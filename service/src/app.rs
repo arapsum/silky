@@ -1,11 +1,12 @@
-use std::io::IsTerminal;
+use std::{io::IsTerminal, net::SocketAddr};
 
 use axum::Router;
 use clap::Parser;
 use color_eyre::config::{HookBuilder, Theme};
 use tokio::net::TcpListener;
+use tower_http::trace::TraceLayer;
 
-use crate::{Config, Result, config::Environment, controllers};
+use crate::{Config, Result, config::Environment, controllers, middlewares::trace};
 
 #[derive(Debug, Parser)]
 #[command(version, about, long_about = None)]
@@ -49,11 +50,22 @@ impl App {
 
         let listener = TcpListener::bind(config.server().address()).await?;
 
-        let router = Router::new().nest("/api", controllers::router());
+        let router = Router::new().nest("/api", controllers::router()).layer(
+            TraceLayer::new_for_http()
+                .make_span_with(trace::make_span_with)
+                .on_response(trace::on_response)
+                .on_request(trace::on_request)
+                .on_failure(trace::on_failure),
+        );
 
         tracing::info!("Listening on {}", config.server().url());
 
-        axum::serve(listener, router).await.map_err(Into::into)
+        axum::serve(
+            listener,
+            router.into_make_service_with_connect_info::<SocketAddr>(),
+        )
+        .await
+        .map_err(Into::into)
     }
 }
 

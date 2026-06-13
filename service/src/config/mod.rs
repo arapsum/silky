@@ -50,8 +50,9 @@ impl ServerConfig {
     }
 }
 
-#[derive(Debug, Clone)]
+#[derive(Debug, Default, Clone, PartialEq, Eq)]
 pub enum Environment {
+    #[default]
     Development,
     Production,
     Testing,

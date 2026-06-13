@@ -1,5 +1,8 @@
+use std::io::IsTerminal;
+
 use axum::Router;
 use clap::Parser;
+use color_eyre::config::{HookBuilder, Theme};
 use tokio::net::TcpListener;
 
 use crate::{Config, Result, config::Environment, controllers};
@@ -30,16 +33,25 @@ impl App {
     ///
     /// This function will return an error if:
     /// - The application configuration cannot be loaded.
+    /// - The tracing setup fails.
     /// - The server cannot bind to the configured address.
     /// - The HTTP server encounters an error while serving requests.
     pub async fn run(&self) -> Result<()> {
+        HookBuilder::new().theme(if std::io::stderr().is_terminal() {
+            Theme::dark()
+        } else {
+            Theme::new()
+        });
+
         let config = Config::from_env(&self.env)?;
+
+        config.logger().setup()?;
 
         let listener = TcpListener::bind(config.server().address()).await?;
 
         let router = Router::new().nest("/api", controllers::router());
 
-        println!("Listening on {}", config.server().url());
+        tracing::info!("Listening on {}", config.server().url());
 
         axum::serve(listener, router).await.map_err(Into::into)
     }

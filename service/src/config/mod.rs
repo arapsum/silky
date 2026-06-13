@@ -1,12 +1,17 @@
+mod log;
+
 use std::fmt::{self, Display};
 
 use serde::Deserialize;
 
 use crate::Result;
 
+pub use self::log::Logger;
+
 #[derive(Debug, Deserialize, Clone)]
 pub struct Config {
     server: ServerConfig,
+    logger: Logger,
 }
 
 impl Config {
@@ -47,6 +52,11 @@ impl Config {
     #[must_use]
     pub const fn server(&self) -> &ServerConfig {
         &self.server
+    }
+
+    #[must_use]
+    pub const fn logger(&self) -> &Logger {
+        &self.logger
     }
 }
 

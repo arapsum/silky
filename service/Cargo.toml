@@ -13,5 +13,7 @@ path = "src/lib.rs"
 
 [dependencies]
 axum = { version = "0.8.9", features = ["macros"] }
+config = { version = "0.15.23", features = ["yaml"] }
 serde_json = "1.0.150"
+thiserror = "2.0.18"
 tokio = { version = "1.52.3", features = ["full"] }

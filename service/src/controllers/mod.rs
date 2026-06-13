@@ -14,7 +14,7 @@ async fn health_check() -> impl IntoResponse {
         .into_response()
 }
 
-pub(crate) async fn not_found(uri: Uri) -> impl IntoResponse {
+pub async fn not_found(uri: Uri) -> impl IntoResponse {
     let path = uri.path();
     (
         StatusCode::NOT_FOUND,

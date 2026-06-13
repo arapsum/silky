@@ -45,7 +45,7 @@ impl Config {
     }
 
     #[must_use]
-    pub fn server(&self) -> &ServerConfig {
+    pub const fn server(&self) -> &ServerConfig {
         &self.server
     }
 }

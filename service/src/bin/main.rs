@@ -5,7 +5,7 @@ use service::App;
 #[tokio::main]
 async fn main() -> Result<ExitCode, ExitCode> {
     if let Err(e) = App::new().run().await {
-        eprintln!("{:?}", e);
+        eprintln!("{e:?}");
         Err(ExitCode::FAILURE)
     } else {
         Ok(ExitCode::SUCCESS)

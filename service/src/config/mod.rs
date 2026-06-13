@@ -10,6 +10,22 @@ pub struct Config {
 }
 
 impl Config {
+    /// Loads application configuration from a YAML file and environment variables.
+    ///
+    /// The configuration file is resolved from the `config` directory in the
+    /// current working directory using the provided environment name
+    /// (for example, `config/development.yaml` or `config/production.yaml`).
+    ///
+    /// Environment variables prefixed with `APP_` are also loaded and will
+    /// override values from the configuration file where applicable.
+    ///
+    /// # Errors
+    ///
+    /// This function will return an error if:
+    /// - The current working directory cannot be determined.
+    /// - The configuration file does not exist or cannot be read.
+    /// - The configuration file contains invalid configuration data.
+    /// - The configuration cannot be deserialized into `Self`.
     pub fn from_env(environment: &Environment) -> Result<Self> {
         let base_path = std::env::current_dir()?;
         let config_dir = base_path.join("config");
@@ -28,6 +44,7 @@ impl Config {
         config.try_deserialize::<Self>().map_err(Into::into)
     }
 
+    #[must_use]
     pub fn server(&self) -> &ServerConfig {
         &self.server
     }

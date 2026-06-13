@@ -1,0 +1,13 @@
+# Build Objects
+target/
+node_modules/
+
+# Environmental files
+*.env
+
+# Secrets
+*.pem
+
+# Config file
+production.yaml
+

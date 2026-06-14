@@ -6,7 +6,7 @@ use color_eyre::config::{HookBuilder, Theme};
 use tokio::net::TcpListener;
 use tower_http::trace::TraceLayer;
 
-use crate::{Config, Result, config::Environment, controllers, middlewares::trace};
+use crate::{AppContext, Config, Result, config::Environment, controllers, middlewares::trace};
 
 #[derive(Debug, Parser)]
 #[command(version, about, long_about = None)]
@@ -21,11 +21,14 @@ impl App {
         Self::parse()
     }
 
-    /// Starts the HTTP server and begins serving requests.
+    /// Starts the application and begins serving HTTP requests.
     ///
     /// Configuration is loaded from the environment specified by this
-    /// application instance. The server then binds to the configured address
-    /// and serves the application's routes under the `/api` path.
+    /// application instance. Application services are then initialised,
+    /// including logging and database setup, before the HTTP server is bound
+    /// to the configured address.
+    ///
+    /// All application routes are served under the `/api` path.
     ///
     /// This method does not return until the server shuts down or an error
     /// occurs.
@@ -34,7 +37,8 @@ impl App {
     ///
     /// This function will return an error if:
     /// - The application configuration cannot be loaded.
-    /// - The tracing setup fails.
+    /// - The application context cannot be created.
+    /// - Application initialization fails.
     /// - The server cannot bind to the configured address.
     /// - The HTTP server encounters an error while serving requests.
     pub async fn run(&self) -> Result<()> {
@@ -46,9 +50,13 @@ impl App {
 
         let config = Config::from_env(&self.env)?;
 
-        config.logger().setup()?;
+        let ctx = AppContext::try_from(&config)?;
 
-        let listener = TcpListener::bind(config.server().address()).await?;
+        ctx.init().await?;
+
+        let server = config.server();
+
+        let listener = TcpListener::bind(server.address()).await?;
 
         let router = Router::new().nest("/api", controllers::router()).layer(
             TraceLayer::new_for_http()
@@ -58,7 +66,7 @@ impl App {
                 .on_failure(trace::on_failure),
         );
 
-        tracing::info!("Listening on {}", config.server().url());
+        tracing::info!("Listening on {}", server.url());
 
         axum::serve(
             listener,

@@ -68,10 +68,12 @@ pub struct ServerConfig {
 }
 
 impl ServerConfig {
+    #[must_use]
     pub fn address(&self) -> String {
         format!("{}:{}", &self.host, self.port)
     }
 
+    #[must_use]
     pub fn url(&self) -> String {
         format!("{}://{}:{}", &self.protocol, &self.host, &self.port)
     }
@@ -87,6 +89,7 @@ pub enum Environment {
 }
 
 impl Environment {
+    #[must_use]
     pub fn as_str(&self) -> &str {
         match self {
             Self::Development => "development",

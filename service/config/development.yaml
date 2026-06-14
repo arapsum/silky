@@ -3,6 +3,16 @@ server:
   host: 127.0.0.1
   port: 7150
 
+database:
+  uri: postgresql://username:password@localhost:5432/database
+  max_connections: 10
+  min_connections: 1
+  connection_timeout: 5
+  idle_timeout: 5
+  auto_migrate: true
+  dangerously_truncate: false
+  dangerously_recreate: false
+
 logger:
   level: debug
   format: pretty

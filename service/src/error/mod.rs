@@ -12,8 +12,12 @@ pub enum Error {
     FromEnv(#[from] tracing_subscriber::filter::FromEnvError),
     #[error(transparent)]
     IO(#[from] std::io::Error),
+    #[error(transparent)]
+    Migrate(#[from] sqlx::migrate::MigrateError),
     #[error("Non-blocking work guard already set")]
     NonBlockingWorkGuardAlreadySet,
+    #[error(transparent)]
+    Sqlx(#[from] sqlx::Error),
     #[error(transparent)]
     TryInit(#[from] tracing_subscriber::util::TryInitError),
 }

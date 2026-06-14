@@ -103,6 +103,21 @@ pub struct Logger {
 }
 
 impl Logger {
+    /// Configures and initialises the global tracing subscriber.
+    ///
+    /// The subscriber is configured using the logger's format, level,
+    /// directives, and optional file appender settings.
+    ///
+    /// Calling this method more than once is allowed. Attempts to initialize
+    /// tracing after a global subscriber has already been installed are ignored.
+    ///
+    /// # Errors
+    ///
+    /// This function will return an error if:
+    /// - The logger's environment filter cannot be constructed.
+    /// - The selected tracing layer cannot be initialized.
+    /// - Any initialization error occurs other than an already-installed
+    ///   global subscriber.
     pub fn setup(&self) -> Result<()> {
         let env_filter_layer = self.env_filter()?;
         let registry = tracing_subscriber::registry()
@@ -127,6 +142,19 @@ impl Logger {
         Ok(())
     }
 
+    /// Returns the env filter of this [`Logger`].
+    ///
+    /// The filter is constructed from the `RUST_LOG` environment variable when
+    /// available. If no environment filter is configured, a filter is built
+    /// from the logger's configured level and crate directives.
+    ///
+    /// # Errors
+    ///
+    /// This function will return an error if:
+    /// - The `RUST_LOG` environment variable contains an invalid filter
+    ///   expression.
+    /// - A directive generated from the configured crate list is invalid.
+    /// - The fallback filter cannot be constructed.
     fn env_filter(&self) -> Result<EnvFilter> {
         let mut env_filter = match EnvFilter::try_from_default_env() {
             Ok(env_filter) => env_filter,
@@ -213,6 +241,15 @@ impl Logger {
         &self.format
     }
 
+    /// Returns the directives of this [`Logger`].
+    ///
+    /// A directive is generated for each configured crate using the logger's
+    /// configured log level.
+    ///
+    /// # Errors
+    ///
+    /// This function will return an error if a generated directive cannot be
+    /// be parsed into a valid [`Directive`].
     pub fn directives(&self) -> Result<Vec<Directive>> {
         self.crates
             .iter()
@@ -268,6 +305,22 @@ pub struct LoggerFileAppender {
 }
 
 impl LoggerFileAppender {
+    /// Returns the writer of this [`LoggerFileAppender`].
+    ///
+    /// When file logging is enabled, the returned writer writes to a rolling
+    /// file appender configured according to the rotation policy. When
+    /// non-blocking mode is enabled, the writer is wrapped in a non-blocking
+    /// layer and the associated worker guard is stored for the lifetime of the
+    /// application.
+    ///
+    /// If file logging is disabled, a writer targeting standard error is
+    /// returned.
+    ///
+    /// # Errors
+    ///
+    /// This function will return an error if:
+    /// - The rolling file appender cannot be created.
+    /// - The non-blocking worker guard has already been initialized.
     fn writer(&self) -> Result<BoxMakeWriter> {
         if self.enable {
             let dir = self

@@ -6,10 +6,12 @@ use std::{
     fmt::{self, Display},
     io::IsTerminal,
     str::FromStr,
+    sync::OnceLock,
 };
 
 use serde::{Deserialize, Serialize};
 use tracing::Subscriber;
+use tracing_appender::non_blocking::WorkerGuard;
 use tracing_error::ErrorLayer;
 use tracing_subscriber::{
     EnvFilter, Layer,
@@ -27,6 +29,8 @@ use tracing_subscriber::{
 use crate::{Error, Result};
 
 type TracingFmtLayer<S> = FmtLayer<S, DefaultFields, FmtFormat, BoxMakeWriter>;
+
+static NONBLOCKING_WORK_GUARD: OnceLock<WorkerGuard> = OnceLock::new();
 
 #[derive(Debug, Deserialize, Serialize, Clone, Default)]
 pub enum Level {
@@ -95,6 +99,7 @@ pub struct Logger {
     level: Level,
     format: Format,
     crates: Vec<String>,
+    file_appender: Option<LoggerFileAppender>,
 }
 
 impl Logger {
@@ -152,7 +157,14 @@ impl Logger {
     }
 
     fn writer(&self) -> BoxMakeWriter {
-        BoxMakeWriter::new(std::io::stderr)
+        self.file_appender().map_or_else(
+            || BoxMakeWriter::new(std::io::stderr),
+            |file_appender| {
+                file_appender
+                    .writer()
+                    .unwrap_or_else(|_| BoxMakeWriter::new(std::io::stderr))
+            },
+        )
     }
 
     fn base_fmt_layer<S>(&self) -> TracingFmtLayer<S>
@@ -161,7 +173,6 @@ impl Logger {
     {
         FmtLayer::new()
             .with_ansi(std::io::stderr().is_terminal())
-            // TODO: Implement other writers
             .with_writer(self.writer())
     }
 
@@ -210,5 +221,105 @@ impl Logger {
                 Ok(Directive::from_str(&str_directive)?)
             })
             .collect()
+    }
+
+    #[must_use]
+    pub const fn file_appender(&self) -> Option<&LoggerFileAppender> {
+        self.file_appender.as_ref()
+    }
+}
+
+#[derive(Debug, Deserialize, Serialize, Clone, Default)]
+pub enum Rotation {
+    #[serde(rename = "minutely")]
+    Minutely,
+    #[serde(rename = "hourly")]
+    #[default]
+    Hourly,
+    #[serde(rename = "daily")]
+    Daily,
+    #[serde(rename = "weekly")]
+    Weekly,
+}
+
+impl Display for Rotation {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        match self {
+            Self::Minutely => write!(f, "minutely"),
+            Self::Hourly => write!(f, "hourly"),
+            Self::Daily => write!(f, "daily"),
+            Self::Weekly => write!(f, "weekly"),
+        }
+    }
+}
+
+#[derive(Debug, Clone, Deserialize, Serialize, Default)]
+pub struct LoggerFileAppender {
+    pub enable: bool,
+    pub non_blocking: bool,
+    pub rotation: Rotation,
+    /// Directory where log files will be written. Defaults to `./logs`.
+    pub directory: Option<String>,
+    /// Filename prefix for log files.
+    pub filename_prefix: Option<String>,
+    /// Filename suffix for log files.
+    pub filename_suffix: Option<String>,
+    pub max_log_files: usize,
+}
+
+impl LoggerFileAppender {
+    fn writer(&self) -> Result<BoxMakeWriter> {
+        if self.enable {
+            let dir = self
+                .directory
+                .as_ref()
+                .map_or_else(|| "./logs".into(), ToString::to_string);
+
+            let mut rolling_builder =
+                tracing_appender::rolling::Builder::default().max_log_files(self.max_log_files);
+
+            rolling_builder = match self.rotation {
+                Rotation::Minutely => {
+                    rolling_builder.rotation(tracing_appender::rolling::Rotation::MINUTELY)
+                }
+                Rotation::Hourly => {
+                    rolling_builder.rotation(tracing_appender::rolling::Rotation::HOURLY)
+                }
+                Rotation::Daily => {
+                    rolling_builder.rotation(tracing_appender::rolling::Rotation::DAILY)
+                }
+                Rotation::Weekly => {
+                    rolling_builder.rotation(tracing_appender::rolling::Rotation::WEEKLY)
+                }
+            };
+
+            let rolling_file_appender = rolling_builder
+                .filename_prefix(
+                    self.filename_prefix
+                        .as_ref()
+                        .map_or_else(String::new, ToString::to_string),
+                )
+                .filename_suffix(
+                    self.filename_suffix
+                        .as_ref()
+                        .map_or_else(String::new, ToString::to_string),
+                )
+                .build(dir)?;
+
+            if self.non_blocking {
+                let (non_blocking, work_guard) =
+                    tracing_appender::non_blocking(rolling_file_appender);
+
+                NONBLOCKING_WORK_GUARD
+                    .set(work_guard)
+                    .map_err(|_e| Error::NonBlockingWorkGuardAlreadySet)?;
+
+                Ok(BoxMakeWriter::new(non_blocking))
+            } else {
+                Ok(BoxMakeWriter::new(rolling_file_appender))
+            }
+        } else {
+            Ok(BoxMakeWriter::new(std::io::stderr))
+        }
     }
 }

@@ -1,0 +1,17 @@
+server:
+  protocol: http
+  host: 127.0.0.1
+  port: 7150
+
+logger:
+  level: debug
+  format: json
+  crates:
+    - axum
+    - service
+  file_appender:
+    enable: true
+    non_blocking: true
+    rotation: hourly
+    filename_suffix: log
+    max_log_files: 20

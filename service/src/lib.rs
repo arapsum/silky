@@ -1,8 +1,8 @@
-mod app;
-mod config;
-pub(crate) mod controllers;
-mod error;
-pub(crate) mod middlewares;
+pub mod app;
+pub mod config;
+pub mod controllers;
+pub mod error;
+pub mod middlewares;
 
 pub use self::{
     app::App,

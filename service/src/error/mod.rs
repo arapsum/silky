@@ -20,6 +20,8 @@ pub enum Error {
     Sqlx(#[from] sqlx::Error),
     #[error(transparent)]
     TryInit(#[from] tracing_subscriber::util::TryInitError),
+    #[error("Validation error: {0}")]
+    ValidationError(String),
 }
 
 pub type Result<T, E = Error> = std::result::Result<T, E>;

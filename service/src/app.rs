@@ -1,4 +1,4 @@
-use std::{io::IsTerminal, net::SocketAddr};
+use std::{io::IsTerminal, net::SocketAddr, sync::Arc};
 
 use axum::Router;
 use clap::Parser;
@@ -6,19 +6,39 @@ use color_eyre::config::{HookBuilder, Theme};
 use tokio::net::TcpListener;
 use tower_http::trace::TraceLayer;
 
-use crate::{AppContext, Config, Result, config::Environment, controllers, middlewares::trace};
+use crate::{
+    AppContext, Commands, Config, Result, config::Environment, controllers, middlewares::trace,
+    models::User,
+};
 
 #[derive(Debug, Parser)]
 #[command(version, about, long_about = None)]
 pub struct App {
     #[arg(short, long, default_value_t = Environment::default())]
     env: Environment,
+
+    #[command(subcommand)]
+    command: Option<Commands>,
 }
 
 impl App {
     #[must_use]
     pub fn new() -> Self {
         Self::parse()
+    }
+
+    pub async fn init(&self, config: &Config) -> Result<Arc<AppContext>> {
+        let ctx = AppContext::try_from(config)?;
+        ctx.init().await?;
+
+        match self.command {
+            Some(Commands::Seed) => {
+                Self::seed(ctx.db()).await?;
+            }
+            None => {}
+        }
+
+        Ok(Arc::new(ctx))
     }
 
     /// Starts the application and begins serving HTTP requests.
@@ -50,11 +70,9 @@ impl App {
 
         let config = Config::from_env(&self.env)?;
 
-        let ctx = AppContext::try_from(&config)?;
+        let ctx = self.init(&config).await?;
 
-        ctx.init().await?;
-
-        let server = config.server();
+        let server = ctx.config().server();
 
         let listener = TcpListener::bind(server.address()).await?;
 
@@ -74,6 +92,12 @@ impl App {
         )
         .await
         .map_err(Into::into)
+    }
+
+    pub async fn seed(db: &sqlx::PgPool) -> Result<()> {
+        User::seed_data(db, "users.json").await?;
+
+        Ok(())
     }
 }
 

@@ -1,3 +1,5 @@
+use crate::models::ModelError;
+
 #[derive(Debug, thiserror::Error)]
 pub enum Error {
     #[error(transparent)]
@@ -14,6 +16,8 @@ pub enum Error {
     IO(#[from] std::io::Error),
     #[error(transparent)]
     Migrate(#[from] sqlx::migrate::MigrateError),
+    #[error(transparent)]
+    Model(#[from] ModelError),
     #[error("Non-blocking work guard already set")]
     NonBlockingWorkGuardAlreadySet,
     #[error(transparent)]

@@ -2,7 +2,7 @@ use std::borrow::Cow;
 
 use insta::{Settings, assert_debug_snapshot, with_settings};
 use serial_test::serial;
-use service::{models::user::User, schemas::RegisterUser};
+use service::{App, models::user::User, schemas::RegisterUser};
 
 use crate::{
     boot_test,
@@ -47,4 +47,25 @@ async fn can_create_user() {
     }, {
         assert_debug_snapshot!(result)
     })
+}
+
+#[tokio::test]
+#[serial]
+async fn cannot_create_user_when_email_already_exists() {
+    configure_insta!();
+
+    let ctx = boot_test().await.unwrap();
+
+    App::seed(ctx.db()).await.unwrap();
+
+    let params = RegisterUser::new(
+        Cow::Owned("john.doe@acme.com".to_string()),
+        Cow::Owned("John Doe".to_string()),
+        Cow::Owned("password".to_string()),
+        Cow::Owned("password".to_string()),
+    );
+
+    let result = User::create(ctx.db(), &params).await;
+
+    assert_debug_snapshot!(result);
 }

@@ -1,0 +1,10 @@
+---
+source: tests/models/user.rs
+assertion_line: 70
+expression: result
+---
+Err(
+    EntityAlreadyExists(
+        "User with email already exists",
+    ),
+)

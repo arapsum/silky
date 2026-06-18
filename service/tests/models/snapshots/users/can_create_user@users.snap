@@ -11,7 +11,9 @@ Ok(
         email: "test@mail.com",
         password_hash: "PASSWORD",
         verified_at: None,
-        verification_token_hash: Some("TOKEN"),
+        verification_token_hash: Some(
+            "TOKEN",
+        ),
         verification_token_expires_at: Some(
             DATEZ,
         ),

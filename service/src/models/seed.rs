@@ -9,6 +9,7 @@ use super::{ModelError, ModelResult};
 pub trait Seedable: Sized + Send + Sync + DeserializeOwned + Clone {
     async fn seed(db: &PgPool, data: &[Self]) -> ModelResult<()>;
 
+    #[must_use]
     async fn load(file: &str) -> ModelResult<Vec<Self>> {
         let path = Path::new(&format!("src/data/{file}")).to_path_buf();
 

@@ -27,6 +27,25 @@ impl App {
         Self::parse()
     }
 
+    /// Initialises the application context and executes any startup commands.
+    ///
+    /// An [`AppContext`] is created from the provided configuration and all
+    /// application services are initialised, including logging, database
+    /// connections, and any other configured resources.
+    ///
+    /// If the application was started with a supported subcommand, the
+    /// corresponding action is executed after initialisation. For example,
+    /// the `seed` command populates the database with initial data.
+    ///
+    /// Returns a shared [`Arc`] containing the fully initialised application
+    /// context.
+    ///
+    /// # Errors
+    ///
+    /// This function will return an error if:
+    /// - The application context cannot be created from the configuration.
+    /// - Application service initialisation fails.
+    /// - Execution of a startup command fail
     pub async fn init(&self, config: &Config) -> Result<Arc<AppContext>> {
         let ctx = AppContext::try_from(config)?;
         ctx.init().await?;
@@ -94,6 +113,20 @@ impl App {
         .map_err(Into::into)
     }
 
+    /// Seeds the database with initial application data.
+    ///
+    /// This method loads seed data from the `users.json` file and inserts it
+    /// into the database using the application's seed routines.
+    ///
+    /// The operation is intended for development, testing, or bootstrapping
+    /// environments where a predefined set of records is required.
+    ///
+    /// # Errors
+    ///
+    /// This function will return an error if:
+    /// - The seed data file cannot be found or read.
+    /// - The seed data is invalid or cannot be deserialised.
+    /// - Database operations required to insert the seed data fail.
     pub async fn seed(db: &sqlx::PgPool) -> Result<()> {
         User::seed_data(db, "users.json").await?;
 

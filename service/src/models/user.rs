@@ -113,6 +113,25 @@ impl User {
         &self.email
     }
 
+    /// Loads user seed data from a file and inserts it into the database.
+    ///
+    /// This method reads and deserialises user records from the specified
+    /// seed file before delegating persistence to [`Self::seed`].
+    ///
+    /// It is primarily intended for development, testing, and environment
+    /// bootstrapping where predefined user records need to be created.
+    ///
+    /// # Parameters
+    ///
+    /// - `db` - The database connection pool used to persist the records.
+    /// - `file` - Path to the seed data file.
+    ///
+    /// # Errors
+    ///
+    /// This function will return an error if:
+    /// - The seed file cannot be found or read.
+    /// - The seed file contains invalid or malformed data.
+    /// - User records cannot be inserted into the database.
     pub async fn seed_data(db: &PgPool, file: &str) -> ModelResult<()> {
         let users = Self::load(file).await?;
 

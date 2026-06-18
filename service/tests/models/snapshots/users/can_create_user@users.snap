@@ -1,0 +1,24 @@
+---
+source: tests/models/user.rs
+assertion_line: 48
+expression: result
+---
+Ok(
+    User {
+        id: ID,
+        pid: PID,
+        name: "test",
+        email: "test@mail.com",
+        password_hash: "PASSWORD",
+        verified_at: None,
+        verification_token_hash: Some("TOKEN"),
+        verification_token_expires_at: Some(
+            DATEZ,
+        ),
+        reset_token_hash: None,
+        reset_token_expires_at: None,
+        created_at: DATEZ,
+        updated_at: DATEZ,
+        deleted_at: None,
+    },
+)

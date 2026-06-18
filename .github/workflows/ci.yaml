@@ -63,3 +63,56 @@ jobs:
           workspaces: service
       - name: Run cargo clippy
         run: cargo clippy --all-features -- -D warnings -W clippy::pedantic -W clippy::nursery -W rust-2018-idioms
+
+  test:
+    name: Run Tests
+    runs-on: ubuntu-latest
+
+    permissions:
+      contents: read
+
+    services:
+      postgres:
+        image: postgres:18.3-alpine
+        env:
+          POSTGRES_DB: database
+          POSTGRES_USER: username
+          POSTGRES_PASSWORD: password
+        ports:
+          - "5432:5432"
+        ## Heath checks to wait until postgres has begun
+        options: --health-cmd pg_isready
+          --health-interval 10s
+          --health-timeout 5s
+          --health-retries 5
+
+      redis:
+        image: redis:8.6-alpine
+        ports:
+          - "6379:6379"
+
+      mailer:
+        image: mailtutan/mailtutan:latest
+        ports:
+          - "1080:1080"
+          - "1025:1025"
+
+    steps:
+      - name: Checkout the code
+        uses: actions/checkout@v4
+      - uses: dtolnay/rust-toolchain@stable
+        with:
+          toolchain: ${{ env.RUST_TOOLCHAIN }}
+      - name: Setup Rust cache
+        uses: Swatinem/rust-cache@v2
+      - name: Generate JWT PEM keys
+        run: |
+          mkdir -p secrets/keys/dev
+          echo "${{ secrets.ACCESS_KEY }}" >> secrets/keys/dev/access_key.pem
+          echo "${{ secrets.ACCESS_KEY_PUB }}" >> secrets/keys/dev/access_key_pub.pem
+          echo "${{ secrets.REFRESH_KEY }}" >> secrets/keys/dev/refresh_key.pem
+          echo "${{ secrets.REFRESH_KEY_PUB }}" >> secrets/keys/dev/refresh_key_pub.pem
+      - name: Run cargo test
+        run: cargo test --all-features --all
+        env:
+          DATABASE_URL: postgresql://username:password@localhost:5432/database

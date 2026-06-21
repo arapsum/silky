@@ -1,4 +1,10 @@
 use argon2::password_hash::Error as ArgonError;
+use axum::{
+    Json,
+    http::StatusCode,
+    response::{IntoResponse, Response},
+};
+use serde_json::json;
 
 #[derive(Debug, thiserror::Error)]
 pub enum ModelError {
@@ -36,5 +42,37 @@ impl From<ArgonError> for ModelError {
             ArgonError::Password => Self::InvalidCredentials,
             other => Self::PasswordHash(other),
         }
+    }
+}
+
+impl ModelError {
+    #[must_use]
+    pub fn response_body(&self) -> (StatusCode, String) {
+        let (status, message) = match self {
+            Self::EntityAlreadyExists(_) => {
+                (StatusCode::CONFLICT, "Entity already exists".to_string())
+            }
+            Self::EntityNotFound => (StatusCode::NOT_FOUND, "Entity not found".to_string()),
+            Self::InvalidClaimsKey => (StatusCode::UNAUTHORIZED, "Invalid claims key".to_string()),
+            Self::InvalidCredentials => {
+                (StatusCode::UNAUTHORIZED, "Invalid credentials".to_string())
+            }
+            Self::InvalidVerificationToken => (
+                StatusCode::UNAUTHORIZED,
+                "Invalid verification token".to_string(),
+            ),
+            _ => (
+                StatusCode::INTERNAL_SERVER_ERROR,
+                "Internal server error".to_string(),
+            ),
+        };
+
+        (status, message)
+    }
+
+    #[must_use]
+    pub fn response(&self) -> Response {
+        let (status, message) = self.response_body();
+        (status, Json(json!({ "error": message }))).into_response()
     }
 }

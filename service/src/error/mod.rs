@@ -4,6 +4,8 @@ use jsonwebtoken::errors::{Error as JwtError, ErrorKind as JwtErrorKind};
 
 use crate::models::ModelError;
 
+mod response;
+
 #[derive(Debug, thiserror::Error)]
 pub enum Error {
     #[error(transparent)]

@@ -1,5 +1,3 @@
-use std::sync::Arc;
-
 use axum::{
     Json, Router,
     extract::State,
@@ -10,7 +8,7 @@ use axum::{
 use uuid::Uuid;
 
 use crate::{
-    AppContext, Result,
+    AppState, Result,
     models::User,
     schemas::{RegisterUser, Validator},
     utils::AppJson,
@@ -18,7 +16,7 @@ use crate::{
 };
 
 async fn register(
-    State(ctx): State<Arc<AppContext>>,
+    State(ctx): State<AppState>,
     AppJson(params): AppJson<RegisterUser<'static>>,
 ) -> Result<Response> {
     let validator = Validator::new(params);
@@ -47,7 +45,7 @@ async fn register(
         .into_response())
 }
 
-pub fn router(ctx: &Arc<AppContext>) -> Router {
+pub fn router(ctx: &AppState) -> Router {
     Router::new()
         .route("/register", post(register))
         .with_state(ctx.clone())

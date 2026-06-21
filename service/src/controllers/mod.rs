@@ -1,5 +1,3 @@
-use std::sync::Arc;
-
 use axum::{
     Json, Router, debug_handler,
     http::{StatusCode, Uri},
@@ -7,7 +5,7 @@ use axum::{
     routing::get,
 };
 
-use crate::AppContext;
+use crate::AppState;
 
 mod auth;
 
@@ -28,7 +26,7 @@ pub async fn not_found(uri: Uri) -> impl IntoResponse {
     )
 }
 
-pub fn router(ctx: &Arc<AppContext>) -> Router {
+pub fn router(ctx: &AppState) -> Router {
     Router::new()
         .route("/health", get(health_check))
         .nest("/auth", auth::router(ctx))

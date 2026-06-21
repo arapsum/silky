@@ -1,3 +1,5 @@
+use std::sync::Arc;
+
 use chrono::{Duration, Utc};
 use jsonwebtoken::{Algorithm, DecodingKey, EncodingKey, Header, Validation};
 use serde::{Deserialize, Serialize};
@@ -8,6 +10,8 @@ use crate::{
     Config,
     config::{AuthConfig, JwtConfig},
 };
+
+pub type AppState = Arc<AppContext>;
 
 #[derive(Clone)]
 pub struct AppContext {

@@ -241,7 +241,14 @@ impl User {
             .to_string())
     }
 
-    fn verify_password(&self, plain_password: &str) -> ModelResult<()> {
+    /// Verifies the provided plaintext password against the user's stored hash.
+    ///
+    /// # Errors
+    ///
+    /// This function will return an error if:
+    /// - `PasswordHash` - The stored password hash is invalid.
+    /// - `ArgonError` - The password verification fails.
+    pub fn verify_password(&self, plain_password: &str) -> ModelResult<()> {
         let parded_hash = PasswordHash::new(&self.password_hash)?;
 
         Argon2::default().verify_password(plain_password.as_bytes(), &parded_hash)?;

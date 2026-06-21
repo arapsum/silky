@@ -15,3 +15,7 @@ logger:
     rotation: hourly
     filename_suffix: log
     max_log_files: 20
+
+auth:
+  verification_token_expiry: 604800 # seconds
+  refresh_token_expiry: 1800 # seconds

@@ -6,6 +6,7 @@
     "passwordHash": "$argon2d$v=19$m=12,t=3,p=1$dzhsemJycHJ4bTAwMDAwMA$gwggLXNwI8OgJmMXSP3Wdg",
     "name": "john_doe",
     "verificationTokenHash": "$argon2d$v=19$m=12,t=3,p=1$dzhsemJycHJ4bTAwMDAwMA$gwggLXNwI8OgJmMXSP3Wdg",
+    "verificationTokenExpiresAt": "2024-12-21T09:15:00+00:00",
     "verifiedAt": "2024-12-21T09:00:00+00:00",
     "createdAt": "2024-12-21T09:00:00+00:00",
     "updatedAt": "2024-12-21T09:00:00+00:00"
@@ -18,6 +19,7 @@
     "name": "jane_smith",
     "verifiedAt": null,
     "verificationTokenHash": "$argon2d$v=19$m=12,t=3,p=1$cmk2anZmdmQ4eTAwMDAwMA$twYxAHf+ipQw84lCBUVK+w",
+    "verificationTokenExpiresAt": "2024-12-21T09:15:00+00:00",
     "createdAt": "2024-12-20T11:45:00+00:00",
     "updatedAt": "2024-12-21T09:15:00+00:00"
   },
@@ -29,6 +31,19 @@
     "name": "james_moriaty",
     "verifiedAt": null,
     "verificationTokenHash": "$argon2d$v=19$m=16,t=2,p=1$cTZhOHVtY2dJTzBqYTBudw$/704JvCsW23pidisyXK+Tw",
+    "verificationTokenExpiresAt": "2024-12-21T09:15:00+00:00",
+    "createdAt": "2024-12-20T11:45:00+00:00",
+    "updatedAt": "2024-12-20T11:45:00+00:00"
+  },
+  {
+    "id": 44,
+    "pid": "4c008e68-88fa-4072-808e-6888fa60724c",
+    "email": "morgan@silk.io",
+    "passwordHash": "$argon2d$v=19$m=16,t=2,p=1$cTZhOHVtY2dJTzBqYTBudw$/704JvCsW23pidisyXK+Tw",
+    "name": "Morgan Grimes",
+    "verifiedAt": null,
+    "verificationTokenHash": null,
+    "verificationTokenExpiresAt": null,
     "createdAt": "2024-12-20T11:45:00+00:00",
     "updatedAt": "2024-12-20T11:45:00+00:00"
   }

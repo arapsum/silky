@@ -39,14 +39,12 @@ impl User {
     /// Creates a new [`User`] and stores it in the database.
     ///
     /// The provided password is hashed using Argon2 before being persisted.
-    /// An email verification token is also generated and stored as a hash.
     ///
     /// # Errors
     ///
     /// This function returns an error if:
     ///
     /// - Password hashing fails.
-    /// - Verification token hashing fails.
     /// - The user record cannot be inserted into the database.
     /// - Any database constraint is violated.
     pub async fn create(db: &PgPool, params: &RegisterUser<'_>) -> ModelResult<Self> {
@@ -63,20 +61,18 @@ impl User {
             ));
         }
 
-        let password_hash = Self::hash_password(params.password())?;
-        let verification_token_hash = Self::hash_password(Uuid::new_v4().to_string().as_str())?;
-        let now = Utc::now();
+        let password_hash = Self::hash_text(params.password())?;
 
-        let user = sqlx::query_as::<_, Self>(r"
-            INSERT INTO users (name, email, password_hash, verification_token_hash, verification_token_expires_at)
-            VALUES ($1, $2, $3, $4, $5)
+        let user = sqlx::query_as::<_, Self>(
+            r"
+            INSERT INTO users (name, email, password_hash)
+            VALUES ($1, $2, $3)
             RETURNING *
-        ")
+        ",
+        )
         .bind(params.username())
         .bind(params.email())
         .bind(password_hash)
-        .bind(verification_token_hash)
-        .bind(now + Duration::hours(24))
         .fetch_one(&mut *txn)
         .await?;
 
@@ -85,7 +81,72 @@ impl User {
         Ok(user)
     }
 
-    fn hash_password(password: &str) -> ModelResult<String> {
+    /// Generates a new email verification token for the [`User`].
+    ///
+    /// # Errors
+    ///
+    /// This function will return an error:
+    ///  - if the token could not be hashed.
+    ///  - if the update query fails.
+    pub async fn set_verification_token<'e, C>(
+        &mut self,
+        db: &C,
+        expires_at: i64,
+    ) -> ModelResult<Self>
+    where
+        for<'a> &'a C: Executor<'e, Database = Postgres>,
+    {
+        self.verification_token_hash = Some(Self::hash_text(Uuid::new_v4().to_string().as_str())?);
+        self.verification_token_expires_at = Some(Utc::now() + Duration::seconds(expires_at));
+
+        let this = sqlx::query_as::<_, Self>(
+            r"
+            UPDATE users
+            SET
+                verification_token_hash = $1,
+                verification_token_expires_at = $2
+            WHERE id = $3
+            RETURNING *
+        ",
+        )
+        .bind(&self.verification_token_hash)
+        .bind(self.verification_token_expires_at)
+        .bind(self.id)
+        .fetch_one(db)
+        .await?;
+
+        Ok(this)
+    }
+
+    /// Finds a user by their claims key.
+    ///
+    /// # Errors
+    ///
+    /// This function will return an error:
+    /// - `InvalidClaimsKey` if the claims key is not a valid UUID.
+    /// - `EntityNotFound` if no user is found with the given claims key.
+    /// - `Sqlx` if there is a database error.
+    pub async fn find_by_claims_key<'e, C>(db: &C, claims_key: &str) -> ModelResult<Self>
+    where
+        for<'a> &'a C: Executor<'e, Database = Postgres>,
+    {
+        let pid = Uuid::parse_str(claims_key).map_err(|_| ModelError::InvalidClaimsKey)?;
+
+        let this = sqlx::query_as::<_, Self>(
+            r"
+            SELECT *
+            FROM users
+            WHERE pid = $1
+            ",
+        )
+        .bind(pid)
+        .fetch_optional(db)
+        .await?;
+
+        this.ok_or(ModelError::EntityNotFound)
+    }
+
+    fn hash_text(password: &str) -> ModelResult<String> {
         let argon: Argon2<'_> = Argon2::default();
         let salt: SaltString = SaltString::generate(&mut OsRng);
 
@@ -95,7 +156,7 @@ impl User {
             .to_string())
     }
 
-    fn verify_password(&self, plain_password: &str) -> ModelResult<()> {
+    fn verify_hash(&self, plain_password: &str) -> ModelResult<()> {
         let parded_hash = PasswordHash::new(&self.password_hash)?;
 
         Argon2::default().verify_password(plain_password.as_bytes(), &parded_hash)?;
@@ -141,9 +202,6 @@ impl User {
 
 impl Seedable for User {
     async fn seed(db: &PgPool, data: &[Self]) -> ModelResult<()> {
-        let now = Utc::now();
-        let expires = now + Duration::hours(24);
-
         for user in data {
             sqlx::query(
                 r"
@@ -169,7 +227,7 @@ impl Seedable for User {
             .bind(user.password_hash.as_str())
             .bind(user.verified_at)
             .bind(user.verification_token_hash.as_deref())
-            .bind(expires)
+            .bind(user.verification_token_expires_at)
             .bind(user.created_at)
             .bind(user.updated_at)
             .execute(db)

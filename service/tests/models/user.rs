@@ -40,7 +40,6 @@ async fn can_create_user() {
             let mut filters = cleanup_uuid().to_vec();
             filters.extend(cleanup_date().to_vec());
             filters.extend(cleanup_password());
-            filters.extend(cleanup_verification_token());
             filters.extend(cleanup_id());
             filters
         }
@@ -68,4 +67,32 @@ async fn cannot_create_user_when_email_already_exists() {
     let result = User::create(ctx.db(), &params).await;
 
     assert_debug_snapshot!(result);
+}
+
+#[tokio::test]
+#[serial]
+async fn can_set_verification_token() {
+    configure_insta!();
+
+    let ctx = boot_test().await.unwrap();
+
+    App::seed(ctx.db()).await.unwrap();
+
+    let mut user = User::find_by_claims_key(ctx.db(), "4c008e68-88fa-4072-808e-6888fa60724c")
+        .await
+        .unwrap();
+
+    let result = user
+        .set_verification_token(ctx.db(), ctx.config().auth().verification_token_expiry())
+        .await;
+
+    with_settings!({
+        filters => {
+            let mut filters = cleanup_date().to_vec();
+            filters.extend(cleanup_verification_token());
+            filters
+        }
+    }, {
+        assert_debug_snapshot!(result)
+    })
 }

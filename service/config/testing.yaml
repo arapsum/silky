@@ -20,3 +20,7 @@ logger:
     - axum
     - service
     - sqlx
+
+auth:
+  verification_token_expiry: 86400 # seconds
+  refresh_token_expiry: 900 # seconds

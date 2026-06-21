@@ -1,0 +1,26 @@
+---
+source: tests/models/user.rs
+assertion_line: 96
+expression: result
+---
+Ok(
+    User {
+        id: 44,
+        pid: 4c008e68-88fa-4072-808e-6888fa60724c,
+        name: "Morgan Grimes",
+        email: "morgan@silk.io",
+        password_hash: "TOKEN",
+        verified_at: None,
+        verification_token_hash: Some(
+            "TOKEN",
+        ),
+        verification_token_expires_at: Some(
+            DATEZ,
+        ),
+        reset_token_hash: None,
+        reset_token_expires_at: None,
+        created_at: DATEZ,
+        updated_at: DATEZ,
+        deleted_at: None,
+    },
+)

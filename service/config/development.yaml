@@ -19,3 +19,7 @@ logger:
   crates:
     - axum
     - service
+
+auth:
+  verification_token_expiry: 86400 # seconds
+  refresh_token_expiry: 900 # seconds

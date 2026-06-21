@@ -18,6 +18,7 @@ pub struct Config {
     server: ServerConfig,
     database: DatabaseConfig,
     logger: Logger,
+    auth: AuthConfig,
 }
 
 impl Config {
@@ -68,6 +69,11 @@ impl Config {
     #[must_use]
     pub const fn logger(&self) -> &Logger {
         &self.logger
+    }
+
+    #[must_use]
+    pub const fn auth(&self) -> &AuthConfig {
+        &self.auth
     }
 }
 
@@ -222,6 +228,24 @@ impl DatabaseConfig {
     #[must_use]
     pub const fn dangerously_recreate(&self) -> bool {
         self.dangerously_recreate
+    }
+}
+
+#[derive(Debug, Default, Clone, PartialEq, Eq, Deserialize)]
+pub struct AuthConfig {
+    verification_token_expiry: i64,
+    refresh_token_expiry: i64,
+}
+
+impl AuthConfig {
+    #[must_use]
+    pub const fn verification_token_expiry(&self) -> i64 {
+        self.verification_token_expiry
+    }
+
+    #[must_use]
+    pub const fn refresh_token_expiry(&self) -> i64 {
+        self.refresh_token_expiry
     }
 }
 

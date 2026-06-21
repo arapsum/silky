@@ -1,0 +1,15 @@
+---
+source: tests/requests/auth.rs
+assertion_line: 158
+expression: "(response.status_code(), response.headers(),response.text())"
+---
+(
+    200,
+    {
+        "authorization": "Bearer JWT",
+        "set-cookie": "access_token=JWT; SameSite=Lax; Path=/; Max-Age=900",
+        "set-cookie": "refresh_token=JWT; HttpOnly; SameSite=Lax; Path=/; Max-Age=604800",
+        "content-length": "NUMBER",
+    },
+    "{\"email\":\"john.doe@acme.com\",\"name\":\"john_doe\",\"pid\":\"PID\",\"token\":\"JWT\",\"verified\":true}",
+)

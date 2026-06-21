@@ -20,6 +20,8 @@ pub enum Error {
     ExpiredSession,
     #[error(transparent)]
     FromEnv(#[from] tracing_subscriber::filter::FromEnvError),
+    #[error("Invalid credentials")]
+    InvalidCredentials,
     #[error("Invalid token")]
     InvalidToken,
     #[error(transparent)]

@@ -14,8 +14,8 @@ use serde_json::json;
 use uuid::Uuid;
 
 use crate::{
-    AppState, Result,
-    models::User,
+    AppState, Error, Result,
+    models::{ModelError, User},
     schemas::{LoginUser, RegisterUser, Validator},
     utils::AppJson,
     views::{AuthResponse, LoginResponse},
@@ -59,7 +59,13 @@ async fn login(
     let validator = Validator::new(params);
     let validated = validator.validate()?;
 
-    let user = User::find_by_email(ctx.db(), validated.email()).await?;
+    let user = User::find_by_email(ctx.db(), validated.email())
+        .await
+        .map_err(|e| match e {
+            ModelError::EntityNotFound => Error::InvalidCredentials,
+            _ => Error::Model(e),
+        })?;
+
     user.verify_password(validated.password())?;
 
     let sub = user.pid().to_string();

@@ -112,3 +112,51 @@ async fn can_register_user(#[case] test_name: &str, #[case] params: serde_json::
     })
     .await;
 }
+
+#[rstest]
+#[case("can_successfully_login_user", serde_json::json!({
+    "email": "john.doe@acme.com",
+    "password": "Password"
+}))]
+#[case("when_password_is_wrong_login_fails", serde_json::json!({
+    "email": "john.doe@acme.com",
+    "password": "Password1"
+}))]
+#[case("when_email_is_wrong_login_fails", serde_json::json!({
+    "email": "james.doe@acme.com",
+    "password": "Password1"
+}))]
+#[case("when_email_is_not_email_login_fails", serde_json::json!({
+    "email": "james.doe:acme.com",
+    "password": "Password1"
+}))]
+#[case("when_password_is_too_short_login_fails", serde_json::json!({
+    "email": "james.doe@acme.com",
+    "password": "Pas"
+}))]
+#[tokio::test]
+#[serial]
+async fn can_login_user(#[case] test_name: &str, #[case] params: serde_json::Value) {
+    crate::request(|server, ctx| async move {
+        configure_insta!();
+
+        crate::seed_data(ctx.db())
+            .await
+            .expect("Failed to seed data");
+
+        let response = server.post("/auth/login").json(&params).await;
+
+        with_settings!({
+            filters => {
+                let mut filters = utils::cleanup_date().to_vec();
+                filters.extend(utils::cleanup_uuid().to_vec());
+                filters.extend(utils::cleanup_jwt().to_vec());
+                filters.extend(utils::cleanup_headers());
+                filters
+            }
+        },  {
+            assert_debug_snapshot!(test_name, (response.status_code(), response.headers(),response.text()))
+        })
+    })
+    .await;
+}

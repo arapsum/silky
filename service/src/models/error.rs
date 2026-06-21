@@ -54,9 +54,10 @@ impl ModelError {
             }
             Self::EntityNotFound => (StatusCode::NOT_FOUND, "Entity not found".to_string()),
             Self::InvalidClaimsKey => (StatusCode::UNAUTHORIZED, "Invalid claims key".to_string()),
-            Self::InvalidCredentials => {
-                (StatusCode::UNAUTHORIZED, "Invalid credentials".to_string())
-            }
+            Self::InvalidCredentials => (
+                StatusCode::UNAUTHORIZED,
+                "Invalid email or password".to_string(),
+            ),
             Self::InvalidVerificationToken => (
                 StatusCode::UNAUTHORIZED,
                 "Invalid verification token".to_string(),

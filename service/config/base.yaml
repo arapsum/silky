@@ -17,5 +17,13 @@ logger:
     max_log_files: 20
 
 auth:
-  verification_token_expiry: 604800 # seconds
-  refresh_token_expiry: 1800 # seconds
+  access:
+    public_key: secrets/keys/dev/access_key_pub.pem
+    private_key: secrets/keys/dev/access_key.pem
+    maxage: 900 # seconds 15 minutes
+  refresh:
+    public_key: secrets/keys/dev/refresh_key_pub.pem
+    private_key: secrets/keys/dev/refresh_key.pem
+    maxage: 604800 # seconds 7 days
+  verification_token_expiry: 604800 # seconds 7 days
+  refresh_token_expiry: 1800 # seconds 30 minutes

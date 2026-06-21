@@ -6,3 +6,5 @@
 production.yaml
 
 *.env
+
+*.pem

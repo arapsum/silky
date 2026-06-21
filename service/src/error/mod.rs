@@ -15,6 +15,8 @@ pub enum Error {
     #[error(transparent)]
     IO(#[from] std::io::Error),
     #[error(transparent)]
+    Jwt(#[from] jsonwebtoken::errors::Error),
+    #[error(transparent)]
     Migrate(#[from] sqlx::migrate::MigrateError),
     #[error(transparent)]
     Model(#[from] ModelError),

@@ -2,10 +2,11 @@ mod log;
 
 use std::{
     fmt::{self, Display},
-    path::Path,
+    path::{Path, PathBuf},
     time::Duration,
 };
 
+use jsonwebtoken::{DecodingKey, EncodingKey};
 use serde::Deserialize;
 use sqlx::{Pool, Postgres, migrate::Migrator, postgres::PgPoolOptions};
 
@@ -233,11 +234,23 @@ impl DatabaseConfig {
 
 #[derive(Debug, Default, Clone, PartialEq, Eq, Deserialize)]
 pub struct AuthConfig {
+    access: JwtConfig,
+    refresh: JwtConfig,
     verification_token_expiry: i64,
     refresh_token_expiry: i64,
 }
 
 impl AuthConfig {
+    #[must_use]
+    pub const fn access(&self) -> &JwtConfig {
+        &self.access
+    }
+
+    #[must_use]
+    pub const fn refresh(&self) -> &JwtConfig {
+        &self.refresh
+    }
+
     #[must_use]
     pub const fn verification_token_expiry(&self) -> i64 {
         self.verification_token_expiry
@@ -246,6 +259,54 @@ impl AuthConfig {
     #[must_use]
     pub const fn refresh_token_expiry(&self) -> i64 {
         self.refresh_token_expiry
+    }
+}
+
+#[derive(Debug, Default, Clone, PartialEq, Eq, Deserialize)]
+pub struct JwtConfig {
+    public_key: PathBuf,
+    private_key: PathBuf,
+    maxage: i64,
+}
+
+impl JwtConfig {
+    /// Returns the [`EncodingKey`] of this [`JwtConfig`].
+    ///
+    /// # Errors
+    ///
+    /// This function will return an error if:
+    /// - The private key file cannot be read.
+    /// - The private key is not a valid RSA PEM file.
+    pub fn encoding_key(&self) -> Result<EncodingKey> {
+        let private_key = std::fs::read(&self.private_key)?;
+        Ok(EncodingKey::from_rsa_pem(&private_key)?)
+    }
+
+    /// Returns the [`DecodingKey`] of this [`JwtConfig`].
+    ///
+    /// # Errors
+    ///
+    /// This function will return an error if:
+    /// - The public key file cannot be read.
+    /// - The public key is not a valid RSA PEM file.
+    pub fn decoding_key(&self) -> Result<DecodingKey> {
+        let public_key = std::fs::read(&self.public_key)?;
+        Ok(DecodingKey::from_rsa_pem(&public_key)?)
+    }
+
+    #[must_use]
+    pub const fn public_key(&self) -> &PathBuf {
+        &self.public_key
+    }
+
+    #[must_use]
+    pub const fn private_key(&self) -> &PathBuf {
+        &self.private_key
+    }
+
+    #[must_use]
+    pub const fn maxage(&self) -> i64 {
+        self.maxage
     }
 }
 

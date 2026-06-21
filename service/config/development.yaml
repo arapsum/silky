@@ -21,5 +21,13 @@ logger:
     - service
 
 auth:
-  verification_token_expiry: 86400 # seconds
-  refresh_token_expiry: 900 # seconds
+  access:
+    public_key: secrets/keys/dev/access_key_pub.pem
+    private_key: secrets/keys/dev/access_key.pem
+    maxage: 900 # seconds 15 minutes
+  refresh:
+    public_key: secrets/keys/dev/refresh_key_pub.pem
+    private_key: secrets/keys/dev/refresh_key.pem
+    maxage: 604800 # seconds 7 days
+  verification_token_expiry: 86400 # seconds 24 hours
+  refresh_token_expiry: 900 # seconds 15 minutes

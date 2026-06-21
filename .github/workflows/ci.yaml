@@ -110,11 +110,11 @@ jobs:
         uses: Swatinem/rust-cache@v2
       - name: Generate JWT PEM keys
         run: |
-          mkdir -p secrets/keys/dev
-          echo "${{ secrets.ACCESS_KEY }}" >> secrets/keys/dev/access_key.pem
-          echo "${{ secrets.ACCESS_KEY_PUB }}" >> secrets/keys/dev/access_key_pub.pem
-          echo "${{ secrets.REFRESH_KEY }}" >> secrets/keys/dev/refresh_key.pem
-          echo "${{ secrets.REFRESH_KEY_PUB }}" >> secrets/keys/dev/refresh_key_pub.pem
+          mkdir -p secrets/keys/test
+          echo "${{ secrets.ACCESS_KEY }}" >> secrets/keys/test/access_key.pem
+          echo "${{ secrets.ACCESS_KEY_PUB }}" >> secrets/keys/test/access_key_pub.pem
+          echo "${{ secrets.REFRESH_KEY }}" >> secrets/keys/test/refresh_key.pem
+          echo "${{ secrets.REFRESH_KEY_PUB }}" >> secrets/keys/test/refresh_key_pub.pem
       - name: Run cargo test
         run: cargo test --all-features --all
         env:

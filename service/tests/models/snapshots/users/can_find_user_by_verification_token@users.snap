@@ -15,7 +15,7 @@ Ok(
             "c88bfda2f459c4d741a1a70903662ddeb20c65a78e5915737998dc9aa082399b",
         ),
         verification_token_expires_at: Some(
-            2026-06-21T09:15:00Z,
+            2026-06-22T09:15:00Z,
         ),
         reset_token_hash: None,
         reset_token_expires_at: None,

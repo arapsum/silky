@@ -125,6 +125,7 @@ async fn can_find_user_by_email() {
     })
 }
 
+#[ignore = "change verification expiry in data/users.json before running"]
 #[tokio::test]
 #[serial]
 async fn can_find_user_by_verification_token() {

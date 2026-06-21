@@ -14,12 +14,12 @@ pub struct LoginResponse {
 
 impl LoginResponse {
     #[must_use]
-    pub fn new(user: &User, token: String) -> Self {
+    pub fn new(user: &User, token: &str) -> Self {
         Self {
             pid: user.pid(),
             email: user.email().to_string(),
             name: user.name().to_string(),
-            token,
+            token: token.to_string(),
             verified: user.verified_at().is_some(),
         }
     }

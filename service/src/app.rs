@@ -95,7 +95,7 @@ impl App {
 
         let listener = TcpListener::bind(server.address()).await?;
 
-        let router = Router::new().nest("/api", controllers::router()).layer(
+        let router = Router::new().nest("/api", controllers::router(&ctx)).layer(
             TraceLayer::new_for_http()
                 .make_span_with(trace::make_span_with)
                 .on_response(trace::on_response)

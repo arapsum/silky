@@ -297,6 +297,51 @@ impl User {
 
         Self::seed(db, &users).await
     }
+
+    #[must_use]
+    pub const fn id(&self) -> i32 {
+        self.id
+    }
+
+    #[must_use]
+    pub const fn pid(&self) -> Uuid {
+        self.pid
+    }
+
+    #[must_use]
+    pub fn name(&self) -> &str {
+        &self.name
+    }
+
+    #[must_use]
+    pub fn password_hash(&self) -> &str {
+        &self.password_hash
+    }
+
+    #[must_use]
+    pub const fn verified_at(&self) -> Option<DateTime<Utc>> {
+        self.verified_at
+    }
+
+    #[must_use]
+    pub const fn verification_token_hash(&self) -> Option<&String> {
+        self.verification_token_hash.as_ref()
+    }
+
+    #[must_use]
+    pub const fn verification_token_expires_at(&self) -> Option<DateTime<Utc>> {
+        self.verification_token_expires_at
+    }
+
+    #[must_use]
+    pub const fn reset_token_hash(&self) -> Option<&String> {
+        self.reset_token_hash.as_ref()
+    }
+
+    #[must_use]
+    pub const fn reset_token_expires_at(&self) -> Option<DateTime<Utc>> {
+        self.reset_token_expires_at
+    }
 }
 
 impl Seedable for User {

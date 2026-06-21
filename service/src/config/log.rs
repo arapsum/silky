@@ -162,8 +162,8 @@ impl Logger {
                 if let Some(err) = from_env_err.source() {
                     match err.downcast_ref::<VarError>() {
                         Some(VarError::NotPresent) => (),
-                        Some(other) => return Err(Error::EnvFilter(other.clone())), // Converts into crate::Report
-                        _ => return Err(Error::FromEnv(from_env_err)),
+                        Some(other) => return Err(Error::EnvFilter(other.clone()).into()), // Converts into crate::Report
+                        _ => return Err(Error::FromEnv(from_env_err).into()),
                     }
                 }
 

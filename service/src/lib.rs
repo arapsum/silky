@@ -13,5 +13,5 @@ pub use self::{
     commands::Commands,
     config::Config,
     context::AppContext,
-    error::{Error, Result},
+    error::{Error, Report, Result},
 };

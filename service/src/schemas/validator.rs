@@ -60,9 +60,7 @@ where
                     },
                 );
 
-                Err(Error::ValidationError(
-                    serde_json::json!(errors).to_string(),
-                ))
+                Err(Error::ValidationError(serde_json::json!(errors).to_string()).into())
             }
         }
     }

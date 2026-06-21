@@ -4,8 +4,8 @@ use regex::{Captures, Regex};
 use serde::{Deserialize, Serialize};
 use validator::{Validate, ValidationError};
 
-pub static RE_USERNAME: LazyLock<Regex> =
-    LazyLock::new(|| Regex::new(r"^[a-zA-Z0-9_]+$").expect("Regex initialisation failed"));
+pub static RE_NAME: LazyLock<Regex> =
+    LazyLock::new(|| Regex::new(r"^[a-zA-Z0-9_ ]+$").expect("Regex initialisation failed"));
 
 pub static RE_TOKEN: LazyLock<Regex> = LazyLock::new(|| {
     Regex::new(
@@ -19,8 +19,8 @@ pub static RE_TOKEN: LazyLock<Regex> = LazyLock::new(|| {
 pub struct RegisterUser<'a> {
     #[validate(email(message = "Invalid email address"))]
     email: Cow<'a, str>,
-    #[validate(custom(function = "validate_username"))]
-    username: Cow<'a, str>,
+    #[validate(custom(function = "validate_name"))]
+    name: Cow<'a, str>,
     #[validate(custom(function = "validate_password"))]
     password: Cow<'a, str>,
     #[validate(must_match(other = "password", message = "Passwords do not match"))]
@@ -31,21 +31,21 @@ impl<'a> RegisterUser<'a> {
     #[must_use]
     pub const fn new(
         email: Cow<'a, str>,
-        username: Cow<'a, str>,
+        name: Cow<'a, str>,
         password: Cow<'a, str>,
         confirm_password: Cow<'a, str>,
     ) -> Self {
         Self {
             email,
-            username,
+            name,
             password,
             confirm_password,
         }
     }
 
     #[must_use]
-    pub fn username(&self) -> &str {
-        &self.username
+    pub fn name(&self) -> &str {
+        &self.name
     }
 
     #[must_use]
@@ -178,29 +178,29 @@ fn validate_password(password: &str) -> Result<(), ValidationError> {
     Ok(())
 }
 
-fn validate_username(username: &str) -> Result<(), ValidationError> {
+fn validate_name(name: &str) -> Result<(), ValidationError> {
     const MIN_LENGTH: usize = 6;
     const MAX_LENGTH: usize = 32;
 
-    let username = username.trim();
-    let length = username.len();
+    let name = name.trim();
+    let length = name.len();
 
     let error: ValidationError;
 
-    if username.is_empty() {
-        error = ValidationError::new("empty_username");
-        return Err(error.with_message(Cow::Borrowed("Username is required")));
+    if name.is_empty() {
+        error = ValidationError::new("empty_name");
+        return Err(error.with_message(Cow::Borrowed("Name is required")));
     }
 
     if length < MIN_LENGTH {
-        error = ValidationError::new("short_username");
-        return Err(error.with_message(Cow::Borrowed("Username requires 6 letters")));
+        error = ValidationError::new("short_name");
+        return Err(error.with_message(Cow::Borrowed("Name requires 6 letters")));
     } else if length > MAX_LENGTH {
-        error = ValidationError::new("long_username");
-        return Err(error.with_message(Cow::Borrowed("Username must be under 32 letters")));
+        error = ValidationError::new("long_name");
+        return Err(error.with_message(Cow::Borrowed("Name must be under 32 letters")));
     }
 
-    RE_USERNAME.captures(username).map_or_else(
+    RE_NAME.captures(name).map_or_else(
         || {
             let val_error = ValidationError::new("invalid_name");
             Err(val_error.with_message(Cow::Borrowed(

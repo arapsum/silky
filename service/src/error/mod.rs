@@ -25,6 +25,8 @@ pub enum Error {
     #[error(transparent)]
     IO(#[from] std::io::Error),
     #[error(transparent)]
+    JsonRejection(#[from] axum::extract::rejection::JsonRejection),
+    #[error(transparent)]
     Jwt(JwtError),
     #[error(transparent)]
     Migrate(#[from] sqlx::migrate::MigrateError),

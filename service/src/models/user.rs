@@ -71,7 +71,7 @@ impl User {
             RETURNING *
         ",
         )
-        .bind(params.username())
+        .bind(params.name())
         .bind(params.email())
         .bind(password_hash)
         .fetch_one(&mut *txn)

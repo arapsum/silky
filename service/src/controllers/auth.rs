@@ -13,12 +13,13 @@ use crate::{
     AppContext, Result,
     models::User,
     schemas::{RegisterUser, Validator},
+    utils::AppJson,
     views::AuthResponse,
 };
 
 async fn register(
     State(ctx): State<Arc<AppContext>>,
-    Json(params): Json<RegisterUser<'static>>,
+    AppJson(params): AppJson<RegisterUser<'static>>,
 ) -> Result<Response> {
     let validator = Validator::new(params);
     let validated = validator.validate()?;

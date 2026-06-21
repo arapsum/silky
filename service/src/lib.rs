@@ -7,6 +7,7 @@ pub mod error;
 pub mod middlewares;
 pub mod models;
 pub mod schemas;
+pub mod utils;
 pub mod views;
 
 pub use self::{

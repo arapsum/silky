@@ -37,6 +37,9 @@ impl Error {
             Self::ExpiredSession => (StatusCode::UNAUTHORIZED, "Expired session".to_string()),
             Self::Model(model_error) => model_error.response_body(),
             Self::ValidationError(val_error) => (StatusCode::BAD_REQUEST, val_error.clone()),
+            Self::JsonRejection(json_rejection) => {
+                (json_rejection.status(), json_rejection.body_text())
+            }
             _ => (
                 StatusCode::INTERNAL_SERVER_ERROR,
                 "Internal server error".to_string(),

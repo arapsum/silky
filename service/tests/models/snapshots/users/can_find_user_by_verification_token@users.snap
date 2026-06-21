@@ -1,0 +1,26 @@
+---
+source: tests/models/user.rs
+assertion_line: 140
+expression: result
+---
+Ok(
+    User {
+        id: 22,
+        pid: e761d8e3-fc3e-4a2e-a6c9-7c7a4f2130e8,
+        name: "jane_smith",
+        email: "jane.smith@globex.com",
+        password_hash: "$argon2d$v=19$m=12,t=3,p=1$cmk2anZmdmQ4eTAwMDAwMA$twYxAHf+ipQw84lCBUVK+w",
+        verified_at: None,
+        verification_token_hash: Some(
+            "c88bfda2f459c4d741a1a70903662ddeb20c65a78e5915737998dc9aa082399b",
+        ),
+        verification_token_expires_at: Some(
+            2026-06-21T09:15:00Z,
+        ),
+        reset_token_hash: None,
+        reset_token_expires_at: None,
+        created_at: 2026-06-21T09:00:00Z,
+        updated_at: 2026-06-21T09:00:00Z,
+        deleted_at: None,
+    },
+)

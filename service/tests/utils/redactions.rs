@@ -43,8 +43,9 @@ pub fn cleanup_password() -> &'static Vec<(&'static str, &'static str)> {
 }
 
 pub fn cleanup_verification_token() -> &'static Vec<(&'static str, &'static str)> {
-    CLEANUP_VERIFICATION_TOKEN.get_or_init(|| vec![(r#"\$argon2[a-z]*\$v=\d+\$[^"]+"#, "TOKEN")])
+    CLEANUP_VERIFICATION_TOKEN.get_or_init(|| vec![(r#"\b[a-f0-9]{64}\b"#, "TOKEN")])
 }
+
 pub fn cleanup_jwt() -> &'static Vec<(&'static str, &'static str)> {
     CLEANUP_JWT.get_or_init(|| vec![(r"[A-Za-z0-9-_]+\.[A-Za-z0-9-_]+\.[A-Za-z0-9-_]+", "JWT")])
 }

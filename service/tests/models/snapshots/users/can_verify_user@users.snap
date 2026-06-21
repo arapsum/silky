@@ -1,6 +1,6 @@
 ---
 source: tests/models/user.rs
-assertion_line: 103
+assertion_line: 174
 expression: result
 ---
 Ok(
@@ -10,13 +10,11 @@ Ok(
         name: "Morgan Grimes",
         email: "morgan@silk.io",
         password_hash: "$argon2d$v=19$m=16,t=2,p=1$cTZhOHVtY2dJTzBqYTBudw$/704JvCsW23pidisyXK+Tw",
-        verified_at: None,
-        verification_token_hash: Some(
-            "TOKEN",
-        ),
-        verification_token_expires_at: Some(
+        verified_at: Some(
             DATEZ,
         ),
+        verification_token_hash: None,
+        verification_token_expires_at: None,
         reset_token_hash: None,
         reset_token_expires_at: None,
         created_at: DATEZ,

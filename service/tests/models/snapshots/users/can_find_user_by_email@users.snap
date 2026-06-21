@@ -1,0 +1,28 @@
+---
+source: tests/models/user.rs
+assertion_line: 124
+expression: result
+---
+Ok(
+    User {
+        id: 11,
+        pid: bd6f7c26-d2c9-487e-b837-8f77be468033,
+        name: "john_doe",
+        email: "john.doe@acme.com",
+        password_hash: "$argon2d$v=19$m=12,t=3,p=1$dzhsemJycHJ4bTAwMDAwMA$gwggLXNwI8OgJmMXSP3Wdg",
+        verified_at: Some(
+            2026-06-21T09:00:00Z,
+        ),
+        verification_token_hash: Some(
+            "TOKEN",
+        ),
+        verification_token_expires_at: Some(
+            2026-06-21T09:15:00Z,
+        ),
+        reset_token_hash: None,
+        reset_token_expires_at: None,
+        created_at: 2026-06-21T09:00:00Z,
+        updated_at: 2026-06-21T09:00:00Z,
+        deleted_at: None,
+    },
+)

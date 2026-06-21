@@ -12,6 +12,8 @@ pub enum ModelError {
     InvalidClaimsKey,
     #[error("Invalid credentials provided")]
     InvalidCredentials,
+    #[error("Invalid verification token")]
+    InvalidVerificationToken,
     #[error(transparent)]
     IO(#[from] std::io::Error),
     #[error("Password hashing error: {0}")]

@@ -5,11 +5,11 @@
     "email": "john.doe@acme.com",
     "passwordHash": "$argon2d$v=19$m=12,t=3,p=1$dzhsemJycHJ4bTAwMDAwMA$gwggLXNwI8OgJmMXSP3Wdg",
     "name": "john_doe",
-    "verificationTokenHash": "$argon2d$v=19$m=12,t=3,p=1$dzhsemJycHJ4bTAwMDAwMA$gwggLXNwI8OgJmMXSP3Wdg",
-    "verificationTokenExpiresAt": "2024-12-21T09:15:00+00:00",
-    "verifiedAt": "2024-12-21T09:00:00+00:00",
-    "createdAt": "2024-12-21T09:00:00+00:00",
-    "updatedAt": "2024-12-21T09:00:00+00:00"
+    "verificationTokenHash": "15647d13-07da-468b-845b-b050440115a4",
+    "verificationTokenExpiresAt": "2026-06-21T09:15:00+00:00",
+    "verifiedAt": "2026-06-21T09:00:00+00:00",
+    "createdAt": "2026-06-21T09:00:00+00:00",
+    "updatedAt": "2026-06-21T09:00:00+00:00"
   },
   {
     "id": 22,
@@ -18,10 +18,10 @@
     "passwordHash": "$argon2d$v=19$m=12,t=3,p=1$cmk2anZmdmQ4eTAwMDAwMA$twYxAHf+ipQw84lCBUVK+w",
     "name": "jane_smith",
     "verifiedAt": null,
-    "verificationTokenHash": "$argon2d$v=19$m=12,t=3,p=1$cmk2anZmdmQ4eTAwMDAwMA$twYxAHf+ipQw84lCBUVK+w",
-    "verificationTokenExpiresAt": "2024-12-21T09:15:00+00:00",
-    "createdAt": "2024-12-20T11:45:00+00:00",
-    "updatedAt": "2024-12-21T09:15:00+00:00"
+    "verificationTokenHash": "dbcbdf81-0230-4624-af68-e36c49d3f4ee",
+    "verificationTokenExpiresAt": "2026-06-21T09:15:00+00:00",
+    "createdAt": "2026-06-21T09:00:00+00:00",
+    "updatedAt": "2026-06-21T09:00:00+00:00"
   },
   {
     "id": 33,
@@ -30,10 +30,10 @@
     "passwordHash": "$argon2d$v=19$m=16,t=2,p=1$cTZhOHVtY2dJTzBqYTBudw$/704JvCsW23pidisyXK+Tw",
     "name": "james_moriaty",
     "verifiedAt": null,
-    "verificationTokenHash": "$argon2d$v=19$m=16,t=2,p=1$cTZhOHVtY2dJTzBqYTBudw$/704JvCsW23pidisyXK+Tw",
-    "verificationTokenExpiresAt": "2024-12-21T09:15:00+00:00",
-    "createdAt": "2024-12-20T11:45:00+00:00",
-    "updatedAt": "2024-12-20T11:45:00+00:00"
+    "verificationTokenHash": "a660c29f-db33-459d-b478-f75aa3e72d8a",
+    "verificationTokenExpiresAt": "2026-06-21T09:15:00+00:00",
+    "createdAt": "2026-06-21T09:00:00+00:00",
+    "updatedAt": "2026-06-21T09:00:00+00:00"
   },
   {
     "id": 44,
@@ -44,7 +44,7 @@
     "verifiedAt": null,
     "verificationTokenHash": null,
     "verificationTokenExpiresAt": null,
-    "createdAt": "2024-12-20T11:45:00+00:00",
-    "updatedAt": "2024-12-20T11:45:00+00:00"
+    "createdAt": "2026-06-21T09:00:00+00:00",
+    "updatedAt": "2026-06-21T09:00:00+00:00"
   }
 ]

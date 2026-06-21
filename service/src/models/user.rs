@@ -5,6 +5,7 @@ use argon2::{
 };
 use chrono::{DateTime, Duration, Utc};
 use serde::{Deserialize, Serialize};
+use sha2::{Digest, Sha256};
 use sqlx::{Encode, Executor, PgPool, Postgres, prelude::FromRow};
 use uuid::Uuid;
 
@@ -61,7 +62,7 @@ impl User {
             ));
         }
 
-        let password_hash = Self::hash_text(params.password())?;
+        let password_hash = Self::hash_password(params.password())?;
 
         let user = sqlx::query_as::<_, Self>(
             r"
@@ -90,13 +91,14 @@ impl User {
     ///  - if the update query fails.
     pub async fn set_verification_token<'e, C>(
         &mut self,
-        db: &C,
+        db: C,
+        token: &str,
         expires_at: i64,
     ) -> ModelResult<Self>
     where
-        for<'a> &'a C: Executor<'e, Database = Postgres>,
+        C: Executor<'e, Database = Postgres>,
     {
-        self.verification_token_hash = Some(Self::hash_text(Uuid::new_v4().to_string().as_str())?);
+        self.verification_token_hash = Some(Self::hash_text(token));
         self.verification_token_expires_at = Some(Utc::now() + Duration::seconds(expires_at));
 
         let this = sqlx::query_as::<_, Self>(
@@ -118,6 +120,37 @@ impl User {
         Ok(this)
     }
 
+    /// Verifies a [`User`]'s email using the provided verification token.
+    ///
+    /// # Errors
+    ///
+    /// This function will return an error:
+    ///
+    /// - `InvalidVerificationToken` if the token is not valid or does not match the user's verification token.
+    /// - `EntityNotFound` if no user is found with the provided token.
+    /// - `Sqlx` if a database error occurs.
+    pub async fn verify_email(db: &PgPool, token: &str) -> ModelResult<Self> {
+        let mut txn = db.begin().await?;
+
+        let mut user = Self::find_by_verification_token(&mut *txn, token).await?;
+
+        user = sqlx::query_as::<_, Self>(
+            r"
+            UPDATE users
+            SET verified_at = NOW(), verification_token_hash = NULL, verification_token_expires_at = NULL
+            WHERE id = $1
+            RETURNING *
+            ",
+        )
+        .bind(user.id)
+        .fetch_one(&mut *txn)
+        .await?;
+
+        txn.commit().await?;
+
+        Ok(user)
+    }
+
     /// Finds a user by their claims key.
     ///
     /// # Errors
@@ -126,9 +159,9 @@ impl User {
     /// - `InvalidClaimsKey` if the claims key is not a valid UUID.
     /// - `EntityNotFound` if no user is found with the given claims key.
     /// - `Sqlx` if there is a database error.
-    pub async fn find_by_claims_key<'e, C>(db: &C, claims_key: &str) -> ModelResult<Self>
+    pub async fn find_by_claims_key<'e, C>(db: C, claims_key: &str) -> ModelResult<Self>
     where
-        for<'a> &'a C: Executor<'e, Database = Postgres>,
+        C: Executor<'e, Database = Postgres>,
     {
         let pid = Uuid::parse_str(claims_key).map_err(|_| ModelError::InvalidClaimsKey)?;
 
@@ -146,7 +179,59 @@ impl User {
         this.ok_or(ModelError::EntityNotFound)
     }
 
-    fn hash_text(password: &str) -> ModelResult<String> {
+    /// Finds a user by their verification token.
+    ///
+    /// # Errors
+    ///
+    /// This function will return an error:
+    /// - `EntityNotFound` if no user is found with the given token.
+    /// - `Sqlx` if there is a database error.
+    pub async fn find_by_verification_token<'e, C>(db: C, token: &str) -> ModelResult<Self>
+    where
+        C: Executor<'e, Database = Postgres>,
+    {
+        let token_hash = Self::hash_text(token);
+        let this = sqlx::query_as::<_, Self>(
+            r"
+            SELECT *
+            FROM users
+            WHERE verification_token_hash = $1
+            AND verification_token_expires_at > NOW()
+            ",
+        )
+        .bind(token_hash)
+        .fetch_optional(db)
+        .await?;
+
+        this.ok_or(ModelError::EntityNotFound)
+    }
+
+    /// Finds a user by their email.
+    ///
+    /// # Errors
+    ///
+    /// This function will return an error:
+    /// - `EntityNotFound` if no user is found with the given email.
+    /// - `Sqlx` if there is a database error.
+    pub async fn find_by_email<'e, C>(db: C, email: &str) -> ModelResult<Self>
+    where
+        C: Executor<'e, Database = Postgres>,
+    {
+        let this = sqlx::query_as::<_, Self>(
+            r"
+            SELECT *
+            FROM users
+            WHERE email = $1
+            ",
+        )
+        .bind(email)
+        .fetch_optional(db)
+        .await?;
+
+        this.ok_or(ModelError::EntityNotFound)
+    }
+
+    fn hash_password(password: &str) -> ModelResult<String> {
         let argon: Argon2<'_> = Argon2::default();
         let salt: SaltString = SaltString::generate(&mut OsRng);
 
@@ -156,12 +241,19 @@ impl User {
             .to_string())
     }
 
-    fn verify_hash(&self, plain_password: &str) -> ModelResult<()> {
+    fn verify_password(&self, plain_password: &str) -> ModelResult<()> {
         let parded_hash = PasswordHash::new(&self.password_hash)?;
 
         Argon2::default().verify_password(plain_password.as_bytes(), &parded_hash)?;
 
         Ok(())
+    }
+
+    fn hash_text(text: &str) -> String {
+        let mut hasher = Sha256::new();
+        hasher.update(text.as_bytes());
+
+        hex::encode(hasher.finalize())
     }
 
     #[must_use]
@@ -203,6 +295,11 @@ impl User {
 impl Seedable for User {
     async fn seed(db: &PgPool, data: &[Self]) -> ModelResult<()> {
         for user in data {
+            let verification_token_hash = user
+                .verification_token_hash
+                .as_ref()
+                .map(|token| Self::hash_text(token));
+
             sqlx::query(
                 r"
                 INSERT INTO users (
@@ -218,6 +315,16 @@ impl Seedable for User {
                     updated_at
                 )
                 VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10)
+                ON CONFLICT (id) DO UPDATE SET
+                    pid = EXCLUDED.pid,
+                    email = EXCLUDED.email,
+                    name = EXCLUDED.name,
+                    password_hash = EXCLUDED.password_hash,
+                    verified_at = EXCLUDED.verified_at,
+                    verification_token_hash = EXCLUDED.verification_token_hash,
+                    verification_token_expires_at = EXCLUDED.verification_token_expires_at,
+                    created_at = EXCLUDED.created_at,
+                    updated_at = EXCLUDED.updated_at
             ",
             )
             .bind(user.id)
@@ -226,7 +333,7 @@ impl Seedable for User {
             .bind(user.name.as_str())
             .bind(user.password_hash.as_str())
             .bind(user.verified_at)
-            .bind(user.verification_token_hash.as_deref())
+            .bind(verification_token_hash.as_deref())
             .bind(user.verification_token_expires_at)
             .bind(user.created_at)
             .bind(user.updated_at)

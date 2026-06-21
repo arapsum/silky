@@ -19,7 +19,6 @@ logger:
   crates:
     - axum
     - service
-    - sqlx
 
 auth:
   access:

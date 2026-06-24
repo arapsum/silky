@@ -12,6 +12,8 @@ name = "service"
 path = "src/lib.rs"
 
 [dependencies]
+apalis = { version = "0.7.4", features = ["retry"] }
+apalis-redis = "0.7.4"
 argon2 = { version = "0.5.3", features = ["std"] }
 axum = { version = "0.8.9", features = ["macros"] }
 axum-extra = { version = "0.12.6", features = ["cookie", "typed-routing"] }
@@ -23,6 +25,7 @@ handlebars = { version = "6.4.2", features = ["dir_source"] }
 hex = "0.4.3"
 jsonwebtoken = { version = "10.4.0", features = ["rsa", "aws-lc-rs", "aws_lc_rs"] }
 lettre = { version = "0.11.22", features = ["tokio1", "tokio1-native-tls", "tracing"] }
+redis = "1.2.4"
 regex = "1.12.4"
 serde = { version = "1.0.228", features = ["derive"] }
 serde-saphyr = "0.0.27"

@@ -19,6 +19,16 @@ services:
     networks:
       - mailer
 
+  redis:
+    image: redis:8.6-alpine
+    container_name: auth-cache
+    restart: unless-stopped
+    ports:
+      - "6379:6379"
+    networks:
+      - redis
+
 networks:
   postgresql:
   mailer:
+  redis:

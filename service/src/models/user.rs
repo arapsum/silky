@@ -298,6 +298,20 @@ impl User {
         Self::seed(db, &users).await
     }
 
+    /// Finds a user by their public identifier (PID).
+    ///
+    /// # Errors
+    ///
+    /// This function will return an error if:
+    /// - The user with the specified PID is not found.
+    /// - The database query fails.
+    pub async fn find_by_pid(db: &PgPool, pid: Uuid) -> ModelResult<Self> {
+        sqlx::query_as!(Self, "SELECT * FROM users WHERE pid = $1", pid)
+            .fetch_one(db)
+            .await
+            .map_err(|e| ModelError::EntityNotFound)
+    }
+
     #[must_use]
     pub const fn id(&self) -> i32 {
         self.id

@@ -86,6 +86,8 @@ pub enum MailerError {
     Init(String),
     #[error(transparent)]
     Lettre(#[from] lettre::error::Error),
+    #[error("Missing render variable")]
+    MissingVariable,
     #[error(transparent)]
     Render(#[from] handlebars::RenderError),
     #[error(transparent)]
@@ -102,4 +104,4 @@ impl From<&'static Self> for MailerError {
     }
 }
 
-pub type MailerResult<T> = std::result::Result<T, MailerError>;
+pub type MailerResult<T, E = MailerError> = std::result::Result<T, E>;

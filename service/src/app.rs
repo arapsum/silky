@@ -1,5 +1,6 @@
 use std::{io::IsTerminal, net::SocketAddr, sync::Arc};
 
+use apalis::prelude::{Monitor, WorkerBuilder, WorkerFactoryFn};
 use axum::Router;
 use clap::Parser;
 use color_eyre::config::{HookBuilder, Theme};
@@ -7,8 +8,12 @@ use tokio::net::TcpListener;
 use tower_http::trace::TraceLayer;
 
 use crate::{
-    AppContext, Commands, Config, Result, config::Environment, controllers, middlewares::trace,
+    AppContext, Commands, Config, Result,
+    config::Environment,
+    controllers,
+    middlewares::trace,
     models::User,
+    workers::{self, MailQueue},
 };
 
 #[derive(Debug, Parser)]
@@ -80,6 +85,7 @@ impl App {
     /// - Application initialization fails.
     /// - The server cannot bind to the configured address.
     /// - The HTTP server encounters an error while serving requests.
+    /// - The mail queue fails to initialise.
     pub async fn run(&self) -> Result<()> {
         HookBuilder::new().theme(if std::io::stderr().is_terminal() {
             Theme::dark()
@@ -90,6 +96,34 @@ impl App {
         let config = Config::from_env(&self.env)?;
 
         let ctx = self.init(&config).await?;
+
+        let queue = MailQueue::init(config.redis()).await?;
+        let welcome_backend = queue.welcome.clone();
+        let forgot_backend = queue.forgot.clone();
+
+        ctx.set_queue(queue);
+
+        let ctx_worker = Arc::clone(&ctx);
+
+        tokio::spawn(async move {
+            tracing::info!("Worker started");
+            Monitor::new()
+                .register(
+                    WorkerBuilder::new("mail-welcome")
+                        .data(ctx_worker.clone())
+                        .backend(welcome_backend)
+                        .build_fn(workers::handle_welcome),
+                )
+                .register(
+                    WorkerBuilder::new("mail-forgot")
+                        .data(ctx_worker.clone())
+                        .backend(forgot_backend)
+                        .build_fn(workers::handle_forgot_password),
+                )
+                .run()
+                .await
+                .unwrap_or_else(|e| tracing::error!(error = ?e, "Queue monitor crashed" ));
+        });
 
         let server = ctx.config().server();
 

@@ -10,6 +10,7 @@ pub mod models;
 pub mod schemas;
 pub mod utils;
 pub mod views;
+pub mod workers;
 
 pub use self::{
     app::App,

@@ -10,6 +10,8 @@ use lettre::{
 };
 use serde::{Deserialize, Serialize};
 
+pub use self::auth::AuthMailer;
+
 use crate::{
     AppContext,
     config::SmtpConfig,
@@ -30,6 +32,7 @@ pub static MAILER_TEMPLATES: LazyLock<MailerResult<HandlebarsTemplate>> =
         Ok(handlebars)
     });
 
+#[derive(Clone)]
 pub struct HandlebarsTemplate {
     pub registry: Handlebars<'static>,
 }

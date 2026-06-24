@@ -1,4 +1,4 @@
-use std::sync::Arc;
+use std::sync::{Arc, OnceLock};
 
 use chrono::{Duration, Utc};
 use jsonwebtoken::{Algorithm, DecodingKey, EncodingKey, Header, Validation};
@@ -9,6 +9,7 @@ use uuid::Uuid;
 use crate::{
     Config,
     config::{AuthConfig, JwtConfig},
+    workers::MailQueue,
 };
 
 pub type AppState = Arc<AppContext>;
@@ -18,6 +19,7 @@ pub struct AppContext {
     auth: AuthContext,
     config: Config,
     db: PgPool,
+    queue: Arc<OnceLock<MailQueue>>,
 }
 
 impl AppContext {
@@ -59,6 +61,15 @@ impl AppContext {
     pub const fn auth(&self) -> &AuthContext {
         &self.auth
     }
+
+    #[must_use]
+    pub const fn queue(&self) -> &Arc<OnceLock<MailQueue>> {
+        &self.queue
+    }
+
+    pub fn set_queue(&self, queue: MailQueue) {
+        self.queue.get_or_init(|| queue);
+    }
 }
 
 impl TryFrom<&Config> for AppContext {
@@ -69,6 +80,7 @@ impl TryFrom<&Config> for AppContext {
             auth: cfg.auth().try_into()?,
             db: cfg.database().pool()?,
             config: cfg.clone(),
+            queue: Arc::new(OnceLock::new()),
         })
     }
 }

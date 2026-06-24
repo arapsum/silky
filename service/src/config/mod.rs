@@ -8,6 +8,7 @@ use std::{
 };
 
 use jsonwebtoken::{DecodingKey, EncodingKey};
+use redis::Client;
 use serde::Deserialize;
 use sqlx::{Pool, Postgres, migrate::Migrator, postgres::PgPoolOptions};
 
@@ -25,6 +26,7 @@ pub struct Config {
     logger: Logger,
     auth: AuthConfig,
     mailer: MailerConfig,
+    redis: RedisConfig,
 }
 
 impl Config {
@@ -85,6 +87,11 @@ impl Config {
     #[must_use]
     pub const fn mailer(&self) -> &MailerConfig {
         &self.mailer
+    }
+
+    #[must_use]
+    pub const fn redis(&self) -> &RedisConfig {
+        &self.redis
     }
 }
 
@@ -320,6 +327,34 @@ impl JwtConfig {
     }
 }
 
+#[derive(Debug, Deserialize, Clone)]
+pub struct RedisConfig {
+    pub url: String,
+}
+
+impl RedisConfig {
+    /// Establishes a connection to the Redis server using the configured URL.
+    ///
+    /// # Returns
+    ///
+    /// Returns a [`Client`] connected to the Redis server.
+    ///
+    /// # Errors
+    ///
+    /// This function will return an error if:
+    /// - The URL is invalid or cannot be parsed.
+    /// - The connection to the Redis server fails.
+    pub fn connection(&self) -> Result<Client> {
+        let client = Client::open(self.url.as_str())?;
+
+        Ok(client)
+    }
+
+    #[must_use]
+    pub fn url(&self) -> &str {
+        &self.url
+    }
+}
 #[derive(Debug, Default, Clone, PartialEq, Eq)]
 pub enum Environment {
     #[default]

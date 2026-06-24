@@ -1,3 +1,4 @@
+use apalis::prelude::Storage as _;
 use axum::{
     Json, Router,
     body::Body,
@@ -19,6 +20,7 @@ use crate::{
     schemas::{LoginUser, RegisterUser, Validator},
     utils::AppJson,
     views::{AuthResponse, LoginResponse},
+    workers::MailJob,
 };
 
 async fn register(
@@ -40,8 +42,15 @@ async fn register(
         )
         .await?;
 
-    // TODO: Send verification token to user's email
-    tracing::info!("Send verification token {verification_token} to user's email");
+    if let Some(queue) = ctx.queue().get() {
+        tracing::info!("Send verification token {verification_token} to user's email");
+        let mut welcome = queue.welcome.clone();
+        welcome
+            .push(MailJob {
+                user_id: created.pid(),
+            })
+            .await?;
+    }
 
     Ok((
         StatusCode::CREATED,

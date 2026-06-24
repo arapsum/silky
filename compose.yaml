@@ -9,6 +9,16 @@ services:
       - "5432:5432"
     networks:
       - postgresql
+  mailer:
+    image: mailtutan/mailtutan:latest
+    container_name: mailer
+    restart: unless-stopped
+    ports:
+      - "1080:1080"
+      - "1025:1025"
+    networks:
+      - mailer
 
 networks:
   postgresql:
+  mailer:

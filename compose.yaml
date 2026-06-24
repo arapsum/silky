@@ -11,7 +11,7 @@ services:
       - postgresql
   mailer:
     image: mailtutan/mailtutan:latest
-    container_name: mailer
+    container_name: silk-mailer
     restart: unless-stopped
     ports:
       - "1080:1080"
@@ -21,7 +21,7 @@ services:
 
   redis:
     image: redis:8.6-alpine
-    container_name: auth-cache
+    container_name: silk-cache
     restart: unless-stopped
     ports:
       - "6379:6379"

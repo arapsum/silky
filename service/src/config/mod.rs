@@ -13,7 +13,10 @@ use sqlx::{Pool, Postgres, migrate::Migrator, postgres::PgPoolOptions};
 
 use crate::Result;
 
-pub use self::{log::Logger, mailer::MailerConfig};
+pub use self::{
+    log::Logger,
+    mailer::{MailerAuthConfig, MailerConfig, SmtpConfig},
+};
 
 #[derive(Debug, Deserialize, Clone)]
 pub struct Config {

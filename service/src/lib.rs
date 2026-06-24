@@ -4,6 +4,7 @@ pub mod config;
 pub mod context;
 pub mod controllers;
 pub mod error;
+pub mod mailer;
 pub mod middlewares;
 pub mod models;
 pub mod schemas;

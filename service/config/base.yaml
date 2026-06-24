@@ -16,6 +16,16 @@ logger:
     filename_suffix: log
     max_log_files: 20
 
+mailer:
+  smtp:
+    enable: true
+    host: localhost
+    port: 1025
+    secure: false
+    auth:
+      # username:
+      # password:
+
 auth:
   access:
     public_key: secrets/keys/dev/access_key_pub.pem

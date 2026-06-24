@@ -11,5 +11,5 @@ expression: "(response.status_code(), response.headers(),response.text())"
         "set-cookie": "refresh_token=JWT; HttpOnly; SameSite=Lax; Path=/; Max-Age=604800",
         "content-length": "NUMBER",
     },
-    "{\"email\":\"john.doe@acme.com\",\"name\":\"john_doe\",\"pid\":\"PID\",\"token\":\"JWT\",\"verified\":true}",
+    "{\"pid\":\"PID\",\"email\":\"john.doe@acme.com\",\"name\":\"john_doe\",\"token\":\"JWT\",\"verified\":true}",
 )

@@ -1,4 +1,5 @@
 mod log;
+mod mailer;
 
 use std::{
     fmt::{self, Display},
@@ -12,7 +13,7 @@ use sqlx::{Pool, Postgres, migrate::Migrator, postgres::PgPoolOptions};
 
 use crate::Result;
 
-pub use self::log::Logger;
+pub use self::{log::Logger, mailer::MailerConfig};
 
 #[derive(Debug, Deserialize, Clone)]
 pub struct Config {
@@ -20,6 +21,7 @@ pub struct Config {
     database: DatabaseConfig,
     logger: Logger,
     auth: AuthConfig,
+    mailer: MailerConfig,
 }
 
 impl Config {
@@ -75,6 +77,11 @@ impl Config {
     #[must_use]
     pub const fn auth(&self) -> &AuthConfig {
         &self.auth
+    }
+
+    #[must_use]
+    pub const fn mailer(&self) -> &MailerConfig {
+        &self.mailer
     }
 }
 

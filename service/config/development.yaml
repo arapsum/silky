@@ -13,6 +13,9 @@ database:
   dangerously_truncate: false
   dangerously_recreate: false
 
+redis:
+  url: redis://127.0.0.1:6379/
+
 logger:
   level: debug
   format: pretty

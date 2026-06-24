@@ -26,6 +26,9 @@ mailer:
       # username:
       # password:
 
+redis:
+  url: redis://127.0.0.1:6379/
+
 auth:
   access:
     public_key: secrets/keys/dev/access_key_pub.pem

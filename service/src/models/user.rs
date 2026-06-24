@@ -306,7 +306,8 @@ impl User {
     /// - The user with the specified PID is not found.
     /// - The database query fails.
     pub async fn find_by_pid(db: &PgPool, pid: Uuid) -> ModelResult<Self> {
-        sqlx::query_as!(Self, "SELECT * FROM users WHERE pid = $1", pid)
+        sqlx::query_as::<_, Self>("SELECT * FROM users WHERE pid = $1")
+            .bind(pid)
             .fetch_one(db)
             .await
             .map_err(|e| ModelError::EntityNotFound)

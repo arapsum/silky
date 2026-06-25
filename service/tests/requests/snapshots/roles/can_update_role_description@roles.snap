@@ -1,0 +1,8 @@
+---
+source: tests/requests/roles.rs
+expression: "(response.status_code(), response.text())"
+---
+(
+    201,
+    "{\"id\":22,\"pid\":\"PID\",\"name\":\"customer\",\"description\":\"Both registered shoppers and guest browsers\",\"createdAt\":\"DATE\",\"updatedAt\":\"DATE\"}",
+)

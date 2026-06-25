@@ -1,0 +1,8 @@
+---
+source: tests/requests/roles.rs
+expression: "(response.status_code(), response.text())"
+---
+(
+    400,
+    "{\"error\":\"{\\\"name\\\":\\\"Only letters, numbers and underscores can be used.\\\"}\"}",
+)

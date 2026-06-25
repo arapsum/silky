@@ -5,9 +5,10 @@ use axum::{
     routing::get,
 };
 
-use crate::AppState;
+use crate::{AppState, middlewares::auth::AuthLayer};
 
 mod auth;
+mod roles;
 
 #[debug_handler]
 async fn health_check() -> impl IntoResponse {
@@ -30,5 +31,9 @@ pub fn router(ctx: &AppState) -> Router {
     Router::new()
         .route("/health", get(health_check))
         .nest("/auth", auth::router(ctx))
+        .nest(
+            "/roles",
+            roles::router(ctx).layer(AuthLayer::new(ctx.clone())),
+        )
         .fallback(not_found)
 }

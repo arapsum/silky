@@ -1,0 +1,8 @@
+---
+source: tests/requests/roles.rs
+expression: "(response.status_code(), response.text())"
+---
+(
+    201,
+    "{\"id\":1,\"pid\":\"PID\",\"name\":\"billing admin\",\"description\":\"Billing team\",\"createdAt\":\"DATE\",\"updatedAt\":\"DATE\"}",
+)

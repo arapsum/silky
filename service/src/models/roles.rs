@@ -79,7 +79,7 @@ impl Role {
     /// Returns [`ModelError::EntityAlreadyExists`] when another role already
     /// uses the requested normalized name. Returns a database error if the
     /// lookup, update, or transaction commit fails.
-    pub async fn update(db: &PgPool, pid: Uuid, params: UpdateRole<'_>) -> ModelResult<Self> {
+    pub async fn update(db: &PgPool, pid: Uuid, params: &UpdateRole<'_>) -> ModelResult<Self> {
         let mut txn = db.begin().await?;
 
         let exists = sqlx::query_as::<_, Self>(

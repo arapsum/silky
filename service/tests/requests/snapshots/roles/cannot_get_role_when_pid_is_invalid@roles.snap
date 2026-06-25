@@ -1,0 +1,8 @@
+---
+source: tests/requests/roles.rs
+expression: "(response.status_code(), response.text())"
+---
+(
+    400,
+    "Invalid URL: Cannot parse `pid` with value `not-a-uuid`: UUID parsing failed: invalid character: found `n` at 0",
+)

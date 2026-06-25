@@ -185,7 +185,7 @@ async fn can_update_role(
     let pid = uuid(pid);
     let params = update_role(name, description);
 
-    let result = Role::update(ctx.db(), pid, params).await;
+    let result = Role::update(ctx.db(), pid, &params).await;
 
     with_settings!({
         filters => {

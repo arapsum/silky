@@ -1,0 +1,8 @@
+---
+source: tests/requests/roles.rs
+expression: "(response.status_code(), response.text())"
+---
+(
+    200,
+    "{\"id\":22,\"pid\":\"PID\",\"name\":\"customer\",\"description\":\"Regular shoppers\",\"createdAt\":\"DATE\",\"updatedAt\":\"DATE\"}",
+)

@@ -1,0 +1,8 @@
+---
+source: tests/requests/roles.rs
+expression: "(response.status_code(), response.text())"
+---
+(
+    201,
+    "{\"id\":1,\"pid\":\"PID\",\"name\":\"support agent\",\"description\":null,\"createdAt\":\"DATE\",\"updatedAt\":\"DATE\"}",
+)

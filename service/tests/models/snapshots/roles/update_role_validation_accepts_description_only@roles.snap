@@ -1,0 +1,8 @@
+---
+source: tests/models/roles.rs
+assertion_line: 167
+expression: result
+---
+Ok(
+    "valid",
+)

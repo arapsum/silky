@@ -1,0 +1,10 @@
+---
+source: tests/models/roles.rs
+assertion_line: 101
+expression: result
+---
+Err(
+    EntityAlreadyExists(
+        "Role manager already exists",
+    ),
+)

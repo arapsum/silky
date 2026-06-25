@@ -1,0 +1,18 @@
+[
+  {
+    "id": 11,
+    "pid": "7d416019-34c6-4f25-a39a-fa6752f8b319",
+    "name": "Administrator",
+    "description": "System administrator",
+    "createdAt": "2026-06-21T09:00:00+00:00",
+    "updatedAt": "2026-06-21T09:05:00+00:00"
+  },
+  {
+    "id": 22,
+    "pid": "f028f910-1a4f-4b79-8619-71a8c185e221",
+    "name": "Customer",
+    "description": "Regular shoppers",
+    "createdAt": "2026-06-21T09:01:00+00:00",
+    "updatedAt": "2026-06-21T09:02:00+00:00"
+  }
+]

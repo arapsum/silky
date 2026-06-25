@@ -1,0 +1,15 @@
+---
+source: tests/models/roles.rs
+assertion_line: 69
+expression: result
+---
+Ok(
+    Role {
+        id: ID,
+        pid: PID,
+        name: "support",
+        description: None,
+        created_at: DATE,
+        updated_at: DATE,
+    },
+)

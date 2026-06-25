@@ -1,0 +1,17 @@
+---
+source: tests/models/roles.rs
+assertion_line: 69
+expression: result
+---
+Ok(
+    Role {
+        id: ID,
+        pid: PID,
+        name: "inventory manager",
+        description: Some(
+            "Stock owners",
+        ),
+        created_at: DATE,
+        updated_at: DATE,
+    },
+)

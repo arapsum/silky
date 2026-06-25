@@ -12,7 +12,7 @@ use crate::{
     config::Environment,
     controllers,
     middlewares::trace,
-    models::User,
+    models::{Role, User},
     workers::{self, MailQueue},
 };
 
@@ -163,6 +163,7 @@ impl App {
     /// - Database operations required to insert the seed data fail.
     pub async fn seed(db: &sqlx::PgPool) -> Result<()> {
         User::seed_data(db, "users.json").await?;
+        Role::seed_data(db, "roles.json").await?;
 
         Ok(())
     }

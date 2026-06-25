@@ -6,6 +6,7 @@ static CLEANUP_PASSWORD: OnceLock<Vec<(&'static str, &'static str)>> = OnceLock:
 static CLEANUP_JWT: OnceLock<Vec<(&'static str, &'static str)>> = OnceLock::new();
 static CLEANUP_HEADERS: OnceLock<Vec<(&'static str, &'static str)>> = OnceLock::new();
 static CLEANUP_VERIFICATION_TOKEN: OnceLock<Vec<(&'static str, &'static str)>> = OnceLock::new();
+static CLEANUP_HASHED_TOKEN: OnceLock<Vec<(&'static str, &'static str)>> = OnceLock::new();
 static CLEANUP_ID: OnceLock<Vec<(&'static str, &'static str)>> = OnceLock::new();
 
 pub fn cleanup_id() -> &'static Vec<(&'static str, &'static str)> {
@@ -44,6 +45,10 @@ pub fn cleanup_password() -> &'static Vec<(&'static str, &'static str)> {
 
 pub fn cleanup_verification_token() -> &'static Vec<(&'static str, &'static str)> {
     CLEANUP_VERIFICATION_TOKEN.get_or_init(|| vec![(r#"\b[a-f0-9]{64}\b"#, "TOKEN")])
+}
+
+pub fn cleanup_hashed_token() -> &'static Vec<(&'static str, &'static str)> {
+    CLEANUP_HASHED_TOKEN.get_or_init(|| vec![(r#"\b[a-f0-9]{64}\b"#, "TOKEN")])
 }
 
 pub fn cleanup_jwt() -> &'static Vec<(&'static str, &'static str)> {

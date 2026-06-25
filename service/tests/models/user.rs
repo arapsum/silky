@@ -7,7 +7,10 @@ use uuid::Uuid;
 
 use crate::{
     boot_test,
-    utils::{cleanup_date, cleanup_id, cleanup_password, cleanup_uuid, cleanup_verification_token},
+    utils::{
+        cleanup_date, cleanup_hashed_token, cleanup_id, cleanup_password, cleanup_uuid,
+        cleanup_verification_token,
+    },
 };
 
 macro_rules! configure_insta {
@@ -169,6 +172,69 @@ async fn can_verify_user() {
     with_settings!({
         filters => {
             let filters = cleanup_date().to_vec();
+            filters
+        }
+    }, {
+        assert_debug_snapshot!(result)
+    })
+}
+
+#[tokio::test]
+#[serial]
+async fn can_set_reset_token() {
+    configure_insta!();
+
+    let ctx = boot_test().await.unwrap();
+
+    App::seed(ctx.db()).await.unwrap();
+
+    let mut user = User::find_by_email(ctx.db(), "john.doe@acme.com")
+        .await
+        .unwrap();
+
+    let token = Uuid::new_v4().to_string();
+
+    let result = user
+        .set_reset_token(ctx.db(), &token, ctx.config().auth().refresh_token_expiry())
+        .await;
+
+    with_settings!({
+        filters => {
+            let mut filters = cleanup_date().to_vec();
+            filters.extend(cleanup_hashed_token());
+            filters
+        }
+    }, {
+        assert_debug_snapshot!(result)
+    })
+}
+
+#[tokio::test]
+#[serial]
+async fn can_reset_password() {
+    configure_insta!();
+
+    let ctx = boot_test().await.unwrap();
+
+    App::seed(ctx.db()).await.unwrap();
+
+    let mut user = User::find_by_email(ctx.db(), "john.doe@acme.com")
+        .await
+        .unwrap();
+
+    let token = Uuid::new_v4().to_string();
+
+    user.set_reset_token(ctx.db(), &token, ctx.config().auth().refresh_token_expiry())
+        .await
+        .unwrap();
+
+    let result = User::reset_password(ctx.db(), &token, "Password123").await;
+
+    with_settings!({
+        filters => {
+            let mut filters = cleanup_date().to_vec();
+            filters.extend(cleanup_hashed_token());
+            filters.extend(cleanup_password());
             filters
         }
     }, {

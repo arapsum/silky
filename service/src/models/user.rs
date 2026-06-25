@@ -151,6 +151,43 @@ impl User {
         Ok(user)
     }
 
+    /// Resets the user's password using the provided token and new password.
+    ///
+    /// # Errors
+    ///
+    /// This function will return an error if:
+    ///  - The reset token is invalid.
+    ///  - The database transaction fails.
+    pub async fn reset_password(db: &PgPool, token: &str, new_password: &str) -> ModelResult<Self> {
+        let mut txn = db.begin().await?;
+
+        let valid = Self::find_by_reset_token(&mut *txn, token).await?;
+
+        if valid.reset_token_hash().is_none() {
+            return Err(ModelError::InvalidResetToken);
+        }
+
+        let user = sqlx::query_as::<_, Self>(
+            r"
+            UPDATE users
+            SET
+                password_hash = $2,
+                reset_token_hash = NULL,
+                reset_token_expires_at = NULL
+            WHERE reset_token_hash = $1
+            RETURNING *
+            ",
+        )
+        .bind(valid.reset_token_hash().as_ref())
+        .bind(Self::hash_password(new_password)?)
+        .fetch_one(&mut *txn)
+        .await?;
+
+        txn.commit().await?;
+
+        Ok(user)
+    }
+
     /// Finds a user by their claims key.
     ///
     /// # Errors
@@ -204,6 +241,72 @@ impl User {
         .await?;
 
         this.ok_or(ModelError::EntityNotFound)
+    }
+
+    /// Finds a user by their reset token.
+    ///
+    /// # Errors
+    ///
+    /// This function will return an error if:
+    /// - `EntityNotFound` if no user is found with the given token.
+    /// - `Sqlx` if there is a database error.
+    pub async fn find_by_reset_token<'e, C>(db: C, token: &str) -> ModelResult<Self>
+    where
+        C: Executor<'e, Database = Postgres>,
+    {
+        let token_hash = Self::hash_text(token);
+        let this = sqlx::query_as::<_, Self>(
+            r"
+            SELECT *
+            FROM users
+            WHERE reset_token_hash = $1
+            AND reset_token_expires_at > NOW()
+            ",
+        )
+        .bind(token_hash)
+        .fetch_optional(db)
+        .await?;
+
+        this.ok_or(ModelError::EntityNotFound)
+    }
+
+    /// Sets the reset token for the user.
+    ///
+    /// # Errors
+    ///
+    /// This function will return an error if:
+    /// - There is a database error.
+    /// - The token is empty.
+    pub async fn set_reset_token<'e, C>(
+        &mut self,
+        db: C,
+        token: &str,
+        expires_at: i64,
+    ) -> ModelResult<Self>
+    where
+        C: Executor<'e, Database = Postgres>,
+    {
+        let token_hash = Self::hash_text(token);
+
+        let reset_token_expires_at = Utc::now() + Duration::seconds(expires_at);
+
+        let this = sqlx::query_as::<_, Self>(
+            r"
+            UPDATE users
+            SET
+                reset_token_hash = $1,
+                reset_token_expires_at = $2
+            WHERE id = $3
+            RETURNING *
+            ",
+        )
+        .bind(token_hash)
+        .bind(reset_token_expires_at)
+        .bind(self.id)
+        .fetch_one(db)
+        .await?;
+
+        Ok(this)
     }
 
     /// Finds a user by their email.

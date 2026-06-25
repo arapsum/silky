@@ -18,6 +18,8 @@ pub enum ModelError {
     InvalidClaimsKey,
     #[error("Invalid credentials provided")]
     InvalidCredentials,
+    #[error("Invalid reset token")]
+    InvalidResetToken,
     #[error("Invalid verification token")]
     InvalidVerificationToken,
     #[error(transparent)]
@@ -58,6 +60,7 @@ impl ModelError {
                 StatusCode::UNAUTHORIZED,
                 "Invalid email or password".to_string(),
             ),
+            Self::InvalidResetToken => (StatusCode::FORBIDDEN, "Invalid reset token".to_string()),
             Self::InvalidVerificationToken => (
                 StatusCode::UNAUTHORIZED,
                 "Invalid verification token".to_string(),

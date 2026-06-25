@@ -1,0 +1,16 @@
+---
+source: tests/models/roles.rs
+expression: result
+---
+Ok(
+    Role {
+        id: 11,
+        pid: 7d416019-34c6-4f25-a39a-fa6752f8b319,
+        name: "administrator",
+        description: Some(
+            "System administrator",
+        ),
+        created_at: 2026-06-21T09:00:00+00:00,
+        updated_at: 2026-06-21T09:05:00+00:00,
+    },
+)

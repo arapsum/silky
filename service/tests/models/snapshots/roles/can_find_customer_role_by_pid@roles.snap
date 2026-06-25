@@ -1,0 +1,16 @@
+---
+source: tests/models/roles.rs
+expression: result
+---
+Ok(
+    Role {
+        id: 22,
+        pid: f028f910-1a4f-4b79-8619-71a8c185e221,
+        name: "customer",
+        description: Some(
+            "Regular shoppers",
+        ),
+        created_at: 2026-06-21T09:01:00+00:00,
+        updated_at: 2026-06-21T09:02:00+00:00,
+    },
+)

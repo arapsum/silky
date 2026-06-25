@@ -1,6 +1,6 @@
 use chrono::{DateTime, FixedOffset};
 use serde::{Deserialize, Serialize};
-use sqlx::{Encode, PgPool, prelude::FromRow};
+use sqlx::{Encode, Executor, PgPool, Postgres, prelude::FromRow};
 use uuid::Uuid;
 
 use crate::{
@@ -131,6 +131,50 @@ impl Role {
         txn.commit().await?;
 
         Ok(updated_role)
+    }
+
+    /// Finds a role by public ID.
+    ///
+    /// # Errors
+    ///
+    /// Returns [`ModelError::EntityNotFound`] when no role exists for `pid`.
+    /// Returns a database error if the lookup fails.
+    pub async fn find_by_pid<'e, C>(db: C, pid: Uuid) -> ModelResult<Self>
+    where
+        C: Executor<'e, Database = Postgres>,
+    {
+        let role = sqlx::query_as::<_, Self>(
+            r"
+            SELECT * FROM roles WHERE pid = $1
+        ",
+        )
+        .bind(pid)
+        .fetch_optional(db)
+        .await?
+        .ok_or_else(|| ModelError::EntityNotFound)?;
+
+        Ok(role)
+    }
+
+    /// Lists all roles ordered by newest creation time first.
+    ///
+    /// # Errors
+    ///
+    /// Returns a database error if the role query fails.
+    pub async fn find_list<'e, C>(db: C) -> ModelResult<Vec<Self>>
+    where
+        C: Executor<'e, Database = Postgres>,
+    {
+        let roles = sqlx::query_as::<_, Self>(
+            r"
+            SELECT * FROM roles
+            ORDER BY created_at DESC
+        ",
+        )
+        .fetch_all(db)
+        .await?;
+
+        Ok(roles)
     }
 
     /// Seeds roles from a file in `src/data`.

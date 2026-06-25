@@ -32,6 +32,10 @@ fn update_role(name: Option<String>, description: Option<String>) -> UpdateRole<
     UpdateRole::new(name.map(Cow::Owned), description.map(Cow::Owned))
 }
 
+fn uuid(value: &str) -> Uuid {
+    Uuid::parse_str(value).expect("Failed to parse UUID")
+}
+
 #[rstest]
 #[case(
     "can_create_role_with_description",
@@ -178,7 +182,7 @@ async fn can_update_role(
         .await
         .expect("Failed to seed roles");
 
-    let pid = Uuid::parse_str(pid).expect("Failed to parse UUID");
+    let pid = uuid(pid);
     let params = update_role(name, description);
 
     let result = Role::update(ctx.db(), pid, params).await;
@@ -193,4 +197,68 @@ async fn can_update_role(
     }, {
         assert_debug_snapshot!(test_name, result)
     })
+}
+
+#[rstest]
+#[case(
+    "can_find_administrator_role_by_pid",
+    "7d416019-34c6-4f25-a39a-fa6752f8b319"
+)]
+#[case(
+    "can_find_customer_role_by_pid",
+    "f028f910-1a4f-4b79-8619-71a8c185e221"
+)]
+#[tokio::test]
+#[serial]
+async fn can_find_role_by_pid(#[case] test_name: &str, #[case] pid: &str) {
+    configure_insta!();
+
+    let ctx = boot_test().await.unwrap();
+
+    Role::seed_data(ctx.db(), "roles.json")
+        .await
+        .expect("Failed to seed roles");
+
+    let result = Role::find_by_pid(ctx.db(), uuid(pid)).await;
+
+    assert_debug_snapshot!(test_name, result);
+}
+
+#[rstest]
+#[case(
+    "cannot_find_role_when_pid_does_not_exist",
+    "00000000-0000-0000-0000-000000000000"
+)]
+#[tokio::test]
+#[serial]
+async fn cannot_find_role_by_pid(#[case] test_name: &str, #[case] pid: &str) {
+    configure_insta!();
+
+    let ctx = boot_test().await.unwrap();
+
+    Role::seed_data(ctx.db(), "roles.json")
+        .await
+        .expect("Failed to seed roles");
+
+    let result = Role::find_by_pid(ctx.db(), uuid(pid)).await;
+
+    assert_debug_snapshot!(test_name, result);
+}
+
+#[rstest]
+#[case("can_find_role_list")]
+#[tokio::test]
+#[serial]
+async fn can_find_role_list(#[case] test_name: &str) {
+    configure_insta!();
+
+    let ctx = boot_test().await.unwrap();
+
+    Role::seed_data(ctx.db(), "roles.json")
+        .await
+        .expect("Failed to seed roles");
+
+    let result = Role::find_list(ctx.db()).await;
+
+    assert_debug_snapshot!(test_name, result);
 }

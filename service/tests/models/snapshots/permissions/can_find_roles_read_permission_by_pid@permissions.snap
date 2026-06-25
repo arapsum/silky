@@ -1,0 +1,16 @@
+---
+source: tests/models/permissions.rs
+expression: result
+---
+Ok(
+    Permission {
+        id: 101,
+        pid: 9e230b11-cb47-4fe8-8bc0-5185fd9f9bb2,
+        name: "roles.read",
+        description: Some(
+            "View roles",
+        ),
+        created_at: 2026-06-21T09:10:00+00:00,
+        updated_at: 2026-06-21T09:11:00+00:00,
+    },
+)

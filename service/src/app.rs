@@ -12,7 +12,7 @@ use crate::{
     config::Environment,
     controllers,
     middlewares::trace,
-    models::{Role, User},
+    models::{Permission, Role, User},
     workers::{self, MailQueue},
 };
 
@@ -149,8 +149,9 @@ impl App {
 
     /// Seeds the database with initial application data.
     ///
-    /// This method loads seed data from the `users.json` file and inserts it
-    /// into the database using the application's seed routines.
+    /// This method loads seed data from the `users.json`, `roles.json`, and
+    /// `permissions.json` files and inserts it into the database using the
+    /// application's seed routines.
     ///
     /// The operation is intended for development, testing, or bootstrapping
     /// environments where a predefined set of records is required.
@@ -164,6 +165,7 @@ impl App {
     pub async fn seed(db: &sqlx::PgPool) -> Result<()> {
         User::seed_data(db, "users.json").await?;
         Role::seed_data(db, "roles.json").await?;
+        Permission::seed_data(db, "permissions.json").await?;
 
         Ok(())
     }

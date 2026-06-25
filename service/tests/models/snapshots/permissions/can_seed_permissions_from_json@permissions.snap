@@ -1,0 +1,7 @@
+---
+source: tests/models/permissions.rs
+expression: result
+---
+Ok(
+    (),
+)

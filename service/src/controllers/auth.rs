@@ -1,6 +1,6 @@
 use apalis::prelude::Storage as _;
 use axum::{
-    Json, Router,
+    Extension, Json, Router,
     body::Body,
     debug_handler,
     extract::{Path, State},
@@ -17,10 +17,12 @@ use uuid::Uuid;
 
 use crate::{
     AppState, Error, Result,
+    context::Claims,
+    middlewares::auth::AuthLayer,
     models::{ModelError, User},
     schemas::{ForgotPassword, LoginUser, RegisterUser, ResetPassword, Validator},
     utils::AppJson,
-    views::{AuthResponse, LoginResponse},
+    views::{AuthResponse, LoginResponse, UserResponse},
     workers::MailJob,
 };
 
@@ -207,6 +209,16 @@ async fn login(
     Ok(response)
 }
 
+#[debug_handler]
+#[tracing::instrument(skip(ctx))]
+async fn current(
+    State(ctx): State<AppState>,
+    Extension(claims): Extension<Claims>,
+) -> Result<Response> {
+    let user = User::find_by_claims_key(ctx.db(), claims.sub()).await?;
+
+    Ok((StatusCode::OK, Json(UserResponse::new(&user))).into_response())
+}
 pub fn router(ctx: &AppState) -> Router {
     Router::new()
         .route("/register", post(register))
@@ -214,5 +226,6 @@ pub fn router(ctx: &AppState) -> Router {
         .route("/forgot-password", post(forgot_password))
         .route("/reset-password", post(reset_password))
         .route("/verify/{token}", get(verify))
+        .route("/me", get(current).layer(AuthLayer::new(ctx.clone())))
         .with_state(ctx.clone())
 }

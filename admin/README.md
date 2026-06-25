@@ -1,220 +1,139 @@
-Welcome to your new TanStack Start app! 
+# Silk Admin
 
-# Getting Started
+React admin frontend for the Silk fashion e-commerce project.
 
-To run this application:
+## Stack
+
+- TanStack Start and Vite
+- React 19
+- TanStack Router with file-based routes
+- TanStack Query
+- Tailwind CSS
+- shadcn-compatible component tooling
+- T3 Env for typed environment variables
+- Vitest for tests
+
+## Requirements
+
+- Node.js
+- pnpm
+- The Silk service for backend API behavior
+
+Start the backend from the repository root or `service/` directory before
+working on API-backed admin features.
+
+## Getting Started
+
+Install dependencies:
 
 ```bash
 pnpm install
+```
+
+Start the development server:
+
+```bash
 pnpm dev
 ```
 
-# Building For Production
+Vite prints the local URL when the server starts.
 
-To build this application for production:
-
-```bash
-pnpm build
-```
-
-## Testing
-
-This project uses [Vitest](https://vitest.dev/) for testing. You can run the tests with:
+## Commands
 
 ```bash
-pnpm test
+pnpm dev               # start the Vite dev server
+pnpm build             # build for production
+pnpm preview           # preview the production build
+pnpm test              # run Vitest
+pnpm generate-routes   # regenerate the TanStack Router route tree
 ```
 
-## Styling
+## Environment
 
-This project uses [Tailwind CSS](https://tailwindcss.com/) for styling.
+Typed environment variables are defined in `src/env.ts`.
 
-### Removing Tailwind CSS
+Supported variables:
 
-If you prefer not to use Tailwind CSS:
+- `SERVER_URL` - optional server-side API base URL
+- `VITE_APP_TITLE` - optional client/browser app title
 
-1. Remove the demo pages in `src/routes/demo/`
-2. Replace the Tailwind import in `src/styles.css` with your own styles
-3. Remove `tailwindcss()` from the plugins array in `vite.config.ts`
-4. Uninstall the packages: `pnpm add @tailwindcss/vite tailwindcss --dev`
+Client-side variables must use the `VITE_` prefix.
 
+Example `.env`:
 
-## Shadcn
+```env
+SERVER_URL=http://127.0.0.1:7150
+VITE_APP_TITLE=Silk Admin
+```
 
-Add components using the latest version of [Shadcn](https://ui.shadcn.com/).
+Use environment values through the shared env module:
+
+```ts
+import { env } from '#/env'
+
+console.log(env.VITE_APP_TITLE)
+```
+
+## Routing
+
+Routes live in `src/routes/` and are managed by TanStack Router's file-based
+routing.
+
+Important files:
+
+- `src/routes/__root.tsx` - root document, global styles, devtools, and router
+  context
+- `src/routes/index.tsx` - current home route
+- `src/routeTree.gen.ts` - generated route tree
+
+Regenerate the route tree after route changes:
+
+```bash
+pnpm generate-routes
+```
+
+## Data Fetching
+
+TanStack Query is wired through `src/integrations/tanstack-query/`. Use it for
+server state and API-backed admin views. The root provider owns the shared query
+client and devtools integration.
+
+## Styling And UI
+
+Global styles live in `src/styles.css`. Tailwind CSS is configured through the
+Vite plugin.
+
+The project includes shadcn-compatible setup in `components.json`. Add UI
+components with:
 
 ```bash
 pnpm dlx shadcn@latest add button
 ```
 
+Use existing component and utility conventions before introducing new styling
+patterns.
 
-## T3Env
+## Project Layout
 
-- You can use T3Env to add type safety to your environment variables.
-- Add Environment variables to the `src/env.mjs` file.
-- Use the environment variables in your code.
-
-### Usage
-
-```ts
-import { env } from "#/env";
-
-console.log(env.VITE_APP_TITLE);
+```text
+.
+|-- public/                         # Static assets and web manifest
+|-- src/
+|   |-- integrations/tanstack-query/ # Query provider and devtools
+|   |-- lib/                         # Shared frontend utilities
+|   |-- routes/                      # File-based routes
+|   |-- env.ts                       # Typed environment variables
+|   |-- router.tsx                   # Router setup
+|   |-- routeTree.gen.ts             # Generated route tree
+|   `-- styles.css                   # Global styles
+|-- components.json                  # shadcn-compatible UI config
+|-- package.json
+|-- tsconfig.json
+`-- vite.config.ts
 ```
 
+## Current State
 
-
-
-
-
-## Routing
-
-This project uses [TanStack Router](https://tanstack.com/router) with file-based routing. Routes are managed as files in `src/routes`.
-
-### Adding A Route
-
-To add a new route to your application just add a new file in the `./src/routes` directory.
-
-TanStack will automatically generate the content of the route file for you.
-
-Now that you have two routes you can use a `Link` component to navigate between them.
-
-### Adding Links
-
-To use SPA (Single Page Application) navigation you will need to import the `Link` component from `@tanstack/react-router`.
-
-```tsx
-import { Link } from "@tanstack/react-router";
-```
-
-Then anywhere in your JSX you can use it like so:
-
-```tsx
-<Link to="/about">About</Link>
-```
-
-This will create a link that will navigate to the `/about` route.
-
-More information on the `Link` component can be found in the [Link documentation](https://tanstack.com/router/v1/docs/framework/react/api/router/linkComponent).
-
-### Using A Layout
-
-In the File Based Routing setup the layout is located in `src/routes/__root.tsx`. Anything you add to the root route will appear in all the routes. The route content will appear in the JSX where you render `{children}` in the `shellComponent`.
-
-Here is an example layout that includes a header:
-
-```tsx
-import { HeadContent, Scripts, createRootRoute } from '@tanstack/react-router'
-
-export const Route = createRootRoute({
-  head: () => ({
-    meta: [
-      { charSet: 'utf-8' },
-      { name: 'viewport', content: 'width=device-width, initial-scale=1' },
-      { title: 'My App' },
-    ],
-  }),
-  shellComponent: ({ children }) => (
-    <html lang="en">
-      <head>
-        <HeadContent />
-      </head>
-      <body>
-        <header>
-          <nav>
-            <Link to="/">Home</Link>
-            <Link to="/about">About</Link>
-          </nav>
-        </header>
-        {children}
-        <Scripts />
-      </body>
-    </html>
-  ),
-})
-```
-
-More information on layouts can be found in the [Layouts documentation](https://tanstack.com/router/latest/docs/framework/react/guide/routing-concepts#layouts).
-
-## Server Functions
-
-TanStack Start provides server functions that allow you to write server-side code that seamlessly integrates with your client components.
-
-```tsx
-import { createServerFn } from '@tanstack/react-start'
-
-const getServerTime = createServerFn({
-  method: 'GET',
-}).handler(async () => {
-  return new Date().toISOString()
-})
-
-// Use in a component
-function MyComponent() {
-  const [time, setTime] = useState('')
-  
-  useEffect(() => {
-    getServerTime().then(setTime)
-  }, [])
-  
-  return <div>Server time: {time}</div>
-}
-```
-
-## API Routes
-
-You can create API routes by using the `server` property in your route definitions:
-
-```tsx
-import { createFileRoute } from '@tanstack/react-router'
-import { json } from '@tanstack/react-start'
-
-export const Route = createFileRoute('/api/hello')({
-  server: {
-    handlers: {
-      GET: () => json({ message: 'Hello, World!' }),
-    },
-  },
-})
-```
-
-## Data Fetching
-
-There are multiple ways to fetch data in your application. You can use TanStack Query to fetch data from a server. But you can also use the `loader` functionality built into TanStack Router to load the data for a route before it's rendered.
-
-For example:
-
-```tsx
-import { createFileRoute } from '@tanstack/react-router'
-
-export const Route = createFileRoute('/people')({
-  loader: async () => {
-    const response = await fetch('https://swapi.dev/api/people')
-    return response.json()
-  },
-  component: PeopleComponent,
-})
-
-function PeopleComponent() {
-  const data = Route.useLoaderData()
-  return (
-    <ul>
-      {data.results.map((person) => (
-        <li key={person.name}>{person.name}</li>
-      ))}
-    </ul>
-  )
-}
-```
-
-Loaders simplify your data fetching logic dramatically. Check out more information in the [Loader documentation](https://tanstack.com/router/latest/docs/framework/react/guide/data-loading#loader-parameters).
-
-# Demo files
-
-Files prefixed with `demo` can be safely deleted. They are there to provide a starting point for you to play around with the features you've installed.
-
-# Learn More
-
-You can learn more about all of the offerings from TanStack in the [TanStack documentation](https://tanstack.com).
-
-For TanStack Start specific documentation, visit [TanStack Start](https://tanstack.com/start).
+The admin app is still close to the TanStack Start starter template. Most
+domain behavior currently lives in the backend service, so expect admin routes,
+forms, and API integration to evolve as the product surface is built out.

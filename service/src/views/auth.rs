@@ -1,3 +1,4 @@
+use chrono::{DateTime, FixedOffset};
 use serde::{Deserialize, Serialize};
 use uuid::Uuid;
 
@@ -35,6 +36,31 @@ impl AuthResponse {
     pub fn new<T: Into<String>>(message: T) -> Self {
         Self {
             message: message.into(),
+        }
+    }
+}
+
+#[derive(Debug, Serialize, Clone, Deserialize)]
+#[serde(rename_all = "camelCase")]
+pub struct UserResponse {
+    pub pid: Uuid,
+    pub email: String,
+    pub name: String,
+    pub verified: bool,
+    pub created_at: DateTime<FixedOffset>,
+    pub updated_at: DateTime<FixedOffset>,
+}
+
+impl UserResponse {
+    #[must_use]
+    pub fn new(user: &User) -> Self {
+        Self {
+            pid: user.pid(),
+            email: user.email().to_string(),
+            name: user.name().to_string(),
+            verified: user.verified_at().is_some(),
+            created_at: user.created_at(),
+            updated_at: user.updated_at(),
         }
     }
 }

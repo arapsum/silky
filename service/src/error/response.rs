@@ -35,6 +35,9 @@ impl Error {
         let (status, message) = match self {
             Self::InvalidToken => (StatusCode::UNAUTHORIZED, "Invalid token".to_string()),
             Self::ExpiredSession => (StatusCode::UNAUTHORIZED, "Expired session".to_string()),
+            Self::MissingCredentials => {
+                (StatusCode::UNAUTHORIZED, "Missing credentials".to_string())
+            }
             Self::InvalidCredentials => (
                 StatusCode::UNAUTHORIZED,
                 "Invalid email or password".to_string(),

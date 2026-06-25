@@ -34,6 +34,8 @@ pub enum Error {
     Mailer(#[from] MailerError),
     #[error(transparent)]
     Migrate(#[from] sqlx::migrate::MigrateError),
+    #[error("Unauthorised: Missing credentials")]
+    MissingCredentials,
     #[error(transparent)]
     Model(#[from] ModelError),
     #[error("Non-blocking work guard already set")]

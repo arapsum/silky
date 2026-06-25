@@ -87,32 +87,42 @@ async fn forgot_password(
     let validator = Validator::new(params);
     let validated = validator.validate()?;
 
-    let mut user = User::find_by_email(ctx.db(), validated.email()).await?;
+    match User::find_by_email(ctx.db(), validated.email()).await {
+        Ok(mut user) => {
+            let reset_token = Uuid::new_v4().to_string();
 
-    let reset_token = Uuid::new_v4().to_string();
+            user = user
+                .set_reset_token(
+                    ctx.db(),
+                    &reset_token,
+                    ctx.config().auth().refresh_token_expiry(),
+                )
+                .await?;
 
-    user = user
-        .set_reset_token(
-            ctx.db(),
-            &reset_token,
-            ctx.config().auth().refresh_token_expiry(),
-        )
-        .await?;
+            if let Some(queue) = ctx.queue().get() {
+                let mut forgot = queue.forgot.clone();
+                forgot
+                    .push(MailJob {
+                        user_id: user.pid(),
+                        token: reset_token,
+                    })
+                    .await?;
+            }
+        }
 
-    if let Some(queue) = ctx.queue().get() {
-        let mut forgot = queue.forgot.clone();
-        forgot
-            .push(MailJob {
-                user_id: user.pid(),
-                token: reset_token,
-            })
-            .await?;
+        Err(ModelError::EntityNotFound) => {
+            // do nothing to avoid leaking information
+        }
+
+        Err(e) => {
+            return Err(e.into());
+        }
     }
 
     Ok((
         StatusCode::OK,
         Json(AuthResponse::new(
-            "Password reset link has been sent to your email",
+            "If an account exists for that email, a password reset link has been sent.",
         )),
     )
         .into_response())

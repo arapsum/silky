@@ -1,0 +1,13 @@
+---
+source: tests/requests/auth.rs
+assertion_line: 513
+expression: "(response.status_code(), response.headers(), response.text())"
+---
+(
+    200,
+    {
+        "content-type": "application/json",
+        "content-length": "NUMBER",
+    },
+    "{\"pid\":\"PID\",\"email\":\"john.doe@acme.com\",\"name\":\"john_doe\",\"verified\":true,\"createdAt\":\"DATEZ\",\"updatedAt\":\"DATEZ\"}",
+)

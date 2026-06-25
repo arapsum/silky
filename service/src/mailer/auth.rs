@@ -41,25 +41,20 @@ impl AuthMailer {
     /// This function will return an error if:
     /// - The `MAILER_TEMPLATES` lazy lock fails to initialize.
     /// - The `HandlebarsTemplate` fails to clone.
-    /// - The user's verification token hash is `None`.
     ///
     /// # Panics
     ///
     /// This function will panic if:
     /// - The `MAILER_TEMPLATES` lazy lock fails to initialize.
     /// - The `HandlebarsTemplate` fails to clone.
-    pub async fn send_welcome(ctx: &AppContext, user: &User) -> MailerResult<()> {
+    pub async fn send_welcome(ctx: &AppContext, user: &User, token: &str) -> MailerResult<()> {
         let this = Self::init()?;
-
-        if user.verification_token_hash().is_none() {
-            return Err(MailerError::MissingVariable);
-        }
 
         let rendered = this.renderer.render_template(
             "welcome",
             &json!({
                 "name": user.name(),
-                "url": format!("{}/verify/{}", ctx.config().server().url(), user.verification_token_hash().unwrap()),
+                "url": format!("{}/verify/{}", ctx.config().server().url(), token),
                 "subject": "Welcome"
             }),
         )?;
@@ -89,22 +84,17 @@ impl AuthMailer {
     /// This function will return an error if:
     /// - The `MAILER_TEMPLATES` lazy lock fails to initialize.
     /// - The `HandlebarsTemplate` fails to clone.
-    /// - The user's reset token hash is `None`.
     ///
     /// # Panics
     /// * This function will panic if the reset token is not set
-    pub async fn forgot_password(ctx: &AppContext, user: &User) -> MailerResult<()> {
+    pub async fn forgot_password(ctx: &AppContext, user: &User, token: &str) -> MailerResult<()> {
         let this = Self::init()?;
-
-        if user.reset_token_hash().is_none() {
-            return Err(MailerError::MissingVariable);
-        }
 
         let rendered = this.renderer.render_template(
             "forgot",
             &json!({
                 "name": user.name(),
-                "url": format!("{}/reset-password/{}", ctx.config().server().url(), user.reset_token_hash().unwrap()),
+                "url": format!("{}/reset-password/{}", ctx.config().server().url(), token),
                 "subject": "Forgot Password?"
             }),
         )?;

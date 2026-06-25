@@ -137,7 +137,10 @@ impl User {
         user = sqlx::query_as::<_, Self>(
             r"
             UPDATE users
-            SET verified_at = NOW(), verification_token_hash = NULL, verification_token_expires_at = NULL
+            SET
+                verified_at = NOW(),
+                verification_token_hash = NULL,
+                verification_token_expires_at = NULL
             WHERE id = $1
             RETURNING *
             ",
@@ -228,6 +231,7 @@ impl User {
         C: Executor<'e, Database = Postgres>,
     {
         let token_hash = Self::hash_text(token);
+
         let this = sqlx::query_as::<_, Self>(
             r"
             SELECT *

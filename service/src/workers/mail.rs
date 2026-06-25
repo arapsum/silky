@@ -10,6 +10,7 @@ use crate::{AppContext, config::RedisConfig, mailer::AuthMailer, models::User};
 #[derive(Debug, Serialize, Deserialize)]
 pub struct MailJob {
     pub user_id: Uuid,
+    pub token: String,
 }
 
 pub struct MailQueue {
@@ -58,14 +59,14 @@ impl MailQueue {
 /// This function will return an error if:
 /// - The `MAILER_TEMPLATES` lazy lock fails to initialize.
 /// - The `HandlebarsTemplate` fails to clone.
-/// - The user's reset token hash is `None`.
+/// - The user's verification token hash is `None`.
 #[tracing::instrument(skip(ctx))]
 pub async fn handle_welcome(job: MailJob, ctx: Data<Arc<AppContext>>) -> Result<(), Error> {
     let user = User::find_by_pid(ctx.db(), job.user_id)
         .await
         .map_err(|e| Error::Failed(Arc::new(e.into())))?;
 
-    AuthMailer::send_welcome(&ctx, &user)
+    AuthMailer::send_welcome(&ctx, &user, &job.token)
         .await
         .map_err(|e| Error::Failed(Arc::new(e.into())))?;
 
@@ -90,7 +91,7 @@ pub async fn handle_forgot_password(job: MailJob, ctx: Data<Arc<AppContext>>) ->
         .await
         .map_err(|e| Error::Failed(Arc::new(e.into())))?;
 
-    AuthMailer::forgot_password(&ctx, &user)
+    AuthMailer::forgot_password(&ctx, &user, &job.token)
         .await
         .map_err(|e| Error::Failed(Arc::new(e.into())))?;
 

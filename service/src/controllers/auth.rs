@@ -3,13 +3,13 @@ use axum::{
     Json, Router,
     body::Body,
     debug_handler,
-    extract::State,
+    extract::{Path, State},
     http::{
         HeaderValue, StatusCode,
         header::{AUTHORIZATION, SET_COOKIE},
     },
     response::{IntoResponse, Response},
-    routing::post,
+    routing::{get, post},
 };
 use axum_extra::extract::cookie;
 use serde_json::json;
@@ -50,6 +50,7 @@ async fn register(
         welcome
             .push(MailJob {
                 user_id: created.pid(),
+                token: verification_token,
             })
             .await?;
     }
@@ -59,6 +60,20 @@ async fn register(
         Json(AuthResponse::new(
             "User registered successfully. Please check your email to verify your account.",
         )),
+    )
+        .into_response())
+}
+
+#[tracing::instrument(skip(ctx))]
+#[debug_handler]
+async fn verify(State(ctx): State<AppState>, Path(token): Path<String>) -> Result<Response> {
+    let user = User::verify_email(ctx.db(), &token).await?;
+
+    tracing::info!("User verified: {}", user.pid());
+
+    Ok((
+        StatusCode::OK,
+        Json(AuthResponse::new("Email verified successfully")),
     )
         .into_response())
 }
@@ -123,5 +138,6 @@ pub fn router(ctx: &AppState) -> Router {
     Router::new()
         .route("/register", post(register))
         .route("/login", post(login))
+        .route("/verify/{token}", get(verify))
         .with_state(ctx.clone())
 }

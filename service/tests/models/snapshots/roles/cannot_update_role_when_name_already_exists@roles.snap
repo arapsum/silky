@@ -1,0 +1,9 @@
+---
+source: tests/models/roles.rs
+expression: result
+---
+Err(
+    EntityAlreadyExists(
+        "Role administrator already exists",
+    ),
+)

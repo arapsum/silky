@@ -6,6 +6,7 @@ use sqlx::PgPool;
 
 mod models;
 mod requests;
+mod schemas;
 pub mod utils;
 
 pub async fn boot_test() -> Result<AppState> {

@@ -1,0 +1,8 @@
+---
+source: tests/schemas/roles.rs
+assertion_line: 143
+expression: result
+---
+Err(
+    "Validation error: {\"description\":\"Description must be under 256 characters\"}",
+)

@@ -5,12 +5,13 @@ use rstest::rstest;
 use serial_test::serial;
 use service::{
     models::Role,
-    schemas::{NewRole, UpdateRole, Validator},
+    schemas::{NewRole, UpdateRole},
 };
+use uuid::Uuid;
 
 use crate::{
     boot_test,
-    utils::{cleanup_date, cleanup_id, cleanup_password, cleanup_uuid},
+    utils::{cleanup_date, cleanup_id, cleanup_uuid},
 };
 
 macro_rules! configure_insta {
@@ -61,7 +62,6 @@ async fn can_create_role(
         filters => {
             let mut filters = cleanup_uuid().to_vec();
             filters.extend(cleanup_date().to_vec());
-            filters.extend(cleanup_password());
             filters.extend(cleanup_id());
             filters
         }
@@ -120,49 +120,77 @@ async fn can_seed_roles(#[case] test_name: &str, #[case] file: &str) {
 }
 
 #[rstest]
-#[case("new_role_validation_accepts_valid_params", "Manager".to_string(), Some("Department heads".to_string()))]
-#[case("new_role_validation_accepts_missing_description", "Manager".to_string(), None)]
-#[case("new_role_validation_rejects_empty_name", "".to_string(), Some("Department heads".to_string()))]
-#[case("new_role_validation_rejects_short_name", "A".to_string(), Some("Department heads".to_string()))]
-#[case("new_role_validation_rejects_long_name", "a".repeat(33), Some("Department heads".to_string()))]
-#[case("new_role_validation_rejects_name_with_special_chars", "Manager+".to_string(), Some("Department heads".to_string()))]
-#[case("new_role_validation_rejects_long_description", "Manager".to_string(), Some("a".repeat(257)))]
-fn can_validate_new_role(
+#[case(
+    "can_update_role",
+    "f028f910-1a4f-4b79-8619-71a8c185e221",
+    None,
+    Some("Both registered shoppers and guest browsers".to_string())
+)]
+#[case(
+    "can_update_role_name_only",
+    "f028f910-1a4f-4b79-8619-71a8c185e221",
+    Some("Buyer".to_string()),
+    None
+)]
+#[case(
+    "can_update_role_with_name_and_description",
+    "f028f910-1a4f-4b79-8619-71a8c185e221",
+    Some("Wholesale Buyer".to_string()),
+    Some("Bulk order customers".to_string())
+)]
+#[case(
+    "can_update_role_and_normalize_name",
+    "f028f910-1a4f-4b79-8619-71a8c185e221",
+    Some("  VIP Customer  ".to_string()),
+    Some("Priority shoppers".to_string())
+)]
+#[case(
+    "can_update_role_with_same_name",
+    "7d416019-34c6-4f25-a39a-fa6752f8b319",
+    Some("  ADMINISTRATOR  ".to_string()),
+    Some("Full system access".to_string())
+)]
+#[case(
+    "cannot_update_role_when_name_already_exists",
+    "f028f910-1a4f-4b79-8619-71a8c185e221",
+    Some("Administrator".to_string()),
+    Some("Duplicate role".to_string())
+)]
+#[case(
+    "cannot_update_role_when_role_does_not_exist",
+    "00000000-0000-0000-0000-000000000000",
+    Some("Guest".to_string()),
+    Some("Guest shoppers".to_string())
+)]
+#[tokio::test]
+#[serial]
+async fn can_update_role(
     #[case] test_name: &str,
-    #[case] name: String,
-    #[case] description: Option<String>,
-) {
-    configure_insta!();
-
-    let params = new_role(name, description);
-    let result = Validator::new(params)
-        .validate()
-        .map(|_| "valid".to_string())
-        .map_err(|err| err.to_string());
-
-    assert_debug_snapshot!(test_name, result);
-}
-
-#[rstest]
-#[case("update_role_validation_accepts_valid_name", Some("Manager".to_string()), None)]
-#[case("update_role_validation_accepts_description_only", None, Some("Department heads".to_string()))]
-#[case("update_role_validation_rejects_empty_name", Some("".to_string()), Some("Department heads".to_string()))]
-#[case("update_role_validation_rejects_short_name", Some("A".to_string()), Some("Department heads".to_string()))]
-#[case("update_role_validation_rejects_long_name", Some("a".repeat(33)), Some("Department heads".to_string()))]
-#[case("update_role_validation_rejects_name_with_special_chars", Some("Manager+".to_string()), Some("Department heads".to_string()))]
-#[case("update_role_validation_rejects_long_description", Some("Manager".to_string()), Some("a".repeat(257)))]
-fn can_validate_update_role(
-    #[case] test_name: &str,
+    #[case] pid: &str,
     #[case] name: Option<String>,
     #[case] description: Option<String>,
 ) {
     configure_insta!();
 
-    let params = update_role(name, description);
-    let result = Validator::new(params)
-        .validate()
-        .map(|_| "valid".to_string())
-        .map_err(|err| err.to_string());
+    let ctx = boot_test().await.unwrap();
 
-    assert_debug_snapshot!(test_name, result);
+    crate::seed_data(ctx.db())
+        .await
+        .expect("Failed to seed roles");
+
+    let pid = Uuid::parse_str(pid).expect("Failed to parse UUID");
+    let params = update_role(name, description);
+
+    let result = Role::update(ctx.db(), pid, params).await;
+
+    with_settings!({
+        filters => {
+            let mut filters = cleanup_uuid().to_vec();
+            filters.extend(cleanup_date().to_vec());
+            filters.extend(cleanup_id());
+            filters
+        }
+    }, {
+        assert_debug_snapshot!(test_name, result)
+    })
 }

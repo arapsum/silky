@@ -1,0 +1,7 @@
+---
+source: tests/models/roles.rs
+expression: result
+---
+Err(
+    EntityNotFound,
+)

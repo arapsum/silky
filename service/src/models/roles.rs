@@ -5,7 +5,7 @@ use uuid::Uuid;
 
 use crate::{
     models::{ModelError, ModelResult, Seedable},
-    schemas::NewRole,
+    schemas::{NewRole, UpdateRole},
 };
 
 #[derive(Debug, Deserialize, Serialize, Clone, FromRow, Encode)]
@@ -65,6 +65,72 @@ impl Role {
         txn.commit().await?;
 
         Ok(new_role)
+    }
+
+    /// Updates an existing role by public ID.
+    ///
+    /// The role name is trimmed and stored in lowercase when provided. A name
+    /// can be reused by the same role after normalization, but cannot collide
+    /// with another role's normalized name.
+    ///
+    /// # Errors
+    ///
+    /// Returns [`ModelError::EntityNotFound`] when no role exists for `pid`.
+    /// Returns [`ModelError::EntityAlreadyExists`] when another role already
+    /// uses the requested normalized name. Returns a database error if the
+    /// lookup, update, or transaction commit fails.
+    pub async fn update(db: &PgPool, pid: Uuid, params: UpdateRole<'_>) -> ModelResult<Self> {
+        let mut txn = db.begin().await?;
+
+        let exists = sqlx::query_as::<_, Self>(
+            r"
+            SELECT * FROM roles WHERE pid = $1
+        ",
+        )
+        .bind(pid)
+        .fetch_optional(&mut *txn)
+        .await?
+        .ok_or_else(|| ModelError::EntityNotFound)?;
+
+        if let Some(name) = params.name() {
+            let name_exists = sqlx::query_as::<_, Self>(
+                r"
+                SELECT * FROM roles WHERE name = $1
+            ",
+            )
+            .bind(name.to_lowercase().trim())
+            .fetch_optional(&mut *txn)
+            .await?;
+
+            if let Some(role) = name_exists
+                && role.pid != exists.pid
+            {
+                return Err(ModelError::EntityAlreadyExists(format!(
+                    "Role {} already exists",
+                    &role.name
+                )));
+            }
+        }
+
+        let updated_role = sqlx::query_as::<_, Self>(
+            r"
+            UPDATE roles
+            SET
+                name = COALESCE($1, name),
+                description = COALESCE($2, description)
+            WHERE pid = $3
+            RETURNING *
+        ",
+        )
+        .bind(params.name().map(|s| s.trim().to_lowercase()))
+        .bind(params.description())
+        .bind(pid)
+        .fetch_one(&mut *txn)
+        .await?;
+
+        txn.commit().await?;
+
+        Ok(updated_role)
     }
 
     /// Seeds roles from a file in `src/data`.

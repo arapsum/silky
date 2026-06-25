@@ -1,0 +1,17 @@
+---
+source: tests/models/roles.rs
+assertion_line: 153
+expression: result
+---
+Ok(
+    Role {
+        id: ID,
+        pid: PID,
+        name: "customer",
+        description: Some(
+            "Both registered shoppers and guest browsers",
+        ),
+        created_at: DATE,
+        updated_at: DATE,
+    },
+)

@@ -1,0 +1,16 @@
+---
+source: tests/models/roles.rs
+expression: result
+---
+Ok(
+    Role {
+        id: ID,
+        pid: PID,
+        name: "buyer",
+        description: Some(
+            "Regular shoppers",
+        ),
+        created_at: DATE,
+        updated_at: DATE,
+    },
+)

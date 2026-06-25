@@ -1,0 +1,8 @@
+---
+source: tests/schemas/roles.rs
+assertion_line: 167
+expression: result
+---
+Err(
+    "Validation error: {\"name\":\"Name requires 2 letters\"}",
+)

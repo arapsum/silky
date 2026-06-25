@@ -11,22 +11,22 @@ Ok(
         email: "john.doe@acme.com",
         password_hash: "$argon2d$v=19$m=12,t=3,p=1$dzhsemJycHJ4bTAwMDAwMA$gwggLXNwI8OgJmMXSP3Wdg",
         verified_at: Some(
-            DATEZ,
+            DATE,
         ),
         verification_token_hash: Some(
             "TOKEN",
         ),
         verification_token_expires_at: Some(
-            DATEZ,
+            DATE,
         ),
         reset_token_hash: Some(
             "TOKEN",
         ),
         reset_token_expires_at: Some(
-            DATEZ,
+            DATE,
         ),
-        created_at: DATEZ,
-        updated_at: DATEZ,
+        created_at: DATE,
+        updated_at: DATE,
         deleted_at: None,
     },
 )

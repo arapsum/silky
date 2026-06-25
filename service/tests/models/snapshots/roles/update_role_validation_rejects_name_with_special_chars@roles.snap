@@ -1,8 +1,0 @@
----
-source: tests/models/roles.rs
-assertion_line: 167
-expression: result
----
-Err(
-    "Validation error: {\"name\":\"Only letters, numbers and underscores can be used.\"}",
-)

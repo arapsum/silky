@@ -1,8 +1,0 @@
----
-source: tests/models/roles.rs
-assertion_line: 143
-expression: result
----
-Err(
-    "Validation error: {\"name\":\"Name requires 2 letters\"}",
-)

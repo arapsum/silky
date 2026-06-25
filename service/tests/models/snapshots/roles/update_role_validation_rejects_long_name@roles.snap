@@ -1,8 +1,0 @@
----
-source: tests/models/roles.rs
-assertion_line: 167
-expression: result
----
-Err(
-    "Validation error: {\"name\":\"Name must be under 32 letters\"}",
-)

@@ -18,7 +18,7 @@ use uuid::Uuid;
 use crate::{
     AppState, Error, Result,
     models::{ModelError, User},
-    schemas::{ForgotPassword, LoginUser, RegisterUser, Validator},
+    schemas::{ForgotPassword, LoginUser, RegisterUser, ResetPassword, Validator},
     utils::AppJson,
     views::{AuthResponse, LoginResponse},
     workers::MailJob,
@@ -130,6 +130,29 @@ async fn forgot_password(
 
 #[tracing::instrument(skip(ctx, params))]
 #[debug_handler]
+async fn reset_password(
+    State(ctx): State<AppState>,
+    AppJson(params): AppJson<ResetPassword<'static>>,
+) -> Result<Response> {
+    let validator = Validator::new(params);
+    let validated = validator.validate()?;
+
+    let user = User::reset_password(ctx.db(), validated.token(), validated.password()).await?;
+
+    tracing::info!(
+        "Password has been reset successfully, for user: {}",
+        user.pid()
+    );
+
+    Ok((
+        StatusCode::OK,
+        Json(AuthResponse::new("Password has been reset successfully.")),
+    )
+        .into_response())
+}
+
+#[tracing::instrument(skip(ctx, params))]
+#[debug_handler]
 async fn login(
     State(ctx): State<AppState>,
     AppJson(params): AppJson<LoginUser<'static>>,
@@ -189,6 +212,7 @@ pub fn router(ctx: &AppState) -> Router {
         .route("/register", post(register))
         .route("/login", post(login))
         .route("/forgot-password", post(forgot_password))
+        .route("/reset-password", post(reset_password))
         .route("/verify/{token}", get(verify))
         .with_state(ctx.clone())
 }

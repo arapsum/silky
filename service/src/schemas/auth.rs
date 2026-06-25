@@ -85,7 +85,8 @@ impl LoginUser<'_> {
     }
 }
 
-#[derive(Debug, Validate, Clone, Deserialize)]
+#[derive(Debug, Validate, Clone, Deserialize, Serialize)]
+#[serde(rename_all = "camelCase")]
 pub struct ForgotPassword<'a> {
     #[validate(email(message = "Invalid email address"))]
     email: Cow<'a, str>,
@@ -103,7 +104,8 @@ impl<'a> ForgotPassword<'a> {
     }
 }
 
-#[derive(Debug, Validate, Clone, Deserialize)]
+#[derive(Debug, Validate, Clone, Deserialize, Serialize)]
+#[serde(rename_all = "camelCase")]
 pub struct ResetPassword<'a> {
     #[validate(custom(function = "validate_token"))]
     token: Cow<'a, str>,

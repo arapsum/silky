@@ -15,12 +15,12 @@ Ok(
             "TOKEN",
         ),
         verification_token_expires_at: Some(
-            DATEZ,
+            DATE,
         ),
         reset_token_hash: None,
         reset_token_expires_at: None,
-        created_at: DATEZ,
-        updated_at: DATEZ,
+        created_at: DATE,
+        updated_at: DATE,
         deleted_at: None,
     },
 )

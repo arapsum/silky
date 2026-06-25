@@ -11,14 +11,14 @@ Ok(
         email: "morgan@silk.io",
         password_hash: "$argon2d$v=19$m=16,t=2,p=1$cTZhOHVtY2dJTzBqYTBudw$/704JvCsW23pidisyXK+Tw",
         verified_at: Some(
-            DATEZ,
+            DATE,
         ),
         verification_token_hash: None,
         verification_token_expires_at: None,
         reset_token_hash: None,
         reset_token_expires_at: None,
-        created_at: DATEZ,
-        updated_at: DATEZ,
+        created_at: DATE,
+        updated_at: DATE,
         deleted_at: None,
     },
 )

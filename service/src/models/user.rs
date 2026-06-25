@@ -3,7 +3,7 @@ use argon2::{
     Argon2, PasswordHash, PasswordVerifier,
     password_hash::{PasswordHasher, SaltString, rand_core::OsRng},
 };
-use chrono::{DateTime, Duration, Utc};
+use chrono::{DateTime, Duration, FixedOffset, Utc};
 use serde::{Deserialize, Serialize};
 use sha2::{Digest, Sha256};
 use sqlx::{Encode, Executor, PgPool, Postgres, prelude::FromRow};
@@ -24,16 +24,16 @@ pub struct User {
     email: String,
     password_hash: String,
     // email verification
-    verified_at: Option<DateTime<Utc>>,
+    verified_at: Option<DateTime<FixedOffset>>,
     verification_token_hash: Option<String>,
-    verification_token_expires_at: Option<DateTime<Utc>>,
+    verification_token_expires_at: Option<DateTime<FixedOffset>>,
     // password reset
     reset_token_hash: Option<String>,
-    reset_token_expires_at: Option<DateTime<Utc>>,
+    reset_token_expires_at: Option<DateTime<FixedOffset>>,
     // Dates
-    created_at: DateTime<Utc>,
-    updated_at: DateTime<Utc>,
-    deleted_at: Option<DateTime<Utc>>,
+    created_at: DateTime<FixedOffset>,
+    updated_at: DateTime<FixedOffset>,
+    deleted_at: Option<DateTime<FixedOffset>>,
 }
 
 impl User {
@@ -99,7 +99,10 @@ impl User {
         C: Executor<'e, Database = Postgres>,
     {
         self.verification_token_hash = Some(Self::hash_text(token));
-        self.verification_token_expires_at = Some(Utc::now() + Duration::seconds(expires_at));
+
+        let verification_token_expires_at = Utc::now() + Duration::seconds(expires_at);
+
+        self.verification_token_expires_at = Some(verification_token_expires_at.fixed_offset());
 
         let this = sqlx::query_as::<_, Self>(
             r"
@@ -441,7 +444,7 @@ impl User {
     }
 
     #[must_use]
-    pub const fn verified_at(&self) -> Option<DateTime<Utc>> {
+    pub const fn verified_at(&self) -> Option<DateTime<FixedOffset>> {
         self.verified_at
     }
 
@@ -451,7 +454,7 @@ impl User {
     }
 
     #[must_use]
-    pub const fn verification_token_expires_at(&self) -> Option<DateTime<Utc>> {
+    pub const fn verification_token_expires_at(&self) -> Option<DateTime<FixedOffset>> {
         self.verification_token_expires_at
     }
 
@@ -461,8 +464,23 @@ impl User {
     }
 
     #[must_use]
-    pub const fn reset_token_expires_at(&self) -> Option<DateTime<Utc>> {
+    pub const fn reset_token_expires_at(&self) -> Option<DateTime<FixedOffset>> {
         self.reset_token_expires_at
+    }
+
+    #[must_use]
+    pub const fn created_at(&self) -> DateTime<FixedOffset> {
+        self.created_at
+    }
+
+    #[must_use]
+    pub const fn updated_at(&self) -> DateTime<FixedOffset> {
+        self.updated_at
+    }
+
+    #[must_use]
+    pub const fn deleted_at(&self) -> Option<DateTime<FixedOffset>> {
+        self.deleted_at
     }
 }
 

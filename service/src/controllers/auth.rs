@@ -2,6 +2,7 @@ use apalis::prelude::Storage as _;
 use axum::{
     Json, Router,
     body::Body,
+    debug_handler,
     extract::State,
     http::{
         HeaderValue, StatusCode,
@@ -23,6 +24,8 @@ use crate::{
     workers::MailJob,
 };
 
+#[tracing::instrument(skip(ctx, params))]
+#[debug_handler]
 async fn register(
     State(ctx): State<AppState>,
     AppJson(params): AppJson<RegisterUser<'static>>,
@@ -43,7 +46,6 @@ async fn register(
         .await?;
 
     if let Some(queue) = ctx.queue().get() {
-        tracing::info!("Send verification token {verification_token} to user's email");
         let mut welcome = queue.welcome.clone();
         welcome
             .push(MailJob {
@@ -61,6 +63,8 @@ async fn register(
         .into_response())
 }
 
+#[tracing::instrument(skip(ctx, params))]
+#[debug_handler]
 async fn login(
     State(ctx): State<AppState>,
     AppJson(params): AppJson<LoginUser<'static>>,

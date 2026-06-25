@@ -59,6 +59,7 @@ impl MailQueue {
 /// - The `MAILER_TEMPLATES` lazy lock fails to initialize.
 /// - The `HandlebarsTemplate` fails to clone.
 /// - The user's reset token hash is `None`.
+#[tracing::instrument(skip(ctx))]
 pub async fn handle_welcome(job: MailJob, ctx: Data<Arc<AppContext>>) -> Result<(), Error> {
     let user = User::find_by_pid(ctx.db(), job.user_id)
         .await
@@ -83,6 +84,7 @@ pub async fn handle_welcome(job: MailJob, ctx: Data<Arc<AppContext>>) -> Result<
 /// - The `MAILER_TEMPLATES` lazy lock fails to initialize.
 /// - The `HandlebarsTemplate` fails to clone.
 /// - The user's reset token hash is `None`.
+#[tracing::instrument(skip(ctx))]
 pub async fn handle_forgot_password(job: MailJob, ctx: Data<Arc<AppContext>>) -> Result<(), Error> {
     let user = User::find_by_pid(ctx.db(), job.user_id)
         .await

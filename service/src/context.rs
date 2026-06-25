@@ -101,6 +101,48 @@ impl AuthContext {
     pub const fn refresh(&self) -> &JwtContext {
         &self.refresh
     }
+
+    /// Generates a new access token for the given subject.
+    ///
+    /// # Errors
+    ///
+    /// This function will return an error if:
+    /// - The token could not be encoded.
+    pub fn generate_access_token(&self, sub: &str) -> crate::Result<String> {
+        self.access.generate_token(sub)
+    }
+
+    /// Generates a new refresh token for the given subject.
+    ///
+    /// # Errors
+    ///
+    /// This function will return an error if:
+    /// - The token could not be encoded.
+    pub fn generate_refresh_token(&self, sub: &str) -> crate::Result<String> {
+        self.refresh.generate_token(sub)
+    }
+
+    /// Verifies the given access token.
+    ///
+    /// # Errors
+    ///
+    /// This function will return an error if:
+    /// - The token could not be decoded.
+    /// - The token is invalid.
+    pub fn verify_access_token(&self, token: &str) -> crate::Result<Claims> {
+        self.access.verify_token(token)
+    }
+
+    /// Verifies the given refresh token.
+    ///
+    /// # Errors
+    ///
+    /// This function will return an error if:
+    /// - The token could not be decoded.
+    /// - The token is invalid.
+    pub fn verify_refresh_token(&self, token: &str) -> crate::Result<Claims> {
+        self.refresh.verify_token(token)
+    }
 }
 
 impl TryFrom<&AuthConfig> for AuthContext {

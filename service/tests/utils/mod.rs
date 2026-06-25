@@ -1,3 +1,4 @@
+mod auth;
 mod redactions;
 
-pub use self::redactions::*;
+pub use self::{auth::*, redactions::*};

@@ -72,8 +72,7 @@ impl From<JwtError> for Error {
     fn from(err: JwtError) -> Self {
         match err.kind() {
             JwtErrorKind::ExpiredSignature => Self::ExpiredSession,
-            JwtErrorKind::InvalidToken => Self::InvalidToken,
-            _ => Self::Jwt(err),
+            _ => Self::InvalidToken,
         }
     }
 }

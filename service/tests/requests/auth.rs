@@ -1,3 +1,4 @@
+use axum::http::HeaderValue;
 use insta::{Settings, assert_debug_snapshot, with_settings};
 use rstest::rstest;
 use serial_test::serial;
@@ -21,6 +22,17 @@ enum ResetToken {
     Expired,
     Invalid,
     Missing,
+}
+
+#[derive(Clone, Copy)]
+enum CurrentUserCredentials {
+    AuthorizationHeader,
+    AccessCookie,
+    Missing,
+    RefreshCookieOnly,
+    InvalidAuthorizationHeader,
+    InvalidAccessToken,
+    UnknownUser,
 }
 
 macro_rules! configure_insta {
@@ -387,6 +399,107 @@ async fn can_reset_password(
             .post("/auth/reset-password")
             .json(&params)
             .await;
+
+        with_settings!({
+            filters => {
+                let mut filters = utils::cleanup_date().to_vec();
+                filters.extend(utils::cleanup_uuid().to_vec());
+                filters.extend(utils::cleanup_jwt().to_vec());
+                filters.extend(utils::cleanup_headers());
+                filters
+            }
+        },  {
+            assert_debug_snapshot!(test_name, (response.status_code(), response.headers(), response.text()))
+        })
+    })
+    .await;
+}
+
+#[rstest]
+#[case(
+    "can_get_current_user_with_authorization_header",
+    CurrentUserCredentials::AuthorizationHeader
+)]
+#[case(
+    "can_get_current_user_with_access_cookie",
+    CurrentUserCredentials::AccessCookie
+)]
+#[case(
+    "when_credentials_are_missing_current_user_fails",
+    CurrentUserCredentials::Missing
+)]
+#[case(
+    "when_only_refresh_cookie_is_sent_current_user_fails",
+    CurrentUserCredentials::RefreshCookieOnly
+)]
+#[case(
+    "when_authorization_header_is_invalid_current_user_fails",
+    CurrentUserCredentials::InvalidAuthorizationHeader
+)]
+#[case(
+    "when_access_token_is_invalid_current_user_fails",
+    CurrentUserCredentials::InvalidAccessToken
+)]
+#[case(
+    "when_token_subject_does_not_exist_current_user_fails",
+    CurrentUserCredentials::UnknownUser
+)]
+#[tokio::test]
+#[serial]
+async fn can_get_current_user(
+    #[case] test_name: &str,
+    #[case] credentials: CurrentUserCredentials,
+) {
+    crate::request(|server, context| async move {
+        configure_insta!();
+
+        crate::seed_data(context.db())
+            .await
+            .expect("Failed to seed data");
+
+        let params = serde_json::json!({
+            "email": "john.doe@acme.com",
+            "password": "Password"
+        });
+        let user: utils::LoggedInUser = utils::login_users(&server, &params).await;
+
+        let mut request = server.get("/auth/me");
+
+        match credentials {
+            CurrentUserCredentials::AuthorizationHeader => {
+                let (auth_header, auth_value) = utils::auth_header(user.access_token);
+                request = request.add_header(auth_header, auth_value);
+            }
+            CurrentUserCredentials::AccessCookie => {
+                request = request.add_cookie(user.access_cookie);
+            }
+            CurrentUserCredentials::Missing => {}
+            CurrentUserCredentials::RefreshCookieOnly => {
+                request = request.add_cookie(user.refresh_cookie);
+            }
+            CurrentUserCredentials::InvalidAuthorizationHeader => {
+                let (auth_header, auth_value) =
+                    utils::auth_header(HeaderValue::from_static("Basic invalid"));
+                request = request.add_header(auth_header, auth_value);
+            }
+            CurrentUserCredentials::InvalidAccessToken => {
+                let (auth_header, auth_value) =
+                    utils::auth_header(HeaderValue::from_static("Bearer invalid"));
+                request = request.add_header(auth_header, auth_value);
+            }
+            CurrentUserCredentials::UnknownUser => {
+                let token = context
+                    .auth()
+                    .access()
+                    .generate_token(&Uuid::new_v4().to_string())
+                    .unwrap();
+                let auth_value = HeaderValue::from_str(&format!("Bearer {token}")).unwrap();
+                let (auth_header, auth_value) = utils::auth_header(auth_value);
+                request = request.add_header(auth_header, auth_value);
+            }
+        }
+
+        let response = request.await;
 
         with_settings!({
             filters => {

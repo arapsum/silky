@@ -7,7 +7,7 @@ use sqlx::PgPool;
 use uuid::Uuid;
 
 use crate::{
-    Config,
+    Config, Error,
     config::{AuthConfig, JwtConfig},
     workers::MailQueue,
 };
@@ -207,7 +207,8 @@ impl JwtContext {
             token,
             self.decoding_key(),
             &Validation::new(Algorithm::RS256),
-        )?;
+        )
+        .map_err(Error::from)?;
         Ok(claims.claims)
     }
 }

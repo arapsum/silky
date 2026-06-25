@@ -38,6 +38,7 @@ impl Error {
             Self::MissingCredentials => {
                 (StatusCode::UNAUTHORIZED, "Missing credentials".to_string())
             }
+            Self::Forbidden => (StatusCode::FORBIDDEN, "Forbidden".to_string()),
             Self::InvalidCredentials => (
                 StatusCode::UNAUTHORIZED,
                 "Invalid email or password".to_string(),

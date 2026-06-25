@@ -1,6 +1,7 @@
 use insta::{Settings, assert_debug_snapshot, with_settings};
 use rstest::rstest;
 use serial_test::serial;
+use service::App;
 // use service::{models::User, views::LoginResponse};
 
 use crate::utils;
@@ -145,6 +146,35 @@ async fn can_login_user(#[case] test_name: &str, #[case] params: serde_json::Val
             .expect("Failed to seed data");
 
         let response = server.post("/auth/login").json(&params).await;
+
+        with_settings!({
+            filters => {
+                let mut filters = utils::cleanup_date().to_vec();
+                filters.extend(utils::cleanup_uuid().to_vec());
+                filters.extend(utils::cleanup_jwt().to_vec());
+                filters.extend(utils::cleanup_headers());
+                filters
+            }
+        },  {
+            assert_debug_snapshot!(test_name, (response.status_code(), response.headers(),response.text()))
+        })
+    })
+    .await;
+}
+
+#[rstest]
+#[case("when_email_is_valid_reset_token_is_sent", serde_json::json!({ "email": "john.doe@acme.com" }))]
+#[case("when_email_is_invalid_validation_fails_and_no_reset_token_is_sent", serde_json::json!({ "email": "johndoe:acme.com" }))]
+#[case("when_email_does_not_exist_no_reset_token_is_sent", serde_json::json!({ "email": "fake@acme.com" }))]
+#[tokio::test]
+#[serial]
+async fn can_forgot_password(#[case] test_name: &str, #[case] params: serde_json::Value) {
+    crate::request(|server, ctx| async move {
+        configure_insta!();
+
+        App::seed(ctx.db()).await.expect("Failed to seed data");
+
+        let response = server.post("/auth/forgot-password").json(&params).await;
 
         with_settings!({
             filters => {

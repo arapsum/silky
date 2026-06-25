@@ -18,7 +18,7 @@ use uuid::Uuid;
 use crate::{
     AppState, Error, Result,
     models::{ModelError, User},
-    schemas::{LoginUser, RegisterUser, Validator},
+    schemas::{ForgotPassword, LoginUser, RegisterUser, Validator},
     utils::AppJson,
     views::{AuthResponse, LoginResponse},
     workers::MailJob,
@@ -74,6 +74,46 @@ async fn verify(State(ctx): State<AppState>, Path(token): Path<String>) -> Resul
     Ok((
         StatusCode::OK,
         Json(AuthResponse::new("Email verified successfully")),
+    )
+        .into_response())
+}
+
+#[tracing::instrument(skip(ctx, params))]
+#[debug_handler]
+async fn forgot_password(
+    State(ctx): State<AppState>,
+    AppJson(params): AppJson<ForgotPassword<'static>>,
+) -> Result<Response> {
+    let validator = Validator::new(params);
+    let validated = validator.validate()?;
+
+    let mut user = User::find_by_email(ctx.db(), validated.email()).await?;
+
+    let reset_token = Uuid::new_v4().to_string();
+
+    user = user
+        .set_reset_token(
+            ctx.db(),
+            &reset_token,
+            ctx.config().auth().refresh_token_expiry(),
+        )
+        .await?;
+
+    if let Some(queue) = ctx.queue().get() {
+        let mut forgot = queue.forgot.clone();
+        forgot
+            .push(MailJob {
+                user_id: user.pid(),
+                token: reset_token,
+            })
+            .await?;
+    }
+
+    Ok((
+        StatusCode::OK,
+        Json(AuthResponse::new(
+            "Password reset link has been sent to your email",
+        )),
     )
         .into_response())
 }
@@ -138,6 +178,7 @@ pub fn router(ctx: &AppState) -> Router {
     Router::new()
         .route("/register", post(register))
         .route("/login", post(login))
+        .route("/forgot-password", post(forgot_password))
         .route("/verify/{token}", get(verify))
         .with_state(ctx.clone())
 }

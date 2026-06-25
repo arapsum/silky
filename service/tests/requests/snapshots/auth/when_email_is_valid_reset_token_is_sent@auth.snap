@@ -1,0 +1,13 @@
+---
+source: tests/requests/auth.rs
+assertion_line: 186
+expression: "(response.status_code(), response.headers(),response.text())"
+---
+(
+    200,
+    {
+        "content-type": "application/json",
+        "content-length": "NUMBER",
+    },
+    "{\"message\":\"Password reset link has been sent to your email\"}",
+)

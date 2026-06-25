@@ -120,8 +120,7 @@ async fn can_find_user_by_email() {
 
     with_settings!({
         filters => {
-            let  filters = cleanup_verification_token().to_vec();
-            filters
+            cleanup_verification_token().to_vec()
         }
     }, {
         assert_debug_snapshot!(result)
@@ -171,8 +170,7 @@ async fn can_verify_user() {
 
     with_settings!({
         filters => {
-            let filters = cleanup_date().to_vec();
-            filters
+            cleanup_date().to_vec()
         }
     }, {
         assert_debug_snapshot!(result)

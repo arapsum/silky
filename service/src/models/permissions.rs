@@ -17,23 +17,25 @@ pub struct Permission {
 }
 
 impl Permission {
-    /// Checks whether any of the provided roles has the requested permission.
+    /// Checks whether a user has the requested permission through an allowed role.
     ///
-    /// Role and permission names are matched against the persisted normalized
-    /// names in the `roles`, `permissions`, and `roles_permissions` tables.
+    /// The user must be assigned to one of `allowed_roles` through
+    /// `users_roles`, and that same role must be linked to `permission` through
+    /// `roles_permissions`.
     ///
     /// # Errors
     ///
     /// Returns a database error if the authorization query fails.
-    pub async fn is_granted_to_any_role<'e, C>(
+    pub async fn is_granted_to_user_role<'e, C>(
         db: C,
-        roles: &[String],
+        user_pid: Uuid,
+        allowed_roles: &[String],
         permission: &str,
     ) -> ModelResult<bool>
     where
         C: Executor<'e, Database = Postgres>,
     {
-        if roles.is_empty() {
+        if allowed_roles.is_empty() {
             return Ok(false);
         }
 
@@ -41,17 +43,23 @@ impl Permission {
             r"
             SELECT EXISTS (
                 SELECT 1
-                FROM roles
+                FROM users
+                INNER JOIN users_roles
+                    ON users_roles.user_id = users.id
+                INNER JOIN roles
+                    ON roles.id = users_roles.role_id
                 INNER JOIN roles_permissions
                     ON roles_permissions.role_id = roles.id
                 INNER JOIN permissions
                     ON permissions.id = roles_permissions.permission_id
-                WHERE roles.name = ANY($1)
-                    AND permissions.name = $2
+                WHERE users.pid = $1
+                    AND roles.name = ANY($2)
+                    AND permissions.name = $3
             )
         ",
         )
-        .bind(roles)
+        .bind(user_pid)
+        .bind(allowed_roles)
         .bind(permission)
         .fetch_one(db)
         .await?;

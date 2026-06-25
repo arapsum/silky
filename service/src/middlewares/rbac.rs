@@ -10,12 +10,9 @@ use axum::{
 };
 use futures_util::future::BoxFuture;
 use tower::{Layer, Service};
+use uuid::Uuid;
 
-use crate::{
-    AppContext, Error,
-    context::Claims,
-    models::{ModelError, Permission},
-};
+use crate::{AppContext, Error, context::Claims, models::Permission};
 
 #[derive(Clone)]
 pub struct RbacLayer {
@@ -108,12 +105,17 @@ where
         let mut inner = std::mem::replace(&mut self.inner, clone);
 
         Box::pin(async move {
-            if req.extensions().get::<Claims>().is_none() {
+            let Some(claims) = req.extensions().get::<Claims>() else {
                 return Ok(Error::MissingCredentials.response());
-            }
+            };
 
-            let granted = Permission::is_granted_to_any_role(
+            let Ok(user_pid) = Uuid::parse_str(claims.sub()) else {
+                return Ok(Error::Forbidden.response());
+            };
+
+            let granted = Permission::is_granted_to_user_role(
                 state.db(),
+                user_pid,
                 &allowed_roles,
                 &required_permission,
             )
@@ -122,7 +124,6 @@ where
             match granted {
                 Ok(true) => inner.call(req).await,
                 Ok(false) => Ok(Error::Forbidden.response()),
-                Err(ModelError::Sqlx(err)) => Ok(Error::Sqlx(err).response()),
                 Err(err) => Ok(Error::Model(err).response()),
             }
         })

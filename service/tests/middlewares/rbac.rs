@@ -46,21 +46,49 @@ async fn grant_permission(db: &sqlx::PgPool, role: &str, permission: &str) {
     .expect("Failed to grant permission");
 }
 
+async fn assign_role(db: &sqlx::PgPool, email: &str, role: &str) {
+    sqlx::query(
+        r"
+        INSERT INTO users_roles (user_id, role_id)
+        SELECT users.id, roles.id
+        FROM users
+        CROSS JOIN roles
+        WHERE users.email = $1
+            AND roles.name = $2
+        ON CONFLICT (user_id, role_id) DO NOTHING
+    ",
+    )
+    .bind(email)
+    .bind(role)
+    .execute(db)
+    .await
+    .expect("Failed to assign role");
+}
+
 #[rstest]
 #[case(
     "can_access_route_when_role_has_permission",
     "roles.read",
-    Credentials::AuthorizationHeader
+    Credentials::AuthorizationHeader,
+    true
 )]
 #[case(
     "cannot_access_route_when_role_lacks_permission",
     "roles.write",
-    Credentials::AuthorizationHeader
+    Credentials::AuthorizationHeader,
+    true
+)]
+#[case(
+    "cannot_access_route_when_user_lacks_allowed_role",
+    "roles.read",
+    Credentials::AuthorizationHeader,
+    false
 )]
 #[case(
     "cannot_access_route_without_credentials",
     "roles.read",
-    Credentials::Missing
+    Credentials::Missing,
+    false
 )]
 #[tokio::test]
 #[serial]
@@ -68,6 +96,7 @@ async fn can_authorize_with_rbac(
     #[case] test_name: &str,
     #[case] required_permission: &str,
     #[case] credentials: Credentials,
+    #[case] assign_allowed_role: bool,
 ) {
     configure_insta!();
 
@@ -77,6 +106,9 @@ async fn can_authorize_with_rbac(
         .await
         .expect("Failed to seed data");
     grant_permission(ctx.db(), "administrator", "roles.read").await;
+    if assign_allowed_role {
+        assign_role(ctx.db(), "john.doe@acme.com", "administrator").await;
+    }
 
     let protected = Router::new()
         .route(

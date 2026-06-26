@@ -1,0 +1,8 @@
+---
+source: tests/requests/categories.rs
+expression: "(response.status_code(), response.text())"
+---
+(
+    409,
+    "{\"error\":\"Entity already exists\"}",
+)

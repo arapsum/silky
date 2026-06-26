@@ -1,0 +1,8 @@
+---
+source: tests/requests/categories.rs
+expression: "(response.status_code(), response.text())"
+---
+(
+    201,
+    "{\"id\":102,\"pid\":\"PID\",\"name\":\"chinos\",\"imageLink\":\"https://cdn.example.com/categories/chinos.png\",\"description\":\"Smart casual trousers\",\"parentId\":null,\"createdAt\":\"DATE\",\"updatedAt\":\"DATE\",\"deletedAt\":null}",
+)

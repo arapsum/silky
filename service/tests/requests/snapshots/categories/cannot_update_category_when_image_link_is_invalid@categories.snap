@@ -1,0 +1,8 @@
+---
+source: tests/requests/categories.rs
+expression: "(response.status_code(), response.text())"
+---
+(
+    400,
+    "{\"error\":\"{\\\"image_link\\\":\\\"Field error\\\"}\"}",
+)

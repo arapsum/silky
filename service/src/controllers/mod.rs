@@ -8,6 +8,7 @@ use axum::{
 use crate::{AppState, middlewares::auth::AuthLayer};
 
 mod auth;
+mod categories;
 mod roles;
 
 #[debug_handler]
@@ -35,5 +36,6 @@ pub fn router(ctx: &AppState) -> Router {
             "/roles",
             roles::router(ctx).layer(AuthLayer::new(ctx.clone())),
         )
+        .nest("/categories", categories::router(ctx))
         .fallback(not_found)
 }

@@ -1,0 +1,8 @@
+---
+source: tests/requests/categories.rs
+expression: "(response.status_code(), response.text())"
+---
+(
+    404,
+    "{\"error\":\"Entity not found\"}",
+)

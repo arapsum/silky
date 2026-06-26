@@ -10,16 +10,120 @@
   {
     "id": 102,
     "pid": "3fdbf302-c05a-4f58-82d8-1f7efa9ea8a6",
-    "name": "roles:write",
-    "description": "Create and update roles",
+    "name": "roles:create",
+    "description": "Create roles",
     "createdAt": "2026-06-21T09:12:00+00:00",
     "updatedAt": "2026-06-21T09:13:00+00:00"
   },
   {
     "id": 103,
+    "pid": "0a15ba95-6a25-40f6-85db-43b4078daee0",
+    "name": "roles:update",
+    "description": "Update roles",
+    "createdAt": "2026-06-21T09:10:00+00:00",
+    "updatedAt": "2026-06-21T09:11:00+00:00"
+  },
+  {
+    "id": 104,
+    "pid": "fddc6c29-9c36-41b6-be5a-3a31727a0a6c",
+    "name": "roles:delete",
+    "description": "Delete roles",
+    "createdAt": "2026-06-21T09:12:00+00:00",
+    "updatedAt": "2026-06-21T09:13:00+00:00"
+  },
+  {
+    "id": 105,
     "pid": "a0199d51-0147-477f-8778-070785ee81f3",
     "name": "permissions:read",
     "description": "View permissions",
+    "createdAt": "2026-06-21T09:14:00+00:00",
+    "updatedAt": "2026-06-21T09:15:00+00:00"
+  },
+  {
+    "id": 106,
+    "pid": "fcacd9c3-b217-4f42-a660-950dc93262c3",
+    "name": "permissions:create",
+    "description": "Create permissions",
+    "createdAt": "2026-06-21T09:12:00+00:00",
+    "updatedAt": "2026-06-21T09:13:00+00:00"
+  },
+  {
+    "id": 107,
+    "pid": "78bb2da0-3277-4cb1-ae42-ef94e60a3e21",
+    "name": "permissions:update",
+    "description": "Update permissions",
+    "createdAt": "2026-06-21T09:10:00+00:00",
+    "updatedAt": "2026-06-21T09:11:00+00:00"
+  },
+  {
+    "id": 108,
+    "pid": "77604ed0-36ae-4479-aec1-06c034d73b96",
+    "name": "permissions:delete",
+    "description": "Delete permissions",
+    "createdAt": "2026-06-21T09:12:00+00:00",
+    "updatedAt": "2026-06-21T09:13:00+00:00"
+  },
+  {
+    "id": 109,
+    "pid": "0ef803c9-5731-4d5a-a7ce-9d586949128f",
+    "name": "users:read",
+    "description": "View users",
+    "createdAt": "2026-06-21T09:14:00+00:00",
+    "updatedAt": "2026-06-21T09:15:00+00:00"
+  },
+  {
+    "id": 110,
+    "pid": "b8c7c673-b75e-4c62-ab83-5aa48848b80f",
+    "name": "users:create",
+    "description": "Create users",
+    "createdAt": "2026-06-21T09:14:00+00:00",
+    "updatedAt": "2026-06-21T09:15:00+00:00"
+  },
+  {
+    "id": 111,
+    "pid": "a41d21ad-e7f7-4674-b9a3-747a560999f6",
+    "name": "users:update",
+    "description": "Update users",
+    "createdAt": "2026-06-21T09:14:00+00:00",
+    "updatedAt": "2026-06-21T09:15:00+00:00"
+  },
+  {
+    "id": 112,
+    "pid": "c44ebd17-2733-4e59-842f-aecf5a6ad1bc",
+    "name": "users:delete",
+    "description": "Delete users",
+    "createdAt": "2026-06-21T09:14:00+00:00",
+    "updatedAt": "2026-06-21T09:15:00+00:00"
+  },
+  {
+    "id": 113,
+    "pid": "92a1ba7e-d085-48a8-95be-7f6c06b83fd2",
+    "name": "categories:read",
+    "description": "View categories",
+    "createdAt": "2026-06-21T09:14:00+00:00",
+    "updatedAt": "2026-06-21T09:15:00+00:00"
+  },
+  {
+    "id": 114,
+    "pid": "38a8e41a-fe68-43a9-bacb-0c51b8fb7d68",
+    "name": "categories:create",
+    "description": "Create categories",
+    "createdAt": "2026-06-21T09:14:00+00:00",
+    "updatedAt": "2026-06-21T09:15:00+00:00"
+  },
+  {
+    "id": 115,
+    "pid": "eae74977-3aa0-48d3-9d49-58f04074fe41",
+    "name": "categories:update",
+    "description": "Update categories",
+    "createdAt": "2026-06-21T09:14:00+00:00",
+    "updatedAt": "2026-06-21T09:15:00+00:00"
+  },
+  {
+    "id": 116,
+    "pid": "f6dcb0c9-6bc1-4a9a-a4a4-e9781bd37b0a",
+    "name": "categories:delete",
+    "description": "Delete categories",
     "createdAt": "2026-06-21T09:14:00+00:00",
     "updatedAt": "2026-06-21T09:15:00+00:00"
   }

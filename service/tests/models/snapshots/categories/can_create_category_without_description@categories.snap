@@ -1,0 +1,17 @@
+---
+source: tests/models/categories.rs
+expression: result
+---
+Ok(
+    Category {
+        id: ID,
+        pid: PID,
+        name: "hats",
+        image_link: "https://cdn.example.com/categories/hats.png",
+        description: None,
+        parent_id: None,
+        created_at: DATE,
+        updated_at: DATE,
+        deleted_at: None,
+    },
+)

@@ -1,0 +1,7 @@
+---
+source: tests/schemas/categories.rs
+expression: result
+---
+Ok(
+    "valid",
+)

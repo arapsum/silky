@@ -1,0 +1,9 @@
+---
+source: tests/models/categories.rs
+expression: result
+---
+Err(
+    EntityAlreadyExists(
+        "Category accessories already exists!",
+    ),
+)

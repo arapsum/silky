@@ -1,0 +1,7 @@
+---
+source: tests/schemas/categories.rs
+expression: result
+---
+Err(
+    "Validation error: {\"description\":\"Description must be under 1000 characters\"}",
+)

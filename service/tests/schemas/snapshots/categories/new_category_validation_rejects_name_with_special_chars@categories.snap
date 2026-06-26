@@ -1,0 +1,7 @@
+---
+source: tests/schemas/categories.rs
+expression: result
+---
+Err(
+    "Validation error: {\"name\":\"Only letters, numbers and hyphens can be used.\"}",
+)

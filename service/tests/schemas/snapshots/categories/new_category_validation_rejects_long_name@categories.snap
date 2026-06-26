@@ -1,0 +1,7 @@
+---
+source: tests/schemas/categories.rs
+expression: result
+---
+Err(
+    "Validation error: {\"name\":\"Name must be under 48 characters\"}",
+)

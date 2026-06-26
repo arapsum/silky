@@ -1,0 +1,7 @@
+---
+source: tests/models/categories.rs
+expression: result
+---
+Err(
+    FileNotFound,
+)

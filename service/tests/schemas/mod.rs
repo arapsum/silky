@@ -1,1 +1,2 @@
+mod categories;
 mod roles;

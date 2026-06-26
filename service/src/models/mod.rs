@@ -1,3 +1,4 @@
+pub mod categories;
 pub mod error;
 pub mod permissions;
 pub mod roles;

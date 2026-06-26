@@ -4,10 +4,9 @@ use serde::{Deserialize, Serialize};
 use sqlx::{Encode, Executor, PgPool, Postgres, prelude::FromRow};
 use uuid::Uuid;
 
-use crate::{
-    models::{ModelError, ModelResult, Seedable},
-    schemas::{NewCategory, UpdateCategory},
-};
+use crate::schemas::{NewCategory, PaginationQuery, UpdateCategory};
+
+use super::{ModelError, ModelResult, PaginatedModel, Pagination, Seedable};
 
 #[derive(Debug, Deserialize, Serialize, Clone, FromRow, Encode)]
 #[serde(rename_all = "camelCase")]
@@ -119,6 +118,50 @@ impl Category {
         txn.commit().await?;
 
         Ok(updated)
+    }
+
+    /// Lists categories with pagination metadata.
+    ///
+    /// Defaults to page `1` and limit `20` when query values are missing. The
+    /// limit is clamped to the range `1..=40`, and the page is clamped to a
+    /// minimum of `1`.
+    ///
+    /// # Errors
+    ///
+    /// Returns a database error if counting or fetching categories fails, or if
+    /// the transaction commit fails.
+    pub async fn find_all(
+        db: &PgPool,
+        query: &PaginationQuery,
+    ) -> ModelResult<PaginatedModel<Self>> {
+        let mut txn = db.begin().await?;
+
+        let limit = query.limit().unwrap_or(20).clamp(1, 40);
+        let page = query.page().unwrap_or(1).max(1);
+        let offset = (page - 1) * limit;
+
+        let total_items: i64 = sqlx::query_scalar("SELECT COUNT(*) FROM categories")
+            .fetch_one(&mut *txn)
+            .await?;
+
+        let categories = sqlx::query_as::<_, Self>(
+            r"
+            SELECT * FROM categories
+            ORDER BY created_at DESC, id DESC
+            LIMIT $1 OFFSET $2
+        ",
+        )
+        .bind(limit)
+        .bind(offset)
+        .fetch_all(&mut *txn)
+        .await?;
+
+        txn.commit().await?;
+
+        Ok(PaginatedModel::new(
+            categories,
+            Pagination::new(page, limit, total_items),
+        ))
     }
 
     /// Finds a category by public ID.

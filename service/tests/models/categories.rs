@@ -2,10 +2,11 @@ use std::borrow::Cow;
 
 use insta::{Settings, assert_debug_snapshot, with_settings};
 use rstest::rstest;
+use serde_json::{Value, json};
 use serial_test::serial;
 use service::{
     models::Category,
-    schemas::{NewCategory, UpdateCategory},
+    schemas::{NewCategory, PaginationQuery, UpdateCategory},
 };
 use uuid::Uuid;
 
@@ -54,6 +55,20 @@ fn update_category(
 
 fn uuid(value: &str) -> Uuid {
     Uuid::parse_str(value).expect("Failed to parse UUID")
+}
+
+fn pagination_query(limit: Option<i64>, page: Option<i64>) -> PaginationQuery {
+    let mut value = serde_json::Map::new();
+
+    if let Some(limit) = limit {
+        value.insert("limit".to_string(), json!(limit));
+    }
+
+    if let Some(page) = page {
+        value.insert("page".to_string(), json!(page));
+    }
+
+    serde_json::from_value(Value::Object(value)).expect("Failed to parse pagination query")
 }
 
 #[rstest]
@@ -157,6 +172,48 @@ async fn can_seed_categories(#[case] test_name: &str, #[case] file: &str) {
     let ctx = boot_test().await.unwrap();
 
     let result = Category::seed_data(ctx.db(), file).await;
+
+    assert_debug_snapshot!(test_name, result);
+}
+
+#[rstest]
+#[case("can_find_all_categories_with_default_pagination", None, None)]
+#[case("can_find_all_categories_with_first_page", Some(2), Some(1))]
+#[case("can_find_all_categories_with_second_page", Some(2), Some(2))]
+#[case("can_find_all_categories_and_clamp_large_limit", Some(100), Some(1))]
+#[case("can_find_all_categories_and_clamp_low_values", Some(0), Some(0))]
+#[tokio::test]
+#[serial]
+async fn can_find_all_categories(
+    #[case] test_name: &str,
+    #[case] limit: Option<i64>,
+    #[case] page: Option<i64>,
+) {
+    configure_insta!();
+
+    let ctx = boot_test().await.unwrap();
+
+    Category::seed_data(ctx.db(), "categories.json")
+        .await
+        .expect("Failed to seed categories");
+
+    let query = pagination_query(limit, page);
+    let result = Category::find_all(ctx.db(), &query).await;
+
+    assert_debug_snapshot!(test_name, result);
+}
+
+#[rstest]
+#[case("can_find_all_categories_when_empty")]
+#[tokio::test]
+#[serial]
+async fn can_find_all_categories_when_empty(#[case] test_name: &str) {
+    configure_insta!();
+
+    let ctx = boot_test().await.unwrap();
+    let query = pagination_query(Some(10), Some(1));
+
+    let result = Category::find_all(ctx.db(), &query).await;
 
     assert_debug_snapshot!(test_name, result);
 }

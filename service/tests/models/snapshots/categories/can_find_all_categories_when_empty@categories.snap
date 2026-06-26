@@ -1,0 +1,17 @@
+---
+source: tests/models/categories.rs
+expression: result
+---
+Ok(
+    PaginatedModel {
+        data: [],
+        pagination: Pagination {
+            page: 1,
+            limit: 10,
+            total_items: 0,
+            total_pages: 0,
+            has_next: false,
+            has_prev: false,
+        },
+    },
+)

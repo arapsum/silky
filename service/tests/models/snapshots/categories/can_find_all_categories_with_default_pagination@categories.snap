@@ -1,0 +1,51 @@
+---
+source: tests/models/categories.rs
+expression: result
+---
+Ok(
+    PaginatedModel {
+        data: [
+            Category {
+                id: 103,
+                pid: 6f042674-322f-4933-afc8-1d3fd75599f6,
+                name: "shoes",
+                image_link: "https://cdn.example.com/categories/shoes.png",
+                description: None,
+                parent_id: None,
+                created_at: 2026-06-26T08:16:00+00:00,
+                updated_at: 2026-06-26T08:16:00+00:00,
+                deleted_at: None,
+            },
+            Category {
+                id: 102,
+                pid: 00b92bcb-cc7a-4a2b-bd80-e9c1b40d1c46,
+                name: "trousers",
+                image_link: "https://cdn.example.com/categories/trousers.png",
+                description: None,
+                parent_id: None,
+                created_at: 2026-06-26T08:15:00+00:00,
+                updated_at: 2026-06-26T08:15:00+00:00,
+                deleted_at: None,
+            },
+            Category {
+                id: 101,
+                pid: f63b79c9-4753-40c3-bc78-8c4fd38abd5b,
+                name: "t-shirts",
+                image_link: "https://cdn.example.com/categories/tshirts.png",
+                description: None,
+                parent_id: None,
+                created_at: 2026-06-26T08:13:00+00:00,
+                updated_at: 2026-06-26T08:14:00+00:00,
+                deleted_at: None,
+            },
+        ],
+        pagination: Pagination {
+            page: 1,
+            limit: 20,
+            total_items: 3,
+            total_pages: 1,
+            has_next: false,
+            has_prev: false,
+        },
+    },
+)

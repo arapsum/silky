@@ -1,0 +1,7 @@
+---
+source: tests/schemas/request.rs
+expression: result
+---
+Err(
+    "Validation error: {\"limit\":\"Limit must be a positive integer\",\"page\":\"Page must be a positive integer\"}",
+)

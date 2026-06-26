@@ -6,7 +6,7 @@ Ok(
     Permission {
         id: 103,
         pid: a0199d51-0147-477f-8778-070785ee81f3,
-        name: "permissions.read",
+        name: "permissions:read",
         description: Some(
             "View permissions",
         ),

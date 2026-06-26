@@ -17,10 +17,10 @@ pub struct Permission {
 }
 
 impl Permission {
-    /// Checks whether a user has the requested permission through an allowed role.
+    /// Checks whether a user has the requested permission through any assigned role.
     ///
-    /// The user must be assigned to one of `allowed_roles` through
-    /// `users_roles`, and that same role must be linked to `permission` through
+    /// The user must be assigned to a role through `users_roles`, and that same
+    /// role must be linked to `permission` through
     /// `roles_permissions`.
     ///
     /// # Errors
@@ -29,16 +29,11 @@ impl Permission {
     pub async fn is_granted_to_user_role<'e, C>(
         db: C,
         user_pid: Uuid,
-        allowed_roles: &[String],
         permission: &str,
     ) -> ModelResult<bool>
     where
         C: Executor<'e, Database = Postgres>,
     {
-        if allowed_roles.is_empty() {
-            return Ok(false);
-        }
-
         let exists = sqlx::query_scalar::<_, bool>(
             r"
             SELECT EXISTS (
@@ -53,13 +48,11 @@ impl Permission {
                 INNER JOIN permissions
                     ON permissions.id = roles_permissions.permission_id
                 WHERE users.pid = $1
-                    AND roles.name = ANY($2)
-                    AND permissions.name = $3
+                    AND permissions.name = $2
             )
         ",
         )
         .bind(user_pid)
-        .bind(allowed_roles)
         .bind(permission)
         .fetch_one(db)
         .await?;

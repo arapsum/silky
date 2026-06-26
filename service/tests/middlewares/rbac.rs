@@ -68,35 +68,40 @@ async fn assign_role(db: &sqlx::PgPool, email: &str, role: &str) {
 #[rstest]
 #[case(
     "can_access_route_when_role_has_permission",
-    "roles.read",
+    "roles:read",
     Credentials::AuthorizationHeader,
+    "administrator",
+    true
+)]
+#[case(
+    "can_access_route_when_customer_role_has_permission",
+    "roles:read",
+    Credentials::AuthorizationHeader,
+    "customer",
     true
 )]
 #[case(
     "cannot_access_route_when_role_lacks_permission",
-    "roles.write",
+    "roles:write",
     Credentials::AuthorizationHeader,
+    "administrator",
     true
 )]
 #[case(
-    "cannot_access_route_when_user_lacks_allowed_role",
-    "roles.read",
-    Credentials::AuthorizationHeader,
-    false
-)]
-#[case(
     "cannot_access_route_without_credentials",
-    "roles.read",
+    "roles:read",
     Credentials::Missing,
+    "administrator",
     false
 )]
 #[tokio::test]
 #[serial]
-async fn can_authorize_with_rbac(
+async fn can_authorise_with_rbac(
     #[case] test_name: &str,
     #[case] required_permission: &str,
     #[case] credentials: Credentials,
-    #[case] assign_allowed_role: bool,
+    #[case] role: &str,
+    #[case] assign_user_role: bool,
 ) {
     configure_insta!();
 
@@ -105,9 +110,9 @@ async fn can_authorize_with_rbac(
     crate::seed_data(ctx.db())
         .await
         .expect("Failed to seed data");
-    grant_permission(ctx.db(), "administrator", "roles.read").await;
-    if assign_allowed_role {
-        assign_role(ctx.db(), "john.doe@acme.com", "administrator").await;
+    grant_permission(ctx.db(), role, "roles:read").await;
+    if assign_user_role {
+        assign_role(ctx.db(), "john.doe@acme.com", role).await;
     }
 
     let protected = Router::new()
@@ -115,11 +120,7 @@ async fn can_authorize_with_rbac(
             "/rbac/protected",
             get(|| async { (StatusCode::OK, Json(json!({ "message": "granted" }))) }),
         )
-        .layer(RbacLayer::new(
-            ctx.clone(),
-            ["administrator"],
-            required_permission,
-        ))
+        .layer(RbacLayer::new(ctx.clone(), required_permission))
         .layer(AuthLayer::new(ctx.clone()));
 
     let cfg = TestServerConfig {

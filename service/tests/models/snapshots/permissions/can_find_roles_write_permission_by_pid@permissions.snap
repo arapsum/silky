@@ -6,7 +6,7 @@ Ok(
     Permission {
         id: 102,
         pid: 3fdbf302-c05a-4f58-82d8-1f7efa9ea8a6,
-        name: "roles.write",
+        name: "roles:write",
         description: Some(
             "Create and update roles",
         ),

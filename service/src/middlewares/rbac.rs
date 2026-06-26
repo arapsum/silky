@@ -17,28 +17,19 @@ use crate::{AppContext, Error, context::Claims, models::Permission};
 #[derive(Clone)]
 pub struct RbacLayer {
     state: Arc<AppContext>,
-    allowed_roles: Vec<String>,
     required_permission: String,
 }
 
 impl RbacLayer {
     #[must_use]
-    pub fn new<I, R, P>(state: Arc<AppContext>, allowed_roles: I, required_permission: P) -> Self
+    pub fn new<P>(state: Arc<AppContext>, required_permission: P) -> Self
     where
-        I: IntoIterator<Item = R>,
-        R: AsRef<str>,
         P: AsRef<str>,
     {
-        let allowed_roles = allowed_roles
-            .into_iter()
-            .map(|role| role.as_ref().trim().to_lowercase())
-            .filter(|role| !role.is_empty())
-            .collect();
         let required_permission = required_permission.as_ref().trim().to_lowercase();
 
         Self {
             state,
-            allowed_roles,
             required_permission,
         }
     }
@@ -51,7 +42,6 @@ impl<S> Layer<S> for RbacLayer {
         Self::Service {
             inner,
             state: self.state.clone(),
-            allowed_roles: self.allowed_roles.clone(),
             required_permission: self.required_permission.clone(),
         }
     }
@@ -61,22 +51,15 @@ impl<S> Layer<S> for RbacLayer {
 pub struct RbacService<S> {
     inner: S,
     state: Arc<AppContext>,
-    allowed_roles: Vec<String>,
     required_permission: String,
 }
 
 impl<S> RbacService<S> {
     #[must_use]
-    pub const fn new(
-        inner: S,
-        state: Arc<AppContext>,
-        allowed_roles: Vec<String>,
-        required_permission: String,
-    ) -> Self {
+    pub const fn new(inner: S, state: Arc<AppContext>, required_permission: String) -> Self {
         Self {
             inner,
             state,
-            allowed_roles,
             required_permission,
         }
     }
@@ -98,7 +81,6 @@ where
 
     fn call(&mut self, req: Request<B>) -> Self::Future {
         let state = self.state.clone();
-        let allowed_roles = self.allowed_roles.clone();
         let required_permission = self.required_permission.clone();
         let clone = self.inner.clone();
 
@@ -113,13 +95,9 @@ where
                 return Ok(Error::Forbidden.response());
             };
 
-            let granted = Permission::is_granted_to_user_role(
-                state.db(),
-                user_pid,
-                &allowed_roles,
-                &required_permission,
-            )
-            .await;
+            let granted =
+                Permission::is_granted_to_user_role(state.db(), user_pid, &required_permission)
+                    .await;
 
             match granted {
                 Ok(true) => inner.call(req).await,

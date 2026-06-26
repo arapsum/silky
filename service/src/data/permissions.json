@@ -2,7 +2,7 @@
   {
     "id": 101,
     "pid": "9e230b11-cb47-4fe8-8bc0-5185fd9f9bb2",
-    "name": "roles.read",
+    "name": "roles:read",
     "description": "View roles",
     "createdAt": "2026-06-21T09:10:00+00:00",
     "updatedAt": "2026-06-21T09:11:00+00:00"
@@ -10,7 +10,7 @@
   {
     "id": 102,
     "pid": "3fdbf302-c05a-4f58-82d8-1f7efa9ea8a6",
-    "name": "roles.write",
+    "name": "roles:write",
     "description": "Create and update roles",
     "createdAt": "2026-06-21T09:12:00+00:00",
     "updatedAt": "2026-06-21T09:13:00+00:00"
@@ -18,7 +18,7 @@
   {
     "id": 103,
     "pid": "a0199d51-0147-477f-8778-070785ee81f3",
-    "name": "permissions.read",
+    "name": "permissions:read",
     "description": "View permissions",
     "createdAt": "2026-06-21T09:14:00+00:00",
     "updatedAt": "2026-06-21T09:15:00+00:00"

@@ -6,7 +6,7 @@ Ok(
     Permission {
         id: 101,
         pid: 9e230b11-cb47-4fe8-8bc0-5185fd9f9bb2,
-        name: "roles.read",
+        name: "roles:read",
         description: Some(
             "View roles",
         ),

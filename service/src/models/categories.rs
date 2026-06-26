@@ -1,10 +1,13 @@
 #![allow(unused_imports)]
 use chrono::{DateTime, FixedOffset};
 use serde::{Deserialize, Serialize};
-use sqlx::{Encode, PgPool, prelude::FromRow};
+use sqlx::{Encode, Executor, PgPool, Postgres, prelude::FromRow};
 use uuid::Uuid;
 
-use crate::models::{ModelError, ModelResult, Seedable};
+use crate::{
+    models::{ModelError, ModelResult, Seedable},
+    schemas::{NewCategory, UpdateCategory},
+};
 
 #[derive(Debug, Deserialize, Serialize, Clone, FromRow, Encode)]
 #[serde(rename_all = "camelCase")]
@@ -21,6 +24,144 @@ pub struct Category {
 }
 
 impl Category {
+    /// Creates a new category.
+    ///
+    /// The category name is trimmed and stored in lowercase before insertion.
+    ///
+    /// # Errors
+    ///
+    /// Returns [`ModelError::EntityAlreadyExists`] when a category with the
+    /// same normalized name exists. Returns a database error if the duplicate
+    /// lookup, insertion, or transaction commit fails.
+    pub async fn create(db: &PgPool, params: &NewCategory<'_>) -> ModelResult<Self> {
+        let mut txn = db.begin().await?;
+
+        if let Some(category) = Self::find_by_name(&mut *txn, params.name()).await? {
+            return Err(ModelError::EntityAlreadyExists(format!(
+                "Category {} already exists!",
+                category.name()
+            )));
+        }
+
+        let created = sqlx::query_as::<_, Self>(
+            r"
+            INSERT INTO categories (
+                name,
+                image_link,
+                parent_id,
+                description
+            ) VALUES (
+                $1,
+                $2,
+                $3,
+                $4
+            ) RETURNING *
+        ",
+        )
+        .bind(params.name().to_lowercase().trim())
+        .bind(params.image_link().trim())
+        .bind(params.parent_id())
+        .bind(params.description().map(|s| s.trim()))
+        .fetch_one(&mut *txn)
+        .await?;
+
+        txn.commit().await?;
+
+        Ok(created)
+    }
+
+    /// Updates an existing category by public ID.
+    ///
+    /// Provided string fields are trimmed, and the category name is stored in
+    /// lowercase when changed.
+    ///
+    /// # Errors
+    ///
+    /// Returns [`ModelError::EntityNotFound`] when no category exists for
+    /// `pid`. Returns [`ModelError::EntityAlreadyExists`] when the requested
+    /// name belongs to another category. Returns a database error if the lookup,
+    /// update, or transaction commit fails.
+    pub async fn update(db: &PgPool, pid: Uuid, params: &UpdateCategory<'_>) -> ModelResult<Self> {
+        let mut txn = db.begin().await?;
+
+        let exists = Self::find_by_pid(&mut *txn, pid).await?;
+
+        if let Some(name) = params.name()
+            && let Some(category) = Self::find_by_name(&mut *txn, name).await?
+            && category.pid() != exists.pid()
+        {
+            return Err(ModelError::EntityAlreadyExists(format!(
+                "Category {} already exists!",
+                category.name()
+            )));
+        }
+
+        let updated = sqlx::query_as::<_, Self>(
+            r"
+                UPDATE categories
+                SET
+                    name = COALESCE($1, name),
+                    image_link = COALESCE($2, image_link),
+                    parent_id = COALESCE($3, parent_id),
+                    description = COALESCE($4, description)
+                WHERE pid = $5
+                RETURNING *
+        ",
+        )
+        .bind(params.name().map(|s| s.trim().to_lowercase()))
+        .bind(params.image_link().map(|s| s.trim()))
+        .bind(params.parent_id())
+        .bind(params.description().map(|s| s.trim()))
+        .bind(exists.pid())
+        .fetch_one(&mut *txn)
+        .await?;
+
+        txn.commit().await?;
+
+        Ok(updated)
+    }
+
+    /// Finds a category by public ID.
+    ///
+    /// # Errors
+    ///
+    /// Returns [`ModelError::EntityNotFound`] when no category exists for
+    /// `pid`. Returns a database error if the lookup fails.
+    pub async fn find_by_pid<'e, E>(db: E, pid: Uuid) -> ModelResult<Self>
+    where
+        E: Executor<'e, Database = Postgres>,
+    {
+        sqlx::query_as::<_, Self>(
+            r"
+            SELECT * FROM categories WHERE pid = $1
+        ",
+        )
+        .bind(pid)
+        .fetch_optional(db)
+        .await?
+        .ok_or_else(|| ModelError::EntityNotFound)
+    }
+
+    /// Finds a category by normalized name.
+    ///
+    /// # Errors
+    ///
+    /// Returns a database error if the lookup fails.
+    pub async fn find_by_name<'e, E>(db: E, name: &str) -> ModelResult<Option<Self>>
+    where
+        E: Executor<'e, Database = Postgres>,
+    {
+        sqlx::query_as::<_, Self>(
+            r"
+            SELECT * FROM categories WHERE name = $1
+        ",
+        )
+        .bind(name.to_lowercase().trim())
+        .fetch_optional(db)
+        .await
+        .map_err(Into::into)
+    }
+
     /// Seeds categories from a file in `src/data`.
     ///
     /// # Errors
@@ -119,7 +260,7 @@ impl Seedable for Category {
             )
             .bind(category.id())
             .bind(category.pid())
-            .bind(category.name())
+            .bind(category.name().to_lowercase().trim())
             .bind(category.image_link())
             .bind(category.description())
             .bind(category.parent_id())

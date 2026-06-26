@@ -6,6 +6,7 @@ pub mod seed;
 pub mod user;
 
 pub use self::{
+    categories::Category,
     error::{ModelError, ModelResult},
     permissions::Permission,
     roles::Role,

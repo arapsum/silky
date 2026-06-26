@@ -12,7 +12,7 @@ use crate::{
     config::Environment,
     controllers,
     middlewares::trace,
-    models::{Permission, Role, User},
+    models::{Category, Permission, Role, User},
     workers::{self, MailQueue},
 };
 
@@ -149,8 +149,8 @@ impl App {
 
     /// Seeds the database with initial application data.
     ///
-    /// This method loads seed data from the `users.json`, `roles.json`, and
-    /// `permissions.json` files and inserts it into the database using the
+    /// This method loads seed data from the `users.json`, `roles.json`, etc
+    /// files and inserts it into the database using the
     /// application's seed routines.
     ///
     /// The operation is intended for development, testing, or bootstrapping
@@ -166,6 +166,7 @@ impl App {
         User::seed_data(db, "users.json").await?;
         Role::seed_data(db, "roles.json").await?;
         Permission::seed_data(db, "permissions.json").await?;
+        Category::seed_data(db, "categories.json").await?;
 
         Ok(())
     }

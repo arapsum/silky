@@ -1,0 +1,32 @@
+[
+  {
+    "id": 101,
+    "pid": "f63b79c9-4753-40c3-bc78-8c4fd38abd5b",
+    "name": "T-shirts",
+    "imageLink": "https://cdn.example.com/categories/tshirts.png",
+    "description": null,
+    "createdAt": "2026-06-26T11:13:00+03:00",
+    "updatedAt": "2026-06-26T11:14:00+03:00",
+    "deletedAt": null
+  },
+  {
+    "id": 102,
+    "pid": "00b92bcb-cc7a-4a2b-bd80-e9c1b40d1c46",
+    "name": "Trousers",
+    "imageLink": "https://cdn.example.com/categories/trousers.png",
+    "description": null,
+    "createdAt": "2026-06-26T11:15:00+03:00",
+    "updatedAt": "2026-06-26T11:15:00+03:00",
+    "deletedAt": null
+  },
+  {
+    "id": 103,
+    "pid": "6f042674-322f-4933-afc8-1d3fd75599f6",
+    "name": "Shoes",
+    "imageLink": "https://cdn.example.com/categories/shoes.png",
+    "description": null,
+    "createdAt": "2026-06-26T11:16:00+03:00",
+    "updatedAt": "2026-06-26T11:16:00+03:00",
+    "deletedAt": null
+  }
+]

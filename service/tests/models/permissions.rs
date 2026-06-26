@@ -82,7 +82,7 @@ async fn can_seed_permissions(#[case] test_name: &str, #[case] file: &str) {
     "9e230b11-cb47-4fe8-8bc0-5185fd9f9bb2"
 )]
 #[case(
-    "can_find_roles_write_permission_by_pid",
+    "can_find_roles_create_permission_by_pid",
     "3fdbf302-c05a-4f58-82d8-1f7efa9ea8a6"
 )]
 #[case(
@@ -139,7 +139,28 @@ async fn can_find_permission_list(#[case] test_name: &str) {
         .await
         .expect("Failed to seed permissions");
 
-    let result = Permission::find_list(ctx.db()).await;
+    let result = Permission::find_list(ctx.db(), None).await;
+
+    assert_debug_snapshot!(test_name, result);
+}
+
+#[rstest]
+#[case("can_find_permission_list_by_role")]
+#[tokio::test]
+#[serial]
+async fn can_find_permission_list_by_role(#[case] test_name: &str) {
+    configure_insta!();
+
+    let ctx = boot_test().await.unwrap();
+
+    crate::seed_data(ctx.db())
+        .await
+        .expect("Failed to seed data");
+    grant_permission(ctx.db(), "customer", "roles:read").await;
+    grant_permission(ctx.db(), "customer", "permissions:read").await;
+    grant_permission(ctx.db(), "administrator", "roles:create").await;
+
+    let result = Permission::find_list(ctx.db(), Some(" Customer ")).await;
 
     assert_debug_snapshot!(test_name, result);
 }

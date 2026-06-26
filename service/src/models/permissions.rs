@@ -83,21 +83,39 @@ impl Permission {
         Ok(permission)
     }
 
-    /// Lists all permissions ordered by newest creation time first.
+    /// Lists permissions ordered by newest creation time first.
+    ///
+    /// When `role` is provided, only permissions assigned to that role are
+    /// returned.
     ///
     /// # Errors
     ///
     /// Returns a database error if the permissions query fails.
-    pub async fn find_list<'e, C>(db: C) -> ModelResult<Vec<Self>>
+    pub async fn find_list<'e, C>(db: C, role: Option<&str>) -> ModelResult<Vec<Self>>
     where
         C: Executor<'e, Database = Postgres>,
     {
+        let role = role
+            .map(|role| role.trim().to_lowercase())
+            .filter(|role| !role.is_empty());
+
         let permissions = sqlx::query_as::<_, Self>(
             r"
-            SELECT * FROM permissions
-            ORDER BY created_at DESC
+            SELECT permissions.*
+            FROM permissions
+            WHERE $1::TEXT IS NULL
+                OR EXISTS (
+                    SELECT 1
+                    FROM roles_permissions
+                    INNER JOIN roles
+                        ON roles.id = roles_permissions.role_id
+                    WHERE roles_permissions.permission_id = permissions.id
+                        AND roles.name = $1
+                )
+            ORDER BY permissions.created_at DESC, permissions.id DESC
         ",
         )
+        .bind(role.as_deref())
         .fetch_all(db)
         .await?;
 

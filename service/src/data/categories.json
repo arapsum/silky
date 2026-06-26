@@ -5,6 +5,7 @@
     "name": "T-shirts",
     "imageLink": "https://cdn.example.com/categories/tshirts.png",
     "description": null,
+    "parentId": null,
     "createdAt": "2026-06-26T11:13:00+03:00",
     "updatedAt": "2026-06-26T11:14:00+03:00",
     "deletedAt": null
@@ -15,6 +16,7 @@
     "name": "Trousers",
     "imageLink": "https://cdn.example.com/categories/trousers.png",
     "description": null,
+    "parentId": null,
     "createdAt": "2026-06-26T11:15:00+03:00",
     "updatedAt": "2026-06-26T11:15:00+03:00",
     "deletedAt": null
@@ -25,6 +27,7 @@
     "name": "Shoes",
     "imageLink": "https://cdn.example.com/categories/shoes.png",
     "description": null,
+    "parentId": null,
     "createdAt": "2026-06-26T11:16:00+03:00",
     "updatedAt": "2026-06-26T11:16:00+03:00",
     "deletedAt": null

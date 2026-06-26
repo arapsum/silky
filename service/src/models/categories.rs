@@ -14,6 +14,7 @@ pub struct Category {
     name: String,
     image_link: String,
     description: Option<String>,
+    parent_id: Option<i32>,
     created_at: DateTime<FixedOffset>,
     updated_at: DateTime<FixedOffset>,
     deleted_at: Option<DateTime<FixedOffset>>,
@@ -73,6 +74,11 @@ impl Category {
     pub const fn deleted_at(&self) -> Option<DateTime<FixedOffset>> {
         self.deleted_at
     }
+
+    #[must_use]
+    pub const fn parent_id(&self) -> Option<i32> {
+        self.parent_id
+    }
 }
 
 impl Seedable for Category {
@@ -86,6 +92,7 @@ impl Seedable for Category {
                     name,
                     image_link,
                     description,
+                    parent_id,
                     created_at,
                     updated_at,
                     deleted_at
@@ -97,12 +104,14 @@ impl Seedable for Category {
                    $5, 
                    $6, 
                    $7, 
-                   $8 
+                   $8,
+                   $9
                 ) ON CONFLICT (id) DO UPDATE SET
                     pid = EXCLUDED.pid,
                     name = EXCLUDED.name,
                     image_link = EXCLUDED.image_link,
                     description = EXCLUDED.description,
+                    parent_id = EXCLUDED.parent_id,
                     created_at = EXCLUDED.created_at,
                     updated_at = EXCLUDED.updated_at,
                     deleted_at = EXCLUDED.deleted_at
@@ -113,6 +122,7 @@ impl Seedable for Category {
             .bind(category.name())
             .bind(category.image_link())
             .bind(category.description())
+            .bind(category.parent_id())
             .bind(category.created_at())
             .bind(category.updated_at())
             .bind(category.deleted_at())

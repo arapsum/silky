@@ -8,10 +8,14 @@ CREATE TABLE categories (
 
   image_link TEXT NOT NULL,
 
+  parent_id INTEGER,
+
   created_at TIMESTAMPTZ NOT NULL DEFAULT now(),
   updated_at TIMESTAMPTZ NOT NULL DEFAULT now(),
 
-  deleted_at TIMESTAMPTZ
+  deleted_at TIMESTAMPTZ,
+
+  FOREIGN KEY (parent_id) REFERENCES categories (id)
 );
 
 

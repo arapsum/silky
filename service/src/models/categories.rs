@@ -205,6 +205,33 @@ impl Category {
         .map_err(Into::into)
     }
 
+    /// Soft deletes a category by public ID.
+    ///
+    /// The row is retained and `deleted_at` is set to the current database
+    /// timestamp.
+    ///
+    /// # Errors
+    ///
+    /// Returns [`ModelError::EntityNotFound`] when no category exists for
+    /// `pid`. Returns a database error if the update fails.
+    pub async fn delete(db: &PgPool, pid: Uuid) -> ModelResult<Self> {
+        let category = sqlx::query_as::<_, Self>(
+            r"
+            UPDATE categories
+            SET
+                deleted_at = NOW()
+            WHERE pid = $1
+            RETURNING *
+        ",
+        )
+        .bind(pid)
+        .fetch_optional(db)
+        .await?
+        .ok_or_else(|| ModelError::EntityNotFound)?;
+
+        Ok(category)
+    }
+
     /// Seeds categories from a file in `src/data`.
     ///
     /// # Errors

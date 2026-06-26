@@ -364,3 +364,34 @@ async fn can_find_category_by_name(#[case] test_name: &str, #[case] name: String
 
     assert_debug_snapshot!(test_name, result);
 }
+
+#[rstest]
+#[case("can_delete_category", "00b92bcb-cc7a-4a2b-bd80-e9c1b40d1c46")]
+#[case(
+    "cannot_delete_category_when_pid_does_not_exist",
+    "00000000-0000-0000-0000-000000000000"
+)]
+#[tokio::test]
+#[serial]
+async fn can_delete_category(#[case] test_name: &str, #[case] pid: &str) {
+    configure_insta!();
+
+    let ctx = boot_test().await.unwrap();
+
+    Category::seed_data(ctx.db(), "categories.json")
+        .await
+        .expect("Failed to seed categories");
+
+    let result = Category::delete(ctx.db(), uuid(pid)).await;
+
+    with_settings!({
+        filters => {
+            let mut filters = cleanup_uuid().to_vec();
+            filters.extend(cleanup_date().to_vec());
+            filters.extend(cleanup_id());
+            filters
+        }
+    }, {
+        assert_debug_snapshot!(test_name, result)
+    })
+}

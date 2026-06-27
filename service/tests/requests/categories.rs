@@ -67,6 +67,24 @@ async fn assign_role(db: &sqlx::PgPool, email: &str, role: &str) {
     .expect("Failed to assign role");
 }
 
+async fn revoke_role(db: &sqlx::PgPool, email: &str, role: &str) {
+    sqlx::query(
+        r"
+        DELETE FROM users_roles
+        USING users, roles
+        WHERE users_roles.user_id = users.id
+            AND users_roles.role_id = roles.id
+            AND users.email = $1
+            AND roles.name = $2
+    ",
+    )
+    .bind(email)
+    .bind(role)
+    .execute(db)
+    .await
+    .expect("Failed to revoke role");
+}
+
 async fn allow_category_writes(db: &sqlx::PgPool) {
     assign_role(db, "john.doe@acme.com", "administrator").await;
     grant_permission(db, "administrator", "categories:create").await;
@@ -396,6 +414,7 @@ async fn cannot_write_category_without_permission(#[case] test_name: &str) {
         crate::seed_data(ctx.db())
             .await
             .expect("Failed to seed data");
+        revoke_role(ctx.db(), "john.doe@acme.com", "administrator").await;
 
         let token = access_token(&server).await;
         let (auth_header, auth_value) = utils::auth_header(token);

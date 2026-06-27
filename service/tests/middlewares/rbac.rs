@@ -81,8 +81,8 @@ async fn assign_role(db: &sqlx::PgPool, email: &str, role: &str) {
     true
 )]
 #[case(
-    "cannot_access_route_when_role_lacks_permission",
-    "roles:write",
+    "can_access_route_when_administrator_has_seeded_permission",
+    "roles:update",
     Credentials::AuthorizationHeader,
     "administrator",
     true

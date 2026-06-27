@@ -166,6 +166,25 @@ async fn can_find_permission_list_by_role(#[case] test_name: &str) {
 }
 
 #[rstest]
+#[case("can_find_all_permissions_for_administrator")]
+#[tokio::test]
+#[serial]
+async fn can_find_all_permissions_for_administrator(#[case] test_name: &str) {
+    configure_insta!();
+
+    let ctx = boot_test().await.unwrap();
+
+    crate::seed_data(ctx.db())
+        .await
+        .expect("Failed to seed data");
+
+    let result = Permission::find_list(ctx.db(), Some(" Administrator ")).await;
+
+    assert!(matches!(&result, Ok(permissions) if permissions.len() == 16));
+    assert_debug_snapshot!(test_name, result);
+}
+
+#[rstest]
 #[case(
     "can_grant_permission_when_customer_role_has_permission",
     "bd6f7c26-d2c9-487e-b837-8f77be468033",
@@ -186,7 +205,7 @@ async fn can_find_permission_list_by_role(#[case] test_name: &str) {
 )]
 #[case(
     "cannot_grant_permission_when_user_has_no_role",
-    "e761d8e3-fc3e-4a2e-a6c9-7c7a4f2130e8",
+    "3c008e68-88fa-4072-808e-6888fa60724c",
     "administrator",
     "roles:read",
     true,

@@ -1,13 +1,12 @@
 ---
 source: tests/models/user.rs
-assertion_line: 208
 expression: result
 ---
 Ok(
     User {
         id: 11,
         pid: bd6f7c26-d2c9-487e-b837-8f77be468033,
-        name: "john_doe",
+        name: "John Doe",
         email: "john.doe@acme.com",
         password_hash: "$argon2d$v=19$m=12,t=3,p=1$dzhsemJycHJ4bTAwMDAwMA$gwggLXNwI8OgJmMXSP3Wdg",
         verified_at: Some(

@@ -1,6 +1,5 @@
 ---
 source: tests/requests/auth.rs
-assertion_line: 158
 expression: "(response.status_code(), response.headers(),response.text())"
 ---
 (
@@ -11,5 +10,5 @@ expression: "(response.status_code(), response.headers(),response.text())"
         "set-cookie": "refresh_token=JWT; HttpOnly; SameSite=Lax; Path=/; Max-Age=604800",
         "content-length": "NUMBER",
     },
-    "{\"pid\":\"PID\",\"email\":\"john.doe@acme.com\",\"name\":\"john_doe\",\"token\":\"JWT\",\"verified\":true}",
+    "{\"pid\":\"PID\",\"email\":\"john.doe@acme.com\",\"name\":\"John Doe\",\"token\":\"JWT\",\"verified\":true}",
 )

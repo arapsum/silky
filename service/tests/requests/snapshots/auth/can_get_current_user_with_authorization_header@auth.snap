@@ -1,6 +1,5 @@
 ---
 source: tests/requests/auth.rs
-assertion_line: 513
 expression: "(response.status_code(), response.headers(), response.text())"
 ---
 (
@@ -9,5 +8,5 @@ expression: "(response.status_code(), response.headers(), response.text())"
         "content-type": "application/json",
         "content-length": "NUMBER",
     },
-    "{\"pid\":\"PID\",\"email\":\"john.doe@acme.com\",\"name\":\"john_doe\",\"verified\":true,\"createdAt\":\"DATEZ\",\"updatedAt\":\"DATEZ\"}",
+    "{\"pid\":\"PID\",\"email\":\"john.doe@acme.com\",\"name\":\"John Doe\",\"verified\":true,\"createdAt\":\"DATEZ\",\"updatedAt\":\"DATEZ\"}",
 )

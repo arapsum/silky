@@ -122,6 +122,34 @@ impl Permission {
         Ok(permissions)
     }
 
+    /// Assigns every existing permission to a role.
+    ///
+    /// Existing assignments are left unchanged, so this can be called multiple
+    /// times as new permissions are added.
+    ///
+    /// # Errors
+    ///
+    /// Returns a database error if the role-permission assignment query fails.
+    pub(crate) async fn assign_all_to_role(db: &PgPool, role: &str) -> ModelResult<()> {
+        let role = role.trim().to_lowercase();
+
+        sqlx::query(
+            r"
+            INSERT INTO roles_permissions (role_id, permission_id)
+            SELECT roles.id, permissions.id
+            FROM roles
+            CROSS JOIN permissions
+            WHERE roles.name = $1
+            ON CONFLICT (role_id, permission_id) DO NOTHING
+        ",
+        )
+        .bind(role)
+        .execute(db)
+        .await?;
+
+        Ok(())
+    }
+
     /// Seeds permissions from a file in `src/data`.
     ///
     /// # Errors

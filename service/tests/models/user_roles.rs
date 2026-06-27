@@ -121,7 +121,8 @@ async fn cannot_assign_duplicate_role_to_user(
 
 #[rstest]
 #[case("can_find_user_roles_by_user", 11)]
-#[case("can_find_user_roles_by_user_when_none_exist", 22)]
+#[case("can_find_customer_role_by_user", 22)]
+#[case("can_find_user_roles_by_user_when_none_exist", 33)]
 #[tokio::test]
 #[serial]
 async fn can_find_user_roles_by_user(#[case] test_name: &str, #[case] user_id: i32) {

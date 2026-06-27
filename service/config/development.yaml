@@ -11,7 +11,7 @@ database:
   idle_timeout: 5
   auto_migrate: true
   dangerously_truncate: false
-  dangerously_recreate: true
+  dangerously_recreate: false
 
 redis:
   url: redis://localhost:6379

@@ -59,6 +59,28 @@ impl<'a> UpdateRole<'a> {
     }
 }
 
+#[derive(Debug, Deserialize, Serialize, Clone, Validate)]
+#[serde(rename_all = "camelCase")]
+pub struct AssignRole {
+    #[validate(range(min = 1, message = "User ID must be a positive integer"))]
+    user_id: i32,
+
+    #[validate(range(min = 1, message = "Role ID must be a positive integer"))]
+    role_id: i32,
+}
+
+impl AssignRole {
+    #[must_use]
+    pub const fn user_id(&self) -> i32 {
+        self.user_id
+    }
+
+    #[must_use]
+    pub const fn role_id(&self) -> i32 {
+        self.role_id
+    }
+}
+
 fn validate_name(name: &str) -> Result<(), ValidationError> {
     const MIN_LENGTH: usize = 2;
     const MAX_LENGTH: usize = 32;

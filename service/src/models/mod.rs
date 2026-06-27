@@ -4,6 +4,7 @@ pub mod permissions;
 pub mod roles;
 pub mod seed;
 pub mod user;
+pub mod user_roles;
 
 use std::fmt::Debug;
 
@@ -16,6 +17,7 @@ pub use self::{
     roles::Role,
     seed::Seedable,
     user::User,
+    user_roles::UserRole,
 };
 
 #[derive(Debug, Serialize, Deserialize, Clone)]

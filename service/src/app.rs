@@ -12,7 +12,7 @@ use crate::{
     config::Environment,
     controllers,
     middlewares::trace,
-    models::{Category, Permission, Role, User},
+    models::{Category, Permission, Role, User, UserRole},
     workers::{self, MailQueue},
 };
 
@@ -167,6 +167,7 @@ impl App {
         Role::seed_data(db, "roles.json").await?;
         Permission::seed_data(db, "permissions.json").await?;
         Category::seed_data(db, "categories.json").await?;
+        UserRole::seed_data(db, "userRoles.json").await?;
 
         Ok(())
     }

@@ -8,6 +8,6 @@ pub use self::{
     auth::{ForgotPassword, LoginUser, RegisterUser, ResetPassword},
     categories::{NewCategory, UpdateCategory},
     request::PaginationQuery,
-    roles::{NewRole, UpdateRole},
+    roles::{AssignRole, NewRole, UpdateRole},
     validator::Validator,
 };

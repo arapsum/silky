@@ -1,0 +1,7 @@
+---
+source: tests/schemas/roles.rs
+expression: result
+---
+Err(
+    "Validation error: {\"user_id\":\"User ID must be a positive integer\"}",
+)

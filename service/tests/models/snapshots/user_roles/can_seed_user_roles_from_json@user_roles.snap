@@ -1,0 +1,7 @@
+---
+source: tests/models/user_roles.rs
+expression: result
+---
+Ok(
+    (),
+)

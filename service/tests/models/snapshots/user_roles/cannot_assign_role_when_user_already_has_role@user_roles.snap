@@ -1,0 +1,9 @@
+---
+source: tests/models/user_roles.rs
+expression: result
+---
+Err(
+    EntityAlreadyExists(
+        "User has already been assigned that role",
+    ),
+)

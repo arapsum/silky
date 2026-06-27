@@ -1,0 +1,24 @@
+---
+source: tests/models/user_roles.rs
+expression: result
+---
+Ok(
+    [
+        UserRole {
+            id: 103,
+            pid: c323fc7b-9928-40ce-931b-427acb60bec2,
+            user_id: 11,
+            role_id: 22,
+            created_at: 2026-06-21T09:00:00+00:00,
+            updated_at: 2026-06-21T09:05:00+00:00,
+        },
+        UserRole {
+            id: 104,
+            pid: 8b5de739-97d4-4941-bd7d-f0575433ffa9,
+            user_id: 11,
+            role_id: 11,
+            created_at: 2026-06-21T09:00:00+00:00,
+            updated_at: 2026-06-21T09:05:00+00:00,
+        },
+    ],
+)

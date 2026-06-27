@@ -1,0 +1,7 @@
+---
+source: tests/schemas/roles.rs
+expression: result
+---
+Ok(
+    "valid",
+)

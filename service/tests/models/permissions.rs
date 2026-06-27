@@ -168,6 +168,7 @@ async fn can_find_permission_list_by_role(#[case] test_name: &str) {
 #[rstest]
 #[case(
     "can_grant_permission_when_customer_role_has_permission",
+    "bd6f7c26-d2c9-487e-b837-8f77be468033",
     "customer",
     "roles:read",
     true,
@@ -176,6 +177,7 @@ async fn can_find_permission_list_by_role(#[case] test_name: &str) {
 )]
 #[case(
     "cannot_grant_permission_when_assigned_role_lacks_permission",
+    "bd6f7c26-d2c9-487e-b837-8f77be468033",
     "customer",
     "roles:write",
     false,
@@ -184,6 +186,7 @@ async fn can_find_permission_list_by_role(#[case] test_name: &str) {
 )]
 #[case(
     "cannot_grant_permission_when_user_has_no_role",
+    "e761d8e3-fc3e-4a2e-a6c9-7c7a4f2130e8",
     "administrator",
     "roles:read",
     true,
@@ -194,6 +197,7 @@ async fn can_find_permission_list_by_role(#[case] test_name: &str) {
 #[serial]
 async fn can_check_permission_grants_for_user_roles(
     #[case] test_name: &str,
+    #[case] user_pid: &str,
     #[case] role: &str,
     #[case] permission: &str,
     #[case] grant_role_permission: bool,
@@ -216,12 +220,7 @@ async fn can_check_permission_grants_for_user_roles(
         assign_role(ctx.db(), "john.doe@acme.com", role).await;
     }
 
-    let result = Permission::is_granted_to_user_role(
-        ctx.db(),
-        uuid("bd6f7c26-d2c9-487e-b837-8f77be468033"),
-        permission,
-    )
-    .await;
+    let result = Permission::is_granted_to_user_role(ctx.db(), uuid(user_pid), permission).await;
 
     assert!(matches!(&result, Ok(value) if *value == expected));
     assert_debug_snapshot!(test_name, result);

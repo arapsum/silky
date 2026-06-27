@@ -46,5 +46,17 @@
     "verificationTokenExpiresAt": null,
     "createdAt": "2026-06-21T09:00:00+00:00",
     "updatedAt": "2026-06-21T09:00:00+00:00"
+  },
+  {
+    "id": 55,
+    "pid": "57456da3-37b0-473e-8f37-0d74547ebf80",
+    "email": "admin@silk.com",
+    "passwordHash": "$argon2d$v=19$m=12,t=3,p=1$dzhsemJycHJ4bTAwMDAwMA$gwggLXNwI8OgJmMXSP3Wdg",
+    "name": "System Administrator",
+    "verifiedAt": "2026-06-27T09:00:00+00:00",
+    "verificationTokenHash": null,
+    "verificationTokenExpiresAt": null,
+    "createdAt": "2026-06-27T09:00:00+00:00",
+    "updatedAt": "2026-06-21T09:00:00+00:00"
   }
 ]

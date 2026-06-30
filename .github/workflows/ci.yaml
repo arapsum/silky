@@ -28,7 +28,6 @@ jobs:
     name: Detect changes
     runs-on: ubuntu-latest
     outputs:
-      client: ${{ steps.filter.outputs.client }}
       admin: ${{ steps.filter.outputs.admin }}
       server: ${{ steps.filter.outputs.server }}
     steps:
@@ -47,12 +46,13 @@ jobs:
   rustfmt:
     name: Check Style
     runs-on: ubuntu-latest
+    needs:
+      - changes
     defaults:
       run:
         working-directory: service
 
-    permissions:
-      contents: read
+    if: needs.changes.outputs.server == 'true'
 
     steps:
       - name: Checkout code
@@ -68,12 +68,13 @@ jobs:
   clippy:
     name: Run Clippy
     runs-on: ubuntu-latest
+    needs:
+      - changes
     defaults:
       run:
         working-directory: service
 
-    permissions:
-      contents: read
+    if: needs.changes.outputs.server == 'true'
 
     steps:
       - name: Checkout code
@@ -92,12 +93,13 @@ jobs:
   test:
     name: Run Tests
     runs-on: ubuntu-latest
+    needs:
+      - changes
     defaults:
       run:
         working-directory: service
 
-    permissions:
-      contents: read
+    if: needs.changes.outputs.server == 'true'
 
     services:
       postgres:

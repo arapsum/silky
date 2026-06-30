@@ -1,11 +1,17 @@
 use std::{future, io::IsTerminal, net::SocketAddr, sync::Arc};
 
 use apalis::prelude::{Monitor, WorkerBuilder, WorkerFactoryFn};
-use axum::Router;
+use axum::{
+    Router,
+    http::{
+        Method,
+        header::{ACCEPT, AUTHORIZATION, CONTENT_TYPE, COOKIE, SET_COOKIE},
+    },
+};
 use clap::Parser;
 use color_eyre::config::{HookBuilder, Theme};
 use tokio::{net::TcpListener, signal};
-use tower_http::trace::TraceLayer;
+use tower_http::{cors::CorsLayer, trace::TraceLayer};
 
 use crate::{
     AppContext, Commands, Config, Result,
@@ -125,17 +131,27 @@ impl App {
                 .unwrap_or_else(|e| tracing::error!(error = ?e, "Queue monitor crashed" ));
         });
 
+        let cors_layer = CorsLayer::new()
+            .allow_origin(["http://localhost:5173".parse()?])
+            .allow_methods([Method::GET, Method::POST, Method::OPTIONS])
+            .allow_credentials(true)
+            .allow_headers([CONTENT_TYPE, ACCEPT, COOKIE])
+            .expose_headers([AUTHORIZATION, SET_COOKIE]);
+
+        let trace_layer = TraceLayer::new_for_http()
+            .make_span_with(trace::make_span_with)
+            .on_response(trace::on_response)
+            .on_request(trace::on_request)
+            .on_failure(trace::on_failure);
+
         let server = ctx.config().server();
 
         let listener = TcpListener::bind(server.address()).await?;
 
-        let router = Router::new().nest("/api", controllers::router(&ctx)).layer(
-            TraceLayer::new_for_http()
-                .make_span_with(trace::make_span_with)
-                .on_response(trace::on_response)
-                .on_request(trace::on_request)
-                .on_failure(trace::on_failure),
-        );
+        let router = Router::new()
+            .nest("/api", controllers::router(&ctx))
+            .layer(trace_layer)
+            .layer(cors_layer);
 
         tracing::info!("Listening on {}", server.url());
 

@@ -51,9 +51,6 @@ jobs:
     runs-on: ubuntu-latest
     needs:
       - changes
-    defaults:
-      run:
-        working-directory: admin
 
     if: needs.changes.outputs.admin == 'true'
 
@@ -75,6 +72,7 @@ jobs:
         run: pnpm install --frozen-lockfile
 
       - name: Format admin
+        working-directory: admin
         run: pnpm --filter admin fmt
 
   admin-lint:

@@ -1,0 +1,16 @@
+---
+source: tests/models/roles_permissions.rs
+expression: result
+---
+Ok(
+    [
+        RolePermission {
+            id: 1001,
+            pid: d1cb710f-f36b-49f8-b04c-f18aa0393c79,
+            role_id: 22,
+            permission_id: 113,
+            created_at: 2026-06-30T07:41:00+00:00,
+            updated_at: 2026-06-30T07:41:00+00:00,
+        },
+    ],
+)

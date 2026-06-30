@@ -1,0 +1,14 @@
+---
+source: tests/models/roles_permissions.rs
+expression: result
+---
+Ok(
+    RolePermission {
+        id: ID,
+        pid: PID,
+        role_id: ID,
+        permission_id: ID,
+        created_at: DATE,
+        updated_at: DATE,
+    },
+)

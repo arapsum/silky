@@ -1,0 +1,7 @@
+---
+source: tests/schemas/request.rs
+expression: result
+---
+Err(
+    "Validation error: {\"permission_id\":\"Permission ID must be a positive integer\",\"role_id\":\"Role ID must be a positive integer\"}",
+)

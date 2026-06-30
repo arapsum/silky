@@ -3,7 +3,7 @@ use std::borrow::Cow;
 use insta::{Settings, assert_debug_snapshot};
 use rstest::rstest;
 use serde_json::json;
-use service::schemas::{AssignRole, NewRole, UpdateRole, Validator};
+use service::schemas::{AssignPermission, AssignRole, NewRole, UpdateRole, Validator};
 
 macro_rules! configure_insta {
     ($(expr;expr),*) => {
@@ -29,6 +29,14 @@ fn assign_role(user_id: i32, role_id: i32) -> AssignRole {
         "roleId": role_id
     }))
     .expect("Failed to parse role assignment")
+}
+
+fn assign_permission(role_id: i32, permission_id: i32) -> AssignPermission {
+    serde_json::from_value(json!({
+        "roleId": role_id,
+        "permissionId": permission_id
+    }))
+    .expect("Failed to parse permission assignment")
 }
 
 #[rstest]
@@ -144,6 +152,27 @@ fn can_validate_assign_role(#[case] test_name: &str, #[case] user_id: i32, #[cas
     configure_insta!();
 
     let params = assign_role(user_id, role_id);
+    let result = Validator::new(params)
+        .validate()
+        .map(|_| "valid".to_string())
+        .map_err(|err| err.to_string());
+
+    assert_debug_snapshot!(test_name, result);
+}
+
+#[rstest]
+#[case("assign_permission_validation_accepts_valid_params", 11, 101)]
+#[case("assign_permission_validation_rejects_zero_role_id", 0, 101)]
+#[case("assign_permission_validation_rejects_zero_permission_id", 11, 0)]
+#[case("assign_permission_validation_rejects_negative_params", -1, -2)]
+fn can_validate_assign_permission(
+    #[case] test_name: &str,
+    #[case] role_id: i32,
+    #[case] permission_id: i32,
+) {
+    configure_insta!();
+
+    let params = assign_permission(role_id, permission_id);
     let result = Validator::new(params)
         .validate()
         .map(|_| "valid".to_string())

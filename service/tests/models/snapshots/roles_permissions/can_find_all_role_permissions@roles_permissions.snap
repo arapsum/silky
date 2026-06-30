@@ -1,0 +1,32 @@
+---
+source: tests/models/roles_permissions.rs
+expression: result
+---
+Ok(
+    [
+        RolePermission {
+            id: 1001,
+            pid: d1cb710f-f36b-49f8-b04c-f18aa0393c79,
+            role_id: 22,
+            permission_id: 113,
+            created_at: 2026-06-30T07:41:00+00:00,
+            updated_at: 2026-06-30T07:41:00+00:00,
+        },
+        RolePermission {
+            id: 1002,
+            pid: 838de08d-66e7-4236-848b-7547fdabc48f,
+            role_id: 11,
+            permission_id: 103,
+            created_at: 2026-06-30T07:41:00+00:00,
+            updated_at: 2026-06-30T07:41:00+00:00,
+        },
+        RolePermission {
+            id: 1003,
+            pid: 6643d7cd-c170-408c-a6e8-7700784d9d3d,
+            role_id: 11,
+            permission_id: 106,
+            created_at: 2026-06-30T07:41:00+00:00,
+            updated_at: 2026-06-30T07:41:00+00:00,
+        },
+    ],
+)

@@ -81,6 +81,36 @@ impl AssignRole {
     }
 }
 
+#[derive(Debug, Deserialize, Serialize, Clone, Validate)]
+#[serde(rename_all = "camelCase")]
+pub struct AssignPermission {
+    #[validate(range(min = 1, message = "Role ID must be a positive integer"))]
+    role_id: i32,
+
+    #[validate(range(min = 1, message = "Permission ID must be a positive integer"))]
+    permission_id: i32,
+}
+
+impl AssignPermission {
+    #[must_use]
+    pub const fn new(role_id: i32, permission_id: i32) -> Self {
+        Self {
+            role_id,
+            permission_id,
+        }
+    }
+
+    #[must_use]
+    pub const fn permission_id(&self) -> i32 {
+        self.permission_id
+    }
+
+    #[must_use]
+    pub const fn role_id(&self) -> i32 {
+        self.role_id
+    }
+}
+
 fn validate_name(name: &str) -> Result<(), ValidationError> {
     const MIN_LENGTH: usize = 2;
     const MAX_LENGTH: usize = 32;

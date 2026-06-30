@@ -5,6 +5,16 @@ expression: result
 Ok(
     [
         Permission {
+            id: 113,
+            pid: 92a1ba7e-d085-48a8-95be-7f6c06b83fd2,
+            name: "categories:read",
+            description: Some(
+                "View categories",
+            ),
+            created_at: 2026-06-21T09:14:00+00:00,
+            updated_at: 2026-06-21T09:15:00+00:00,
+        },
+        Permission {
             id: 105,
             pid: a0199d51-0147-477f-8778-070785ee81f3,
             name: "permissions:read",

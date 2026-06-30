@@ -2,6 +2,7 @@ pub mod categories;
 pub mod error;
 pub mod permissions;
 pub mod roles;
+pub mod roles_permissions;
 pub mod seed;
 pub mod user;
 pub mod user_roles;
@@ -15,6 +16,7 @@ pub use self::{
     error::{ModelError, ModelResult},
     permissions::Permission,
     roles::Role,
+    roles_permissions::RolePermission,
     seed::Seedable,
     user::User,
     user_roles::UserRole,

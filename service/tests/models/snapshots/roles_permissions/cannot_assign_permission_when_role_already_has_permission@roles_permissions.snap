@@ -1,0 +1,9 @@
+---
+source: tests/models/roles_permissions.rs
+expression: result
+---
+Err(
+    EntityAlreadyExists(
+        "Role already has permission assigned",
+    ),
+)

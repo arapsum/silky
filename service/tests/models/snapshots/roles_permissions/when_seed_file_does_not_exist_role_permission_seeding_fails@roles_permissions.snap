@@ -1,0 +1,7 @@
+---
+source: tests/models/roles_permissions.rs
+expression: result
+---
+Err(
+    FileNotFound,
+)

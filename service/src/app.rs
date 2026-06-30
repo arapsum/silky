@@ -132,7 +132,10 @@ impl App {
         });
 
         let cors_layer = CorsLayer::new()
-            .allow_origin(["http://localhost:5173".parse()?])
+            .allow_origin([
+                "http://localhost:5173".parse()?,
+                "http://127.0.0.1:5173".parse()?,
+            ])
             .allow_methods([Method::GET, Method::POST, Method::OPTIONS])
             .allow_credentials(true)
             .allow_headers([CONTENT_TYPE, ACCEPT, COOKIE])

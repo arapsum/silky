@@ -12,13 +12,15 @@ import {
 } from "react-hook-form";
 import { EyeIcon, EyeSlashIcon } from "@phosphor-icons/react";
 
-type Props<TField extends FieldValues> = {
+type Props<TField extends FieldValues> = Omit<
+  React.ComponentProps<"input">,
+  "defaultValue" | "name" | "onBlur" | "onChange" | "ref" | "type" | "value"
+> & {
   control: Control<TField, any>;
   name: Path<TField>;
   label?: string;
   type?: HTMLInputElement["type"];
   description?: string;
-  required?: boolean;
 };
 
 export default function FormField<TField extends FieldValues>({
@@ -46,7 +48,7 @@ export default function FormField<TField extends FieldValues>({
             </FieldLabel>
           )}
 
-          <RenderInput field={field} fieldState={fieldState} input={rest} />
+          <RenderInput field={field} fieldState={fieldState} input={{ ...rest, required }} />
 
           {description && <FieldDescription>{description}</FieldDescription>}
 

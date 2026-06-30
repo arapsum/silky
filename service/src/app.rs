@@ -1,10 +1,10 @@
-use std::{io::IsTerminal, net::SocketAddr, sync::Arc};
+use std::{future, io::IsTerminal, net::SocketAddr, sync::Arc};
 
 use apalis::prelude::{Monitor, WorkerBuilder, WorkerFactoryFn};
 use axum::Router;
 use clap::Parser;
 use color_eyre::config::{HookBuilder, Theme};
-use tokio::net::TcpListener;
+use tokio::{net::TcpListener, signal};
 use tower_http::trace::TraceLayer;
 
 use crate::{
@@ -105,7 +105,7 @@ impl App {
 
         let ctx_worker = Arc::clone(&ctx);
 
-        tokio::spawn(async move {
+        let worker = tokio::spawn(async move {
             tracing::info!("Worker started");
             Monitor::new()
                 .register(
@@ -143,8 +143,24 @@ impl App {
             listener,
             router.into_make_service_with_connect_info::<SocketAddr>(),
         )
-        .await
-        .map_err(Into::into)
+        .with_graceful_shutdown(shutdown_signal())
+        .await?;
+
+        tracing::info!("HTTP server stopped");
+
+        worker.abort();
+        if let Err(err) = worker.await {
+            if err.is_cancelled() {
+                tracing::info!("Worker stopped");
+            } else {
+                tracing::error!(error = ?err, "Worker task failed while shutting down");
+            }
+        }
+
+        ctx.db().close().await;
+        tracing::info!("Database pool closed");
+
+        Ok(())
     }
 
     /// Seeds the database with initial application data.
@@ -178,5 +194,39 @@ impl App {
 impl Default for App {
     fn default() -> Self {
         Self::new()
+    }
+}
+
+async fn shutdown_signal() {
+    let ctrl_c = async {
+        if let Err(err) = signal::ctrl_c().await {
+            tracing::error!(error = ?err, "Failed to install Ctrl+C shutdown handler");
+            future::pending::<()>().await;
+        }
+    };
+
+    #[cfg(unix)]
+    let terminate = async {
+        match signal::unix::signal(signal::unix::SignalKind::terminate()) {
+            Ok(mut stream) => {
+                stream.recv().await;
+            }
+            Err(err) => {
+                tracing::error!(error = ?err, "Failed to install SIGTERM shutdown handler");
+                future::pending::<()>().await;
+            }
+        }
+    };
+
+    #[cfg(not(unix))]
+    let terminate = future::pending::<()>();
+
+    tokio::select! {
+        () = ctrl_c => {
+            tracing::info!("Received Ctrl+C shutdown signal");
+        }
+        () = terminate => {
+            tracing::info!("Received terminate shutdown signal");
+        }
     }
 }

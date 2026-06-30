@@ -69,9 +69,9 @@ VITE_APP_TITLE=Silk Admin
 Use environment values through the shared env module:
 
 ```ts
-import { env } from '#/env'
+import { env } from "#/env";
 
-console.log(env.VITE_APP_TITLE)
+console.log(env.VITE_APP_TITLE);
 ```
 
 ## Routing

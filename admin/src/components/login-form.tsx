@@ -1,8 +1,11 @@
 import { zodResolver } from "@hookform/resolvers/zod";
+import { useMutation } from "@tanstack/react-query";
 import { Link } from "@tanstack/react-router";
 import { useForm } from "react-hook-form";
+import { toast } from "sonner";
 import { z } from "zod";
 
+import { login } from "#/api/auth.ts";
 import FormField from "#/components/form-field.tsx";
 import { Button } from "#/components/ui/button.tsx";
 import {
@@ -30,8 +33,18 @@ export function LoginForm({ className, ...props }: React.ComponentProps<"form">)
     },
   });
 
+  const loginMutation = useMutation({
+    mutationFn: login,
+    onSuccess: () => {
+      toast.success("Signed in successfully");
+    },
+    onError: (error) => {
+      toast.error(error.message);
+    },
+  });
+
   async function onSubmit(values: LoginValues) {
-    await Promise.resolve(values);
+    await loginMutation.mutateAsync(values);
   }
 
   return (

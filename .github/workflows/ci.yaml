@@ -1,4 +1,4 @@
-name: Service CI
+name: Silky CI
 
 on:
   push:
@@ -18,7 +18,32 @@ concurrency:
   group: ${{ github.workflow }}-${{ github.ref }}
   cancel-in-progress: true
 
+permissions:
+  contents: read
+  pull-requests: read
+
 jobs:
+  # Shared setup
+  changes:
+    name: Detect changes
+    runs-on: ubuntu-latest
+    outputs:
+      client: ${{ steps.filter.outputs.client }}
+      admin: ${{ steps.filter.outputs.admin }}
+      server: ${{ steps.filter.outputs.server }}
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: dorny/paths-filter@v3
+        id: filter
+        with:
+          filters: |
+            admin:
+              - 'admin/**'
+
+            server:
+              - 'server/**'
+
   rustfmt:
     name: Check Style
     runs-on: ubuntu-latest

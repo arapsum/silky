@@ -1,6 +1,6 @@
 import { zodResolver } from "@hookform/resolvers/zod";
 import { useMutation } from "@tanstack/react-query";
-import { Link } from "@tanstack/react-router";
+import { Link, useNavigate } from "@tanstack/react-router";
 import { useForm } from "react-hook-form";
 import { toast } from "sonner";
 import { z } from "zod";
@@ -25,6 +25,7 @@ const loginSchema = z.object({
 type LoginValues = z.infer<typeof loginSchema>;
 
 export function LoginForm({ className, ...props }: React.ComponentProps<"form">) {
+  const navigate = useNavigate();
   const form = useForm<LoginValues>({
     resolver: zodResolver(loginSchema),
     defaultValues: {
@@ -35,11 +36,16 @@ export function LoginForm({ className, ...props }: React.ComponentProps<"form">)
 
   const loginMutation = useMutation({
     mutationFn: login,
-    onSuccess: () => {
-      toast.success("Signed in successfully");
+    onSuccess: async (data) => {
+      toast.success(`Signed in successfully. Welcome back ${data.name}`, {
+        id: "sign-in-success",
+      });
+      await navigate({ to: "/" });
     },
     onError: (error) => {
-      toast.error(error.message);
+      toast.error(error.message, {
+        id: "sign-in-error",
+      });
     },
   });
 

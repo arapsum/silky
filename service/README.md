@@ -101,6 +101,7 @@ Routes are mounted under `/api` when the binary starts the full application.
 | `GET` | `/api/auth/verify/{token}` | Verify a user's email address |
 | `POST` | `/api/auth/forgot-password` | Queue a password reset email when the account exists |
 | `POST` | `/api/auth/reset-password` | Reset a password with a reset token |
+| `POST` | `/api/auth/change-password` | Change the authenticated user's password |
 | `GET` | `/api/auth/me` | Return the current authenticated user |
 
 Request tests mount the controller router directly, so test paths omit the

@@ -194,6 +194,48 @@ impl User {
         Ok(user)
     }
 
+    /// Changes a user's password after verifying their current password.
+    ///
+    /// # Errors
+    ///
+    /// This function will return an error if:
+    /// - The claims key does not resolve to a user.
+    /// - The current password does not match the user's stored password.
+    /// - The new password cannot be hashed.
+    /// - The database transaction fails.
+    pub async fn change_password(
+        db: &PgPool,
+        claims_key: &str,
+        current_password: &str,
+        new_password: &str,
+    ) -> ModelResult<Self> {
+        let mut txn = db.begin().await?;
+
+        let user = Self::find_by_claims_key(&mut *txn, claims_key).await?;
+        user.verify_password(current_password)?;
+
+        let user = sqlx::query_as::<_, Self>(
+            r"
+            UPDATE users
+            SET
+                password_hash = $2,
+                reset_token_hash = NULL,
+                reset_token_expires_at = NULL,
+                updated_at = NOW()
+            WHERE id = $1
+            RETURNING *
+            ",
+        )
+        .bind(user.id)
+        .bind(Self::hash_password(new_password)?)
+        .fetch_one(&mut *txn)
+        .await?;
+
+        txn.commit().await?;
+
+        Ok(user)
+    }
+
     /// Finds a user by their claims key.
     ///
     /// # Errors

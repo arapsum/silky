@@ -276,6 +276,173 @@ async fn logout_revokes_refresh_token_and_clears_cookies() {
     .await;
 }
 
+#[tokio::test]
+#[serial]
+async fn can_change_password_with_authorization_header() {
+    crate::request(|server, context| async move {
+        crate::seed_data(context.db())
+            .await
+            .expect("Failed to seed data");
+
+        let params = serde_json::json!({
+            "email": "john.doe@acme.com",
+            "password": "Password"
+        });
+        let user = utils::login_users(&server, &params).await;
+        let (auth_header, auth_value) = utils::auth_header(user.access_token);
+
+        let response = server
+            .post("/auth/change-password")
+            .add_header(auth_header, auth_value)
+            .json(&serde_json::json!({
+                "currentPassword": "Password",
+                "password": "NewPassword123",
+                "confirmPassword": "NewPassword123"
+            }))
+            .await;
+
+        assert_eq!(response.status_code(), 200);
+        assert_eq!(
+            response.text(),
+            "{\"message\":\"Password has been changed successfully.\"}"
+        );
+
+        let old_password_response = server
+            .post("/auth/login")
+            .json(&params)
+            .do_not_save_cookies()
+            .await;
+        assert_eq!(old_password_response.status_code(), 401);
+
+        let new_password_response = server
+            .post("/auth/login")
+            .json(&serde_json::json!({
+                "email": "john.doe@acme.com",
+                "password": "NewPassword123"
+            }))
+            .do_not_save_cookies()
+            .await;
+        assert_eq!(new_password_response.status_code(), 200);
+    })
+    .await;
+}
+
+#[tokio::test]
+#[serial]
+async fn cannot_change_password_when_current_password_is_wrong() {
+    crate::request(|server, context| async move {
+        crate::seed_data(context.db())
+            .await
+            .expect("Failed to seed data");
+
+        let params = serde_json::json!({
+            "email": "john.doe@acme.com",
+            "password": "Password"
+        });
+        let user = utils::login_users(&server, &params).await;
+        let (auth_header, auth_value) = utils::auth_header(user.access_token);
+
+        let response = server
+            .post("/auth/change-password")
+            .add_header(auth_header, auth_value)
+            .json(&serde_json::json!({
+                "currentPassword": "WrongPassword",
+                "password": "NewPassword123",
+                "confirmPassword": "NewPassword123"
+            }))
+            .await;
+
+        assert_eq!(response.status_code(), 401);
+        assert_eq!(response.text(), "{\"error\":\"Invalid email or password\"}");
+
+        let login_response = server
+            .post("/auth/login")
+            .json(&params)
+            .do_not_save_cookies()
+            .await;
+        assert_eq!(login_response.status_code(), 200);
+    })
+    .await;
+}
+
+#[tokio::test]
+#[serial]
+async fn cannot_change_password_without_credentials() {
+    crate::request(|server, context| async move {
+        crate::seed_data(context.db())
+            .await
+            .expect("Failed to seed data");
+
+        let response = server
+            .post("/auth/change-password")
+            .json(&serde_json::json!({
+                "currentPassword": "Password",
+                "password": "NewPassword123",
+                "confirmPassword": "NewPassword123"
+            }))
+            .await;
+
+        assert_eq!(response.status_code(), 401);
+        assert_eq!(response.text(), "{\"error\":\"Missing credentials\"}");
+    })
+    .await;
+}
+
+#[rstest]
+#[case(
+    serde_json::json!({
+        "currentPassword": "",
+        "password": "NewPassword123",
+        "confirmPassword": "NewPassword123"
+    }),
+    "Current password is required"
+)]
+#[case(
+    serde_json::json!({
+        "currentPassword": "Password",
+        "password": "NewPassword123",
+        "confirmPassword": "DifferentPassword123"
+    }),
+    "Passwords do not match"
+)]
+#[case(
+    serde_json::json!({
+        "currentPassword": "Password",
+        "password": "short",
+        "confirmPassword": "short"
+    }),
+    "password requires 8 characters"
+)]
+#[tokio::test]
+#[serial]
+async fn cannot_change_password_with_invalid_payload(
+    #[case] params: serde_json::Value,
+    #[case] expected_error: &str,
+) {
+    crate::request(|server, context| async move {
+        crate::seed_data(context.db())
+            .await
+            .expect("Failed to seed data");
+
+        let login_params = serde_json::json!({
+            "email": "john.doe@acme.com",
+            "password": "Password"
+        });
+        let user = utils::login_users(&server, &login_params).await;
+        let (auth_header, auth_value) = utils::auth_header(user.access_token);
+
+        let response = server
+            .post("/auth/change-password")
+            .add_header(auth_header, auth_value)
+            .json(&params)
+            .await;
+
+        assert_eq!(response.status_code(), 400);
+        assert!(response.text().contains(expected_error));
+    })
+    .await;
+}
+
 #[rstest]
 #[case("when_email_is_valid_reset_token_is_sent", serde_json::json!({ "email": "john.doe@acme.com" }))]
 #[case("when_email_is_invalid_validation_fails_and_no_reset_token_is_sent", serde_json::json!({ "email": "johndoe:acme.com" }))]

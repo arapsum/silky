@@ -145,6 +145,47 @@ impl<'a> ResetPassword<'a> {
     }
 }
 
+#[derive(Debug, Validate, Clone, Deserialize, Serialize)]
+#[serde(rename_all = "camelCase")]
+pub struct ChangePassword<'a> {
+    #[validate(length(min = 1, message = "Current password is required"))]
+    current_password: Cow<'a, str>,
+    #[validate(custom(function = "validate_password"))]
+    password: Cow<'a, str>,
+    #[validate(must_match(other = "password", message = "Passwords do not match"))]
+    confirm_password: Cow<'a, str>,
+}
+
+impl<'a> ChangePassword<'a> {
+    #[must_use]
+    pub const fn new(
+        current_password: Cow<'a, str>,
+        password: Cow<'a, str>,
+        confirm_password: Cow<'a, str>,
+    ) -> Self {
+        Self {
+            current_password,
+            password,
+            confirm_password,
+        }
+    }
+
+    #[must_use]
+    pub fn current_password(&self) -> &str {
+        &self.current_password
+    }
+
+    #[must_use]
+    pub fn password(&self) -> &str {
+        &self.password
+    }
+
+    #[must_use]
+    pub fn confirm_password(&self) -> &str {
+        &self.confirm_password
+    }
+}
+
 fn validate_password(password: &str) -> Result<(), ValidationError> {
     const MIN_LENGTH: usize = 8;
     const MAX_LENGTH: usize = 48;

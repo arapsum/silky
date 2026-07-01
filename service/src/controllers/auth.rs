@@ -20,7 +20,7 @@ use crate::{
     context::Claims,
     middlewares::auth::AuthLayer,
     models::{ModelError, User},
-    schemas::{ForgotPassword, LoginUser, RegisterUser, ResetPassword, Validator},
+    schemas::{ChangePassword, ForgotPassword, LoginUser, RegisterUser, ResetPassword, Validator},
     utils::AppJson,
     views::{AuthResponse, LoginResponse, UserResponse},
     workers::MailJob,
@@ -149,6 +149,36 @@ async fn reset_password(
     Ok((
         StatusCode::OK,
         Json(AuthResponse::new("Password has been reset successfully.")),
+    )
+        .into_response())
+}
+
+#[tracing::instrument(skip(ctx, params))]
+#[debug_handler]
+async fn change_password(
+    State(ctx): State<AppState>,
+    Extension(claims): Extension<Claims>,
+    AppJson(params): AppJson<ChangePassword<'static>>,
+) -> Result<Response> {
+    let validator = Validator::new(params);
+    let validated = validator.validate()?;
+
+    let user = User::change_password(
+        ctx.db(),
+        claims.sub(),
+        validated.current_password(),
+        validated.password(),
+    )
+    .await?;
+
+    tracing::info!(
+        "Password has been changed successfully, for user: {}",
+        user.pid()
+    );
+
+    Ok((
+        StatusCode::OK,
+        Json(AuthResponse::new("Password has been changed successfully.")),
     )
         .into_response())
 }
@@ -297,6 +327,10 @@ pub fn router(ctx: &AppState) -> Router {
         .route("/logout", post(logout))
         .route("/forgot-password", post(forgot_password))
         .route("/reset-password", post(reset_password))
+        .route(
+            "/change-password",
+            post(change_password).layer(AuthLayer::new(ctx.clone())),
+        )
         .route("/verify/{token}", get(verify))
         .route("/me", get(current).layer(AuthLayer::new(ctx.clone())))
         .with_state(ctx.clone())

@@ -2,7 +2,11 @@ use std::borrow::Cow;
 
 use insta::{Settings, assert_debug_snapshot, with_settings};
 use serial_test::serial;
-use service::{App, models::user::User, schemas::RegisterUser};
+use service::{
+    App,
+    models::{ModelError, user::User},
+    schemas::RegisterUser,
+};
 use uuid::Uuid;
 
 use crate::{
@@ -238,4 +242,69 @@ async fn can_reset_password() {
     }, {
         assert_debug_snapshot!(result)
     })
+}
+
+#[tokio::test]
+#[serial]
+async fn can_change_password() {
+    let ctx = boot_test().await.unwrap();
+
+    App::seed(ctx.db()).await.unwrap();
+
+    let mut user = User::find_by_email(ctx.db(), "john.doe@acme.com")
+        .await
+        .unwrap();
+    let token = Uuid::new_v4().to_string();
+
+    user.set_reset_token(ctx.db(), &token, ctx.config().auth().refresh_token_expiry())
+        .await
+        .unwrap();
+
+    let changed = User::change_password(
+        ctx.db(),
+        &user.pid().to_string(),
+        "Password",
+        "NewPassword123",
+    )
+    .await
+    .unwrap();
+
+    assert_eq!(changed.pid(), user.pid());
+    assert_ne!(changed.password_hash(), user.password_hash());
+    assert!(changed.reset_token_hash().is_none());
+    assert!(changed.reset_token_expires_at().is_none());
+    assert!(changed.verify_password("NewPassword123").is_ok());
+    assert!(matches!(
+        changed.verify_password("Password"),
+        Err(ModelError::InvalidCredentials)
+    ));
+}
+
+#[tokio::test]
+#[serial]
+async fn cannot_change_password_when_current_password_is_wrong() {
+    let ctx = boot_test().await.unwrap();
+
+    App::seed(ctx.db()).await.unwrap();
+
+    let user = User::find_by_email(ctx.db(), "john.doe@acme.com")
+        .await
+        .unwrap();
+
+    let result = User::change_password(
+        ctx.db(),
+        &user.pid().to_string(),
+        "WrongPassword",
+        "NewPassword123",
+    )
+    .await;
+
+    assert!(matches!(result, Err(ModelError::InvalidCredentials)));
+
+    let unchanged = User::find_by_email(ctx.db(), "john.doe@acme.com")
+        .await
+        .unwrap();
+
+    assert_eq!(unchanged.password_hash(), user.password_hash());
+    assert!(unchanged.verify_password("Password").is_ok());
 }

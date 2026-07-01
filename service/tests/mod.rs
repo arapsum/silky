@@ -4,6 +4,7 @@ use axum_test::{TestServer, TestServerConfig};
 use service::{App, AppContext, AppState, Config, Result, config::Environment, controllers};
 use sqlx::PgPool;
 
+mod config;
 mod middlewares;
 mod models;
 mod requests;

@@ -8,6 +8,7 @@ import { Toaster } from "#/components/ui/sonner.tsx";
 import appCss from "../styles.css?url";
 
 import type { QueryClient } from "@tanstack/react-query";
+import { TooltipProvider } from "#/components/ui/tooltip";
 
 interface MyRouterContext {
   queryClient: QueryClient;
@@ -44,7 +45,7 @@ function RootDocument({ children }: { children: React.ReactNode }) {
         <HeadContent />
       </head>
       <body>
-        {children}
+        <TooltipProvider>{children}</TooltipProvider>
         <Toaster richColors position="top-right" duration={5000} />
         <TanStackDevtools
           config={{

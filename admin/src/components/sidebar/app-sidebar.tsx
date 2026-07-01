@@ -25,7 +25,6 @@ import {
   SidebarContent,
   SidebarFooter,
   SidebarHeader,
-  SidebarTrigger,
   useSidebar,
 } from "@/components/ui/sidebar";
 import { cn } from "@/lib/utils";
@@ -190,15 +189,6 @@ export function DashboardSidebar() {
           <Logo className="h-8 w-8" />
           {!isCollapsed && <span className="font-semibold text-black dark:text-white">Acme</span>}
         </a>
-        <div
-          key={isCollapsed ? "header-collapsed" : "header-expanded"}
-          className={cn(
-            "flex items-center gap-2",
-            isCollapsed ? "flex-row md:flex-col-reverse" : "flex-row",
-          )}
-        >
-          <SidebarTrigger />
-        </div>
       </SidebarHeader>
       <SidebarContent className="gap-4 px-2 py-4">
         <DashboardNavigation routes={dashboardRoutes} />

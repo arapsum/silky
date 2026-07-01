@@ -1,3 +1,4 @@
+import { DashboardNavbar } from "#/components/dashboard-navbar";
 import { DashboardSidebar } from "#/components/sidebar/app-sidebar";
 import { SidebarInset, SidebarProvider } from "#/components/ui/sidebar";
 import { createFileRoute } from "@tanstack/react-router";
@@ -9,7 +10,9 @@ function Home() {
     <SidebarProvider>
       <div className="relative flex h-dvh w-full">
         <DashboardSidebar />
-        <SidebarInset className="flex flex-col" />
+        <SidebarInset className="flex flex-col">
+          <DashboardNavbar />
+        </SidebarInset>
       </div>
     </SidebarProvider>
   );

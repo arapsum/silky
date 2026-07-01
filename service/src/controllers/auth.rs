@@ -263,6 +263,17 @@ async fn logout(
     Ok(response)
 }
 
+#[debug_handler]
+#[tracing::instrument(skip(ctx))]
+async fn current(
+    State(ctx): State<AppState>,
+    Extension(claims): Extension<Claims>,
+) -> Result<Response> {
+    let user = User::find_by_claims_key(ctx.db(), claims.sub()).await?;
+
+    Ok((StatusCode::OK, Json(UserResponse::new(&user))).into_response())
+}
+
 async fn issue_login_response(ctx: &AppState, user: &User, sub: &str) -> Result<Response> {
     let access_token = ctx.auth().access().generate_token(sub)?;
     let (refresh_token, refresh_claims) = ctx.auth().refresh().generate_token_with_claims(sub)?;
@@ -303,16 +314,6 @@ async fn issue_login_response(ctx: &AppState, user: &User, sub: &str) -> Result<
     Ok(response)
 }
 
-#[debug_handler]
-#[tracing::instrument(skip(ctx))]
-async fn current(
-    State(ctx): State<AppState>,
-    Extension(claims): Extension<Claims>,
-) -> Result<Response> {
-    let user = User::find_by_claims_key(ctx.db(), claims.sub()).await?;
-
-    Ok((StatusCode::OK, Json(UserResponse::new(&user))).into_response())
-}
 pub fn router(ctx: &AppState) -> Router {
     Router::new()
         .route("/register", post(register))

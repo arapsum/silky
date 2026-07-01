@@ -9,8 +9,12 @@ React admin frontend for the Silk fashion e-commerce project.
 - TanStack Router with file-based routes
 - TanStack Query
 - Tailwind CSS
-- shadcn-compatible component tooling
+- shadcn-compatible component tooling with Base UI primitives
+- React Hook Form, Zod, and `@hookform/resolvers`
+- Sonner for toast notifications
+- next-themes for theme state
 - T3 Env for typed environment variables
+- Oxlint and oxfmt
 - Vitest for tests
 
 ## Requirements
@@ -19,8 +23,8 @@ React admin frontend for the Silk fashion e-commerce project.
 - pnpm
 - The Silk service for backend API behavior
 
-Start the backend from the repository root or `service/` directory before
-working on API-backed admin features.
+Start the backend from the repository root or `service/` directory before using
+API-backed admin features such as sign-in.
 
 ## Getting Started
 
@@ -45,6 +49,10 @@ pnpm dev               # start the Vite dev server
 pnpm build             # build for production
 pnpm preview           # preview the production build
 pnpm test              # run Vitest
+pnpm lint              # run oxlint
+pnpm lint:fix          # run oxlint fixes
+pnpm fmt               # format with oxfmt
+pnpm fmt:check         # check formatting with oxfmt
 pnpm generate-routes   # regenerate the TanStack Router route tree
 ```
 
@@ -55,6 +63,7 @@ Typed environment variables are defined in `src/env.ts`.
 Supported variables:
 
 - `SERVER_URL` - optional server-side API base URL
+- `VITE_SERVER_URL` - optional client/browser API base URL
 - `VITE_APP_TITLE` - optional client/browser app title
 
 Client-side variables must use the `VITE_` prefix.
@@ -63,6 +72,7 @@ Example `.env`:
 
 ```env
 SERVER_URL=http://127.0.0.1:7150
+VITE_SERVER_URL=http://127.0.0.1:7150/api
 VITE_APP_TITLE=Silk Admin
 ```
 
@@ -83,7 +93,8 @@ Important files:
 
 - `src/routes/__root.tsx` - root document, global styles, devtools, and router
   context
-- `src/routes/index.tsx` - current home route
+- `src/routes/_auth/sign-in/index.tsx` - sign-in page
+- `src/routes/index.tsx` - dashboard shell route
 - `src/routeTree.gen.ts` - generated route tree
 
 Regenerate the route tree after route changes:
@@ -91,6 +102,22 @@ Regenerate the route tree after route changes:
 ```bash
 pnpm generate-routes
 ```
+
+`src/routeTree.gen.ts` is generated and should not be edited manually.
+
+## Authentication And API
+
+API helpers live in `src/api/`. `src/api/client.ts` owns the API base URL,
+shared error response shape, and reusable error parsing. `src/api/auth.ts`
+contains the sign-in request.
+
+The sign-in page uses `LoginForm`, React Hook Form, Zod validation,
+`@hookform/resolvers`, TanStack Query mutation state, and Sonner toasts. On a
+successful sign-in it redirects to `/`.
+
+The service sets auth cookies during login. The frontend sends credentialed
+requests so the browser can accept and return those cookies; it does not create
+or overwrite service auth cookies on the client.
 
 ## Data Fetching
 
@@ -113,12 +140,26 @@ pnpm dlx shadcn@latest add button
 Use existing component and utility conventions before introducing new styling
 patterns.
 
+## Dashboard Shell
+
+The home route renders the dashboard shell with:
+
+- Floating sidebar navigation
+- Top navbar with sidebar trigger, command-search trigger, notifications, and
+  theme toggle
+- Account dropdown with logout confirmation
+
+Sidebar and navbar components live under `src/components/sidebar/` and
+`src/components/dashboard-navbar.tsx`.
+
 ## Project Layout
 
 ```text
 .
 |-- public/                         # Static assets and web manifest
 |-- src/
+|   |-- api/                         # API clients and shared error helpers
+|   |-- components/                  # App components and UI primitives
 |   |-- integrations/tanstack-query/ # Query provider and devtools
 |   |-- lib/                         # Shared frontend utilities
 |   |-- routes/                      # File-based routes
@@ -131,9 +172,3 @@ patterns.
 |-- tsconfig.json
 `-- vite.config.ts
 ```
-
-## Current State
-
-The admin app is still close to the TanStack Start starter template. Most
-domain behavior currently lives in the backend service, so expect admin routes,
-forms, and API integration to evolve as the product surface is built out.

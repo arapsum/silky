@@ -7,6 +7,7 @@ Rust backend API for the Silk fashion e-commerce project.
 - Axum for HTTP routing
 - SQLx with PostgreSQL for persistence and migrations
 - Redis and Apalis for background mail jobs
+- Redis-backed refresh token storage for single-use token rotation
 - Lettre and Handlebars for email delivery and templates
 - JWT authentication with RSA keys
 - Insta, rstest, serial_test, and axum-test for tests
@@ -95,7 +96,7 @@ Routes are mounted under `/api` when the binary starts the full application.
 | --- | --- | --- |
 | `GET` | `/api/health` | Health check |
 | `POST` | `/api/auth/register` | Register a user and queue a verification email |
-| `POST` | `/api/auth/login` | Log in and return an access token |
+| `POST` | `/api/auth/login` | Log in, issue auth cookies, and return an access token |
 | `POST` | `/api/auth/refresh` | Rotate refresh token cookies and return a new access token |
 | `POST` | `/api/auth/logout` | Revoke the refresh token and clear auth cookies |
 | `GET` | `/api/auth/verify/{token}` | Verify a user's email address |
@@ -107,6 +108,28 @@ Routes are mounted under `/api` when the binary starts the full application.
 Request tests mount the controller router directly, so test paths omit the
 outer `/api` prefix. For example, the service route `/api/auth/login` is tested
 as `/auth/login`.
+
+## Authentication
+
+Login returns a JSON body with the user and access token, sets an `access_token`
+cookie, and sets an HTTP-only `refresh_token` cookie. The access token may be
+sent through the `Authorization: Bearer <token>` header or through the
+`access_token` cookie for authenticated routes.
+
+Refresh tokens are stored in Redis by token identifier when they are issued.
+`POST /api/auth/refresh` consumes the stored identifier atomically before
+issuing a new token pair. Reusing an already consumed refresh token is rejected.
+`POST /api/auth/logout` removes the current refresh token identifier from Redis
+and sends expired auth cookies.
+
+Password endpoints:
+
+- `POST /api/auth/forgot-password` accepts `{ "email": "user@example.com" }`
+  and queues a reset email when the account exists.
+- `POST /api/auth/reset-password` accepts `{ "token": "...", "password": "...",
+  "confirmPassword": "..." }`.
+- `POST /api/auth/change-password` requires authentication and accepts
+  `{ "currentPassword": "...", "password": "...", "confirmPassword": "..." }`.
 
 ## Testing
 

@@ -96,6 +96,8 @@ Routes are mounted under `/api` when the binary starts the full application.
 | `GET` | `/api/health` | Health check |
 | `POST` | `/api/auth/register` | Register a user and queue a verification email |
 | `POST` | `/api/auth/login` | Log in and return an access token |
+| `POST` | `/api/auth/refresh` | Rotate refresh token cookies and return a new access token |
+| `POST` | `/api/auth/logout` | Revoke the refresh token and clear auth cookies |
 | `GET` | `/api/auth/verify/{token}` | Verify a user's email address |
 | `POST` | `/api/auth/forgot-password` | Queue a password reset email when the account exists |
 | `POST` | `/api/auth/reset-password` | Reset a password with a reset token |

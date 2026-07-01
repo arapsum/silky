@@ -43,6 +43,8 @@ pub enum Error {
     #[error("Non-blocking work guard already set")]
     NonBlockingWorkGuardAlreadySet,
     #[error(transparent)]
+    Redis(#[from] redis::RedisError),
+    #[error(transparent)]
     Sqlx(#[from] sqlx::Error),
     #[error(transparent)]
     TryInit(#[from] tracing_subscriber::util::TryInitError),

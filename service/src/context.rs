@@ -2,13 +2,14 @@ use std::sync::{Arc, OnceLock};
 
 use chrono::{Duration, Utc};
 use jsonwebtoken::{Algorithm, DecodingKey, EncodingKey, Header, Validation};
+use redis::{ExistenceCheck, SetExpiry, SetOptions};
 use serde::{Deserialize, Serialize};
 use sqlx::PgPool;
 use uuid::Uuid;
 
 use crate::{
     Config, Error,
-    config::{AuthConfig, JwtConfig},
+    config::{AuthConfig, JwtConfig, RedisConfig},
     workers::MailQueue,
 };
 
@@ -20,9 +21,12 @@ pub struct AppContext {
     config: Config,
     db: PgPool,
     queue: Arc<OnceLock<MailQueue>>,
+    redis: redis::Client,
 }
 
 impl AppContext {
+    const REFRESH_TOKEN_KEY_PREFIX: &str = "auth:refresh";
+
     /// Initialises application services and infrastructure.
     ///
     /// This method performs application startup tasks, including configuring
@@ -67,8 +71,89 @@ impl AppContext {
         &self.queue
     }
 
+    #[must_use]
+    pub const fn redis(&self) -> &redis::Client {
+        &self.redis
+    }
+
+    /// Stores a newly issued refresh token identifier until the token expires.
+    ///
+    /// # Errors
+    ///
+    /// This function will return an error if:
+    /// - The token is already expired.
+    /// - Redis cannot store the token identifier.
+    pub async fn store_refresh_token(&self, claims: &Claims) -> crate::Result<()> {
+        let ttl = claims.remaining_ttl()?;
+        let mut conn = self.redis().get_multiplexed_async_connection().await?;
+        let key = Self::refresh_token_key(claims.id());
+        let options = SetOptions::default()
+            .conditional_set(ExistenceCheck::NX)
+            .with_expiration(SetExpiry::EX(ttl));
+
+        let stored: Option<String> = redis::cmd("SET")
+            .arg(&key)
+            .arg(claims.sub())
+            .arg(options)
+            .query_async(&mut conn)
+            .await?;
+
+        if stored.is_some() {
+            Ok(())
+        } else {
+            Err(Error::InvalidToken.into())
+        }
+    }
+
+    /// Consumes a refresh token identifier, preventing any later reuse.
+    ///
+    /// # Errors
+    ///
+    /// This function will return an error if:
+    /// - The token is expired.
+    /// - The token identifier is missing from Redis.
+    /// - The token identifier does not belong to the expected subject.
+    /// - Redis cannot consume the token identifier.
+    pub async fn consume_refresh_token(&self, claims: &Claims) -> crate::Result<()> {
+        claims.remaining_ttl()?;
+
+        let mut conn = self.redis().get_multiplexed_async_connection().await?;
+        let key = Self::refresh_token_key(claims.id());
+        let stored_sub: Option<String> = redis::cmd("GETDEL")
+            .arg(&key)
+            .query_async(&mut conn)
+            .await?;
+
+        match stored_sub {
+            Some(sub) if sub == claims.sub() => Ok(()),
+            _ => Err(Error::InvalidToken.into()),
+        }
+    }
+
+    /// Removes a refresh token identifier from Redis if it is still present.
+    ///
+    /// # Errors
+    ///
+    /// This function will return an error if Redis cannot delete the token
+    /// identifier.
+    pub async fn revoke_refresh_token(&self, claims: &Claims) -> crate::Result<()> {
+        let mut conn = self.redis().get_multiplexed_async_connection().await?;
+        let key = Self::refresh_token_key(claims.id());
+
+        redis::cmd("DEL")
+            .arg(&key)
+            .query_async::<()>(&mut conn)
+            .await?;
+
+        Ok(())
+    }
+
     pub fn set_queue(&self, queue: MailQueue) {
         self.queue.get_or_init(|| queue);
+    }
+
+    fn refresh_token_key(token_id: &str) -> String {
+        format!("{}:{token_id}", Self::REFRESH_TOKEN_KEY_PREFIX)
     }
 }
 
@@ -81,6 +166,7 @@ impl TryFrom<&Config> for AppContext {
             db: cfg.database().pool()?,
             config: cfg.clone(),
             queue: Arc::new(OnceLock::new()),
+            redis: RedisConfig::connection(cfg.redis())?,
         })
     }
 }
@@ -187,12 +273,25 @@ impl JwtContext {
     /// - The encoding key is invalid.
     /// - The claims could not be encoded.
     pub fn generate_token(&self, sub: &str) -> crate::Result<String> {
+        let (token, _) = self.generate_token_with_claims(sub)?;
+
+        Ok(token)
+    }
+
+    /// Generates a JWT token and returns the claims used to encode it.
+    ///
+    /// # Errors
+    ///
+    /// This function will return an error if:
+    /// - The encoding key is invalid.
+    /// - The claims could not be encoded.
+    pub fn generate_token_with_claims(&self, sub: &str) -> crate::Result<(String, Claims)> {
         let claims = Claims::new(sub, self.expires_in());
         let header = Header::new(Algorithm::RS256);
 
         let token = jsonwebtoken::encode(&header, &claims, self.encoding_key())?;
 
-        Ok(token)
+        Ok((token, claims))
     }
 
     /// Verifies a JWT token and returns the claims if valid.
@@ -260,6 +359,16 @@ impl Claims {
     #[must_use]
     pub const fn nbf(&self) -> i64 {
         self.nbf
+    }
+
+    fn remaining_ttl(&self) -> crate::Result<u64> {
+        let ttl = self.exp() - Utc::now().timestamp();
+
+        if ttl <= 0 {
+            return Err(Error::ExpiredSession.into());
+        }
+
+        u64::try_from(ttl).map_err(Into::into)
     }
 }
 

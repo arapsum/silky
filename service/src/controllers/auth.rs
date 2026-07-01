@@ -11,7 +11,7 @@ use axum::{
     response::{IntoResponse, Response},
     routing::{get, post},
 };
-use axum_extra::extract::cookie;
+use axum_extra::{TypedHeader, extract::cookie, headers::Cookie as HeaderCookie};
 use serde_json::json;
 use uuid::Uuid;
 
@@ -172,8 +172,78 @@ async fn login(
     user.verify_password(validated.password())?;
 
     let sub = user.pid().to_string();
-    let access_token = ctx.auth().access().generate_token(&sub)?;
-    let refresh_token = ctx.auth().refresh().generate_token(&sub)?;
+    issue_login_response(&ctx, &user, &sub).await
+}
+
+#[tracing::instrument(skip(ctx, cookies))]
+#[debug_handler]
+async fn refresh(
+    State(ctx): State<AppState>,
+    cookies: Option<TypedHeader<HeaderCookie>>,
+) -> Result<Response> {
+    let refresh_token = cookies
+        .as_ref()
+        .and_then(|TypedHeader(cookies)| cookies.get("refresh_token"))
+        .ok_or(Error::MissingCredentials)?;
+
+    let claims = ctx.auth().verify_refresh_token(refresh_token)?;
+    ctx.consume_refresh_token(&claims).await?;
+
+    let user = User::find_by_claims_key(ctx.db(), claims.sub()).await?;
+    let sub = user.pid().to_string();
+
+    issue_login_response(&ctx, &user, &sub).await
+}
+
+#[tracing::instrument(skip(ctx, cookies))]
+#[debug_handler]
+async fn logout(
+    State(ctx): State<AppState>,
+    cookies: Option<TypedHeader<HeaderCookie>>,
+) -> Result<Response> {
+    if let Some(refresh_token) = cookies
+        .as_ref()
+        .and_then(|TypedHeader(cookies)| cookies.get("refresh_token"))
+        && let Ok(claims) = ctx.auth().verify_refresh_token(refresh_token)
+    {
+        ctx.revoke_refresh_token(&claims).await?;
+    }
+
+    let expired_access_cookie = cookie::Cookie::build(("access_token", ""))
+        .path("/")
+        .http_only(false)
+        .max_age(time::Duration::ZERO)
+        .same_site(cookie::SameSite::Lax)
+        .secure(false);
+
+    let expired_refresh_cookie = cookie::Cookie::build(("refresh_token", ""))
+        .path("/")
+        .http_only(true)
+        .max_age(time::Duration::ZERO)
+        .same_site(cookie::SameSite::Lax)
+        .secure(false);
+
+    let mut response = Response::builder().status(StatusCode::OK).body(Body::from(
+        json!(AuthResponse::new("Logged out successfully")).to_string(),
+    ))?;
+
+    response.headers_mut().append(
+        SET_COOKIE,
+        HeaderValue::from_str(expired_access_cookie.to_string().as_str())?,
+    );
+    response.headers_mut().append(
+        SET_COOKIE,
+        HeaderValue::from_str(expired_refresh_cookie.to_string().as_str())?,
+    );
+
+    Ok(response)
+}
+
+async fn issue_login_response(ctx: &AppState, user: &User, sub: &str) -> Result<Response> {
+    let access_token = ctx.auth().access().generate_token(sub)?;
+    let (refresh_token, refresh_claims) = ctx.auth().refresh().generate_token_with_claims(sub)?;
+
+    ctx.store_refresh_token(&refresh_claims).await?;
 
     let access_cookie = cookie::Cookie::build(("access_token", &access_token))
         .path("/")
@@ -190,7 +260,7 @@ async fn login(
         .secure(false);
 
     let mut response = Response::builder().status(StatusCode::OK).body(Body::from(
-        json!(LoginResponse::new(&user, &access_token)).to_string(),
+        json!(LoginResponse::new(user, &access_token)).to_string(),
     ))?;
 
     response.headers_mut().append(
@@ -223,6 +293,8 @@ pub fn router(ctx: &AppState) -> Router {
     Router::new()
         .route("/register", post(register))
         .route("/login", post(login))
+        .route("/refresh", post(refresh))
+        .route("/logout", post(logout))
         .route("/forgot-password", post(forgot_password))
         .route("/reset-password", post(reset_password))
         .route("/verify/{token}", get(verify))

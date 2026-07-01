@@ -191,6 +191,91 @@ async fn can_login_user(#[case] test_name: &str, #[case] params: serde_json::Val
     .await;
 }
 
+#[tokio::test]
+#[serial]
+async fn refresh_token_reuse_is_rejected() {
+    crate::request(|server, context| async move {
+        crate::seed_data(context.db())
+            .await
+            .expect("Failed to seed data");
+
+        let params = serde_json::json!({
+            "email": "john.doe@acme.com",
+            "password": "Password"
+        });
+        let user = utils::login_users(&server, &params).await;
+
+        let first_response = server
+            .post("/auth/refresh")
+            .add_cookie(user.refresh_cookie.clone())
+            .do_not_save_cookies()
+            .await;
+        assert_eq!(first_response.status_code(), 200);
+
+        let second_response = server
+            .post("/auth/refresh")
+            .add_cookie(user.refresh_cookie)
+            .do_not_save_cookies()
+            .await;
+        assert_eq!(second_response.status_code(), 401);
+        assert_eq!(second_response.text(), "{\"error\":\"Invalid token\"}");
+    })
+    .await;
+}
+
+#[tokio::test]
+#[serial]
+async fn logout_revokes_refresh_token_and_clears_cookies() {
+    crate::request(|server, context| async move {
+        crate::seed_data(context.db())
+            .await
+            .expect("Failed to seed data");
+
+        let params = serde_json::json!({
+            "email": "john.doe@acme.com",
+            "password": "Password"
+        });
+        let user = utils::login_users(&server, &params).await;
+
+        let logout_response = server
+            .post("/auth/logout")
+            .add_cookie(user.refresh_cookie.clone())
+            .do_not_save_cookies()
+            .await;
+
+        assert_eq!(logout_response.status_code(), 200);
+
+        let set_cookies = logout_response
+            .headers()
+            .get_all("set-cookie")
+            .iter()
+            .map(|header| header.to_str().expect("set-cookie should be valid"))
+            .collect::<Vec<_>>();
+
+        assert_eq!(set_cookies.len(), 2);
+        assert!(
+            set_cookies
+                .iter()
+                .any(|cookie| cookie.starts_with("access_token=") && cookie.contains("Max-Age=0"))
+        );
+        assert!(
+            set_cookies
+                .iter()
+                .any(|cookie| cookie.starts_with("refresh_token=") && cookie.contains("Max-Age=0"))
+        );
+
+        let refresh_response = server
+            .post("/auth/refresh")
+            .add_cookie(user.refresh_cookie)
+            .do_not_save_cookies()
+            .await;
+
+        assert_eq!(refresh_response.status_code(), 401);
+        assert_eq!(refresh_response.text(), "{\"error\":\"Invalid token\"}");
+    })
+    .await;
+}
+
 #[rstest]
 #[case("when_email_is_valid_reset_token_is_sent", serde_json::json!({ "email": "john.doe@acme.com" }))]
 #[case("when_email_is_invalid_validation_fails_and_no_reset_token_is_sent", serde_json::json!({ "email": "johndoe:acme.com" }))]

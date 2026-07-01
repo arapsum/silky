@@ -5,7 +5,7 @@ use serial_test::serial;
 use service::{
     App,
     models::{ModelError, user::User},
-    schemas::RegisterUser,
+    schemas::{ChangePassword, RegisterUser},
 };
 use uuid::Uuid;
 
@@ -260,14 +260,14 @@ async fn can_change_password() {
         .await
         .unwrap();
 
-    let changed = User::change_password(
-        ctx.db(),
-        &user.pid().to_string(),
-        "Password",
-        "NewPassword123",
-    )
-    .await
-    .unwrap();
+    let params = ChangePassword::new(
+        Cow::Borrowed("Password"),
+        Cow::Borrowed("NewPassword123"),
+        Cow::Borrowed("NewPassword123"),
+    );
+    let changed = User::change_password(ctx.db(), &user.pid().to_string(), &params)
+        .await
+        .unwrap();
 
     assert_eq!(changed.pid(), user.pid());
     assert_ne!(changed.password_hash(), user.password_hash());
@@ -291,13 +291,12 @@ async fn cannot_change_password_when_current_password_is_wrong() {
         .await
         .unwrap();
 
-    let result = User::change_password(
-        ctx.db(),
-        &user.pid().to_string(),
-        "WrongPassword",
-        "NewPassword123",
-    )
-    .await;
+    let params = ChangePassword::new(
+        Cow::Borrowed("WrongPassword"),
+        Cow::Borrowed("NewPassword123"),
+        Cow::Borrowed("NewPassword123"),
+    );
+    let result = User::change_password(ctx.db(), &user.pid().to_string(), &params).await;
 
     assert!(matches!(result, Err(ModelError::InvalidCredentials)));
 

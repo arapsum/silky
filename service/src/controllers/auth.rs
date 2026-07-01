@@ -163,13 +163,7 @@ async fn change_password(
     let validator = Validator::new(params);
     let validated = validator.validate()?;
 
-    let user = User::change_password(
-        ctx.db(),
-        claims.sub(),
-        validated.current_password(),
-        validated.password(),
-    )
-    .await?;
+    let user = User::change_password(ctx.db(), claims.sub(), validated).await?;
 
     tracing::info!(
         "Password has been changed successfully, for user: {}",

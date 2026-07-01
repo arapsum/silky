@@ -9,7 +9,7 @@ use sha2::{Digest, Sha256};
 use sqlx::{Encode, Executor, PgPool, Postgres, prelude::FromRow};
 use uuid::Uuid;
 
-use crate::schemas::{LoginUser, RegisterUser};
+use crate::schemas::{ChangePassword, LoginUser, RegisterUser};
 
 use super::{ModelError, ModelResult, Seedable};
 
@@ -206,13 +206,12 @@ impl User {
     pub async fn change_password(
         db: &PgPool,
         claims_key: &str,
-        current_password: &str,
-        new_password: &str,
+        params: &ChangePassword<'_>,
     ) -> ModelResult<Self> {
         let mut txn = db.begin().await?;
 
         let user = Self::find_by_claims_key(&mut *txn, claims_key).await?;
-        user.verify_password(current_password)?;
+        user.verify_password(params.current_password())?;
 
         let user = sqlx::query_as::<_, Self>(
             r"
@@ -227,7 +226,7 @@ impl User {
             ",
         )
         .bind(user.id)
-        .bind(Self::hash_password(new_password)?)
+        .bind(Self::hash_password(params.password())?)
         .fetch_one(&mut *txn)
         .await?;
 

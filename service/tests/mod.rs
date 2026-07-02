@@ -10,6 +10,7 @@ mod models;
 mod requests;
 mod schemas;
 pub mod utils;
+mod workers;
 
 pub async fn boot_test() -> Result<AppState> {
     let config = Config::from_env(&Environment::Testing)?;

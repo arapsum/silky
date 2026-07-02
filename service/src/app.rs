@@ -1,10 +1,9 @@
 use std::{future, io::IsTerminal, net::SocketAddr, sync::Arc};
 
-use apalis::prelude::{Monitor, WorkerBuilder, WorkerFactoryFn};
 use axum::{
     Router,
     http::{
-        Method,
+        HeaderValue, Method,
         header::{ACCEPT, AUTHORIZATION, CONTENT_TYPE, COOKIE, SET_COOKIE},
     },
 };
@@ -19,7 +18,7 @@ use crate::{
     controllers,
     middlewares::trace,
     models::{Category, Permission, Role, RolePermission, User, UserRole},
-    workers::{self, MailQueue},
+    workers::Workers,
 };
 
 #[derive(Debug, Parser)]
@@ -103,39 +102,19 @@ impl App {
 
         let ctx = self.init(&config).await?;
 
-        let queue = MailQueue::init(config.redis()).await?;
-        let welcome_backend = queue.welcome.clone();
-        let forgot_backend = queue.forgot.clone();
+        let workers = Workers::init(&config, Arc::clone(&ctx)).await?;
+        ctx.set_queue(workers.mail_queue().clone());
+        let workers = workers.start();
 
-        ctx.set_queue(queue);
-
-        let ctx_worker = Arc::clone(&ctx);
-
-        let worker = tokio::spawn(async move {
-            tracing::info!("Worker started");
-            Monitor::new()
-                .register(
-                    WorkerBuilder::new("mail-welcome")
-                        .data(ctx_worker.clone())
-                        .backend(welcome_backend)
-                        .build_fn(workers::handle_welcome),
-                )
-                .register(
-                    WorkerBuilder::new("mail-forgot")
-                        .data(ctx_worker.clone())
-                        .backend(forgot_backend)
-                        .build_fn(workers::handle_forgot_password),
-                )
-                .run()
-                .await
-                .unwrap_or_else(|e| tracing::error!(error = ?e, "Queue monitor crashed" ));
-        });
+        let allowed_origins = config
+            .cors()
+            .allowed_origin()
+            .iter()
+            .map(|origin| origin.parse::<HeaderValue>())
+            .collect::<std::result::Result<Vec<_>, _>>()?;
 
         let cors_layer = CorsLayer::new()
-            .allow_origin([
-                "http://localhost:5173".parse()?,
-                "http://127.0.0.1:5173".parse()?,
-            ])
+            .allow_origin(allowed_origins)
             .allow_methods([Method::GET, Method::POST, Method::OPTIONS])
             .allow_credentials(true)
             .allow_headers([CONTENT_TYPE, ACCEPT, COOKIE])
@@ -167,14 +146,7 @@ impl App {
 
         tracing::info!("HTTP server stopped");
 
-        worker.abort();
-        if let Err(err) = worker.await {
-            if err.is_cancelled() {
-                tracing::info!("Worker stopped");
-            } else {
-                tracing::error!(error = ?err, "Worker task failed while shutting down");
-            }
-        }
+        workers.shutdown().await;
 
         ctx.db().close().await;
         tracing::info!("Database pool closed");

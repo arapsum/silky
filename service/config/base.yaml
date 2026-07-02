@@ -40,3 +40,8 @@ auth:
     maxage: 604800 # seconds 7 days
   verification_token_expiry: 604800 # seconds 7 days
   refresh_token_expiry: 1800 # seconds 30 minutes
+
+cors:
+  allowed_origin:
+    - http://127.0.0.1:5173
+    - http://localhost:5173

@@ -1,4 +1,3 @@
-use apalis::prelude::Storage as _;
 use axum::{
     Extension, Json, Router,
     body::Body,
@@ -23,7 +22,6 @@ use crate::{
     schemas::{ChangePassword, ForgotPassword, LoginUser, RegisterUser, ResetPassword, Validator},
     utils::AppJson,
     views::{AuthResponse, LoginResponse, UserResponse},
-    workers::MailJob,
 };
 
 #[tracing::instrument(skip(ctx, params))]
@@ -48,12 +46,8 @@ async fn register(
         .await?;
 
     if let Some(queue) = ctx.queue().get() {
-        let mut welcome = queue.welcome.clone();
-        welcome
-            .push(MailJob {
-                user_id: created.pid(),
-                token: verification_token,
-            })
+        queue
+            .enqueue_welcome(created.pid(), verification_token)
             .await?;
     }
 
@@ -102,12 +96,8 @@ async fn forgot_password(
                 .await?;
 
             if let Some(queue) = ctx.queue().get() {
-                let mut forgot = queue.forgot.clone();
-                forgot
-                    .push(MailJob {
-                        user_id: user.pid(),
-                        token: reset_token,
-                    })
+                queue
+                    .enqueue_forgot_password(user.pid(), reset_token)
                     .await?;
             }
         }

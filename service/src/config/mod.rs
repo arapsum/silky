@@ -27,6 +27,7 @@ pub struct Config {
     auth: AuthConfig,
     mailer: MailerConfig,
     redis: RedisConfig,
+    cors: CorsConfig,
 }
 
 impl Config {
@@ -92,6 +93,11 @@ impl Config {
     #[must_use]
     pub const fn redis(&self) -> &RedisConfig {
         &self.redis
+    }
+
+    #[must_use]
+    pub const fn cors(&self) -> &CorsConfig {
+        &self.cors
     }
 }
 
@@ -355,6 +361,19 @@ impl RedisConfig {
         &self.url
     }
 }
+
+#[derive(Debug, Deserialize, Clone)]
+pub struct CorsConfig {
+    pub allowed_origin: Vec<String>,
+}
+
+impl CorsConfig {
+    #[must_use]
+    pub fn allowed_origin(&self) -> &[String] {
+        &self.allowed_origin
+    }
+}
+
 #[derive(Debug, Default, Clone, PartialEq, Eq)]
 pub enum Environment {
     #[default]

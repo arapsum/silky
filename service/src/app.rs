@@ -3,7 +3,7 @@ use std::{future, io::IsTerminal, net::SocketAddr, sync::Arc};
 use axum::{
     Router,
     http::{
-        Method,
+        HeaderValue, Method,
         header::{ACCEPT, AUTHORIZATION, CONTENT_TYPE, COOKIE, SET_COOKIE},
     },
 };
@@ -106,11 +106,15 @@ impl App {
         ctx.set_queue(workers.mail_queue().clone());
         let workers = workers.start();
 
+        let allowed_origins = config
+            .cors()
+            .allowed_origin()
+            .iter()
+            .map(|origin| origin.parse::<HeaderValue>())
+            .collect::<std::result::Result<Vec<_>, _>>()?;
+
         let cors_layer = CorsLayer::new()
-            .allow_origin([
-                "http://localhost:5173".parse()?,
-                "http://127.0.0.1:5173".parse()?,
-            ])
+            .allow_origin(allowed_origins)
             .allow_methods([Method::GET, Method::POST, Method::OPTIONS])
             .allow_credentials(true)
             .allow_headers([CONTENT_TYPE, ACCEPT, COOKIE])

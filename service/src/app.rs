@@ -1,6 +1,5 @@
 use std::{future, io::IsTerminal, net::SocketAddr, sync::Arc};
 
-use apalis::prelude::{Monitor, WorkerBuilder, WorkerFactoryFn};
 use axum::{
     Router,
     http::{
@@ -19,7 +18,7 @@ use crate::{
     controllers,
     middlewares::trace,
     models::{Category, Permission, Role, RolePermission, User, UserRole},
-    workers::{self, MailQueue},
+    workers::Workers,
 };
 
 #[derive(Debug, Parser)]
@@ -103,33 +102,9 @@ impl App {
 
         let ctx = self.init(&config).await?;
 
-        let queue = MailQueue::init(config.redis()).await?;
-        let welcome_backend = queue.welcome.clone();
-        let forgot_backend = queue.forgot.clone();
-
-        ctx.set_queue(queue);
-
-        let ctx_worker = Arc::clone(&ctx);
-
-        let worker = tokio::spawn(async move {
-            tracing::info!("Worker started");
-            Monitor::new()
-                .register(
-                    WorkerBuilder::new("mail-welcome")
-                        .data(ctx_worker.clone())
-                        .backend(welcome_backend)
-                        .build_fn(workers::handle_welcome),
-                )
-                .register(
-                    WorkerBuilder::new("mail-forgot")
-                        .data(ctx_worker.clone())
-                        .backend(forgot_backend)
-                        .build_fn(workers::handle_forgot_password),
-                )
-                .run()
-                .await
-                .unwrap_or_else(|e| tracing::error!(error = ?e, "Queue monitor crashed" ));
-        });
+        let workers = Workers::init(&config, Arc::clone(&ctx)).await?;
+        ctx.set_queue(workers.mail_queue().clone());
+        let workers = workers.start();
 
         let cors_layer = CorsLayer::new()
             .allow_origin([
@@ -167,14 +142,7 @@ impl App {
 
         tracing::info!("HTTP server stopped");
 
-        worker.abort();
-        if let Err(err) = worker.await {
-            if err.is_cancelled() {
-                tracing::info!("Worker stopped");
-            } else {
-                tracing::error!(error = ?err, "Worker task failed while shutting down");
-            }
-        }
+        workers.shutdown().await;
 
         ctx.db().close().await;
         tracing::info!("Database pool closed");

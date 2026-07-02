@@ -1,6 +1,6 @@
 use axum::{
     Json, Router, debug_handler,
-    extract::{Path, State},
+    extract::State,
     http::StatusCode,
     response::{IntoResponse, Response},
     routing::{get, patch, post},
@@ -11,7 +11,7 @@ use crate::{
     AppState, Result,
     models::Role,
     schemas::{NewRole, UpdateRole, Validator},
-    utils::AppJson,
+    utils::{AppJson, AppPath},
 };
 
 #[tracing::instrument(skip(ctx))]
@@ -40,7 +40,7 @@ async fn list(State(ctx): State<AppState>) -> Result<Response> {
 #[debug_handler]
 async fn update(
     State(ctx): State<AppState>,
-    Path(pid): Path<Uuid>,
+    AppPath(pid): AppPath<Uuid>,
     AppJson(params): AppJson<UpdateRole<'static>>,
 ) -> Result<Response> {
     let validator = Validator::new(params);
@@ -53,7 +53,7 @@ async fn update(
 
 #[tracing::instrument(skip(ctx))]
 #[debug_handler]
-async fn one(State(ctx): State<AppState>, Path(pid): Path<Uuid>) -> Result<Response> {
+async fn one(State(ctx): State<AppState>, AppPath(pid): AppPath<Uuid>) -> Result<Response> {
     let role = Role::find_by_pid(ctx.db(), pid).await?;
 
     Ok((StatusCode::OK, Json(role)).into_response())

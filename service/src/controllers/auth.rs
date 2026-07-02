@@ -1,8 +1,8 @@
 use axum::{
-    Extension, Json, Router,
+    Json, Router,
     body::Body,
     debug_handler,
-    extract::{Path, State},
+    extract::State,
     http::{
         HeaderValue, StatusCode,
         header::{AUTHORIZATION, SET_COOKIE},
@@ -20,7 +20,7 @@ use crate::{
     middlewares::auth::AuthLayer,
     models::{ModelError, User},
     schemas::{ChangePassword, ForgotPassword, LoginUser, RegisterUser, ResetPassword, Validator},
-    utils::AppJson,
+    utils::{AppExtension, AppJson, AppPath},
     views::{AuthResponse, LoginResponse, UserResponse},
 };
 
@@ -62,7 +62,7 @@ async fn register(
 
 #[tracing::instrument(skip(ctx))]
 #[debug_handler]
-async fn verify(State(ctx): State<AppState>, Path(token): Path<String>) -> Result<Response> {
+async fn verify(State(ctx): State<AppState>, AppPath(token): AppPath<String>) -> Result<Response> {
     let user = User::verify_email(ctx.db(), &token).await?;
 
     tracing::info!("User verified: {}", user.pid());
@@ -147,7 +147,7 @@ async fn reset_password(
 #[debug_handler]
 async fn change_password(
     State(ctx): State<AppState>,
-    Extension(claims): Extension<Claims>,
+    AppExtension(claims): AppExtension<Claims>,
     AppJson(params): AppJson<ChangePassword<'static>>,
 ) -> Result<Response> {
     let validator = Validator::new(params);
@@ -257,7 +257,7 @@ async fn logout(
 #[tracing::instrument(skip(ctx))]
 async fn current(
     State(ctx): State<AppState>,
-    Extension(claims): Extension<Claims>,
+    AppExtension(claims): AppExtension<Claims>,
 ) -> Result<Response> {
     let user = User::find_by_claims_key(ctx.db(), claims.sub()).await?;
 

@@ -48,6 +48,16 @@ impl Error {
             Self::JsonRejection(json_rejection) => {
                 (json_rejection.status(), json_rejection.body_text())
             }
+            Self::PathRejection(path_rejection) => {
+                (path_rejection.status(), path_rejection.body_text())
+            }
+            Self::QueryRejection(query_rejection) => {
+                (query_rejection.status(), query_rejection.body_text())
+            }
+            Self::ExtensionRejection(extension_rejection) => (
+                extension_rejection.status(),
+                extension_rejection.body_text(),
+            ),
             _ => (
                 StatusCode::INTERNAL_SERVER_ERROR,
                 "Internal server error".to_string(),

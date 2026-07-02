@@ -19,6 +19,8 @@ pub enum Error {
     #[error("Expired Session")]
     ExpiredSession,
     #[error(transparent)]
+    ExtensionRejection(#[from] axum::extract::rejection::ExtensionRejection),
+    #[error(transparent)]
     FromEnv(#[from] tracing_subscriber::filter::FromEnvError),
     #[error("Forbidden")]
     Forbidden,
@@ -42,6 +44,10 @@ pub enum Error {
     Model(#[from] ModelError),
     #[error("Non-blocking work guard already set")]
     NonBlockingWorkGuardAlreadySet,
+    #[error(transparent)]
+    PathRejection(#[from] axum::extract::rejection::PathRejection),
+    #[error(transparent)]
+    QueryRejection(#[from] axum::extract::rejection::QueryRejection),
     #[error(transparent)]
     Redis(#[from] redis::RedisError),
     #[error(transparent)]

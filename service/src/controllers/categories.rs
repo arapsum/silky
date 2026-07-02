@@ -1,6 +1,6 @@
 use axum::{
     Json, Router, debug_handler,
-    extract::{Path, Query, State},
+    extract::State,
     http::StatusCode,
     response::{IntoResponse, Response},
     routing::{delete, get, patch, post},
@@ -12,7 +12,7 @@ use crate::{
     middlewares::{AuthLayer, RbacLayer},
     models::Category,
     schemas::{NewCategory, PaginationQuery, UpdateCategory, Validator},
-    utils::AppJson,
+    utils::{AppJson, AppPath, AppQuery},
 };
 
 #[tracing::instrument(skip(ctx))]
@@ -33,7 +33,7 @@ async fn create(
 #[debug_handler]
 async fn list(
     State(ctx): State<AppState>,
-    Query(query): Query<PaginationQuery>,
+    AppQuery(query): AppQuery<PaginationQuery>,
 ) -> Result<Response> {
     let validator = Validator::new(query);
     let validated = validator.validate()?;
@@ -45,7 +45,7 @@ async fn list(
 
 #[tracing::instrument(skip(ctx))]
 #[debug_handler]
-async fn one(State(ctx): State<AppState>, Path(pid): Path<Uuid>) -> Result<Response> {
+async fn one(State(ctx): State<AppState>, AppPath(pid): AppPath<Uuid>) -> Result<Response> {
     let category = Category::find_by_pid(ctx.db(), pid).await?;
 
     Ok((StatusCode::OK, Json(category)).into_response())
@@ -55,7 +55,7 @@ async fn one(State(ctx): State<AppState>, Path(pid): Path<Uuid>) -> Result<Respo
 #[debug_handler]
 async fn update(
     State(ctx): State<AppState>,
-    Path(pid): Path<Uuid>,
+    AppPath(pid): AppPath<Uuid>,
     AppJson(params): AppJson<UpdateCategory<'static>>,
 ) -> Result<Response> {
     let validator = Validator::new(params);
@@ -68,7 +68,7 @@ async fn update(
 
 #[tracing::instrument(skip(ctx))]
 #[debug_handler]
-async fn remove(State(ctx): State<AppState>, Path(pid): Path<Uuid>) -> Result<Response> {
+async fn remove(State(ctx): State<AppState>, AppPath(pid): AppPath<Uuid>) -> Result<Response> {
     let category = Category::delete(ctx.db(), pid).await?;
 
     Ok((StatusCode::NO_CONTENT, Json(category)).into_response())

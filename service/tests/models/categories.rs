@@ -5,7 +5,7 @@ use rstest::rstest;
 use serde_json::{Value, json};
 use serial_test::serial;
 use service::{
-    models::Category,
+    models::{Category, Product},
     schemas::{NewCategory, PaginationQuery, UpdateCategory},
 };
 use uuid::Uuid;
@@ -243,6 +243,9 @@ async fn can_find_all_categories_with_products_count(
     Category::seed_data(ctx.db(), "categories.json")
         .await
         .expect("Failed to seed categories");
+    Product::seed_data(ctx.db(), "products.json")
+        .await
+        .expect("Failed to seed products");
 
     let query = pagination_query(limit, page);
     let result = Category::find_all_with_products_count(ctx.db(), &query).await;

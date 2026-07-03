@@ -8,3 +8,5 @@ production.yaml
 *.env
 
 *.pem
+
+.lazy.lua

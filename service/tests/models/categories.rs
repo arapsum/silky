@@ -204,6 +204,53 @@ async fn can_find_all_categories(
 }
 
 #[rstest]
+#[case(
+    "can_find_all_categories_with_products_count_with_default_pagination",
+    None,
+    None
+)]
+#[case(
+    "can_find_all_categories_with_products_count_with_first_page",
+    Some(2),
+    Some(1)
+)]
+#[case(
+    "can_find_all_categories_with_products_count_with_second_page",
+    Some(2),
+    Some(2)
+)]
+#[case(
+    "can_find_all_categories_with_products_count_and_clamp_large_limit",
+    Some(100),
+    Some(1)
+)]
+#[case(
+    "can_find_all_categories_with_products_count_and_clamp_low_values",
+    Some(0),
+    Some(0)
+)]
+#[tokio::test]
+#[serial]
+async fn can_find_all_categories_with_products_count(
+    #[case] test_name: &str,
+    #[case] limit: Option<i64>,
+    #[case] page: Option<i64>,
+) {
+    configure_insta!();
+
+    let ctx = boot_test().await.unwrap();
+
+    Category::seed_data(ctx.db(), "categories.json")
+        .await
+        .expect("Failed to seed categories");
+
+    let query = pagination_query(limit, page);
+    let result = Category::find_all_with_products_count(ctx.db(), &query).await;
+
+    assert_debug_snapshot!(test_name, result);
+}
+
+#[rstest]
 #[case("can_find_all_categories_when_empty")]
 #[tokio::test]
 #[serial]

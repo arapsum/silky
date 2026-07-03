@@ -4,7 +4,10 @@ use serde::{Deserialize, Serialize};
 use sqlx::{Encode, Executor, PgPool, Postgres, prelude::FromRow};
 use uuid::Uuid;
 
-use crate::schemas::{NewCategory, PaginationQuery, UpdateCategory};
+use crate::{
+    schemas::{NewCategory, PaginationQuery, UpdateCategory},
+    views::CategoryResponse,
+};
 
 use super::{ModelError, ModelResult, PaginatedModel, Pagination, Seedable};
 
@@ -164,6 +167,59 @@ impl Category {
         ))
     }
 
+    pub async fn find_all_with_products_count(
+        db: &PgPool,
+        query: &PaginationQuery,
+    ) -> ModelResult<PaginatedModel<CategoryResponse>> {
+        let limit = query.limit().unwrap_or(20).clamp(1, 40);
+        let page = query.page().unwrap_or(1).max(1);
+        let offset = (page - 1) * limit;
+
+        let mut txn = db.begin().await?;
+
+        let total_items = sqlx::query_scalar::<_, i64>(
+            r"
+            SELECT COUNT(*) FROM categories
+        ",
+        )
+        .fetch_one(&mut *txn)
+        .await?;
+
+        let categories = sqlx::query_as::<_, CategoryResponse>(
+            r"
+            SELECT
+                   c.id,
+                   c.pid,
+                   c.name,
+                   c.image_link,
+                   c.description,
+                   c.parent_id,
+                   p.name AS parent_name,
+                   COUNT(prod.id)::int4 AS product_count,
+                   c.created_at,
+                   c.updated_at,
+                   c.deleted_at
+               FROM categories c
+               LEFT JOIN categories p ON p.id = c.parent_id
+               LEFT JOIN products prod ON prod.category_id = c.id
+               GROUP BY c.id, p.name
+               ORDER BY c.created_at DESC, c.id DESC
+               LIMIT $1 OFFSET $2
+        ",
+        )
+        .bind(limit)
+        .bind(offset)
+        .fetch_all(&mut *txn)
+        .await?;
+
+        txn.commit().await?;
+
+        Ok(PaginatedModel::new(
+            categories,
+            Pagination::new(page, limit, total_items),
+        ))
+    }
+
     /// Finds a category by public ID.
     ///
     /// # Errors
@@ -308,13 +364,13 @@ impl Seedable for Category {
                     updated_at,
                     deleted_at
                 ) VALUES (
-                   $1, 
-                   $2, 
-                   $3, 
-                   $4, 
-                   $5, 
-                   $6, 
-                   $7, 
+                   $1,
+                   $2,
+                   $3,
+                   $4,
+                   $5,
+                   $6,
+                   $7,
                    $8,
                    $9
                 ) ON CONFLICT (id) DO UPDATE SET

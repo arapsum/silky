@@ -35,7 +35,7 @@ impl CategoryResponse {
             product_count,
             created_at: category.created_at(),
             updated_at: category.updated_at(),
-            deleted_at: category.deleted_at().clone(),
+            deleted_at: category.deleted_at(),
         }
     }
 }

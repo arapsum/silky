@@ -17,7 +17,10 @@ use crate::{
     config::Environment,
     controllers,
     middlewares::trace,
-    models::{Category, Permission, Role, RolePermission, User, UserRole},
+    models::{
+        Attribute, AttributeValue, Category, Permission, Picture, Product, ProductOption,
+        ProductVariant, Role, RolePermission, User, UserRole, VariantAttributeValue,
+    },
     workers::Workers,
 };
 
@@ -176,6 +179,13 @@ impl App {
         RolePermission::seed_data(db, "rolesPermission.json").await?;
         Permission::assign_all_to_role(db, "Administrator").await?;
         Category::seed_data(db, "categories.json").await?;
+        Product::seed_data(db, "products.json").await?;
+        Attribute::seed_data(db, "attributes.json").await?;
+        AttributeValue::seed_data(db, "attributeValues.json").await?;
+        ProductOption::seed_data(db, "productOptions.json").await?;
+        ProductVariant::seed_data(db, "productVariants.json").await?;
+        VariantAttributeValue::seed_data(db, "variantAttributeValues.json").await?;
+        Picture::seed_data(db, "pictures.json").await?;
         UserRole::seed_data(db, "userRoles.json").await?;
 
         Ok(())

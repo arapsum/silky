@@ -167,6 +167,16 @@ impl Category {
         ))
     }
 
+    /// Lists categories with pagination metadata and product counts.
+    ///
+    /// Defaults to page `1` and limit `20` when query values are missing. The
+    /// limit is clamped to the range `1..=40`, and the page is clamped to a
+    /// minimum of `1`.
+    ///
+    /// # Errors
+    ///
+    /// Returns a database error if counting categories, fetching categories
+    /// with product totals, or committing the transaction fails.
     pub async fn find_all_with_products_count(
         db: &PgPool,
         query: &PaginationQuery,

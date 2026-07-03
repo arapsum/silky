@@ -1,6 +1,7 @@
 pub mod categories;
 pub mod error;
 pub mod permissions;
+pub mod products;
 pub mod roles;
 pub mod roles_permissions;
 pub mod seed;
@@ -15,6 +16,10 @@ pub use self::{
     categories::Category,
     error::{ModelError, ModelResult},
     permissions::Permission,
+    products::{
+        Attribute, AttributeValue, Picture, Product, ProductOption, ProductVariant,
+        VariantAttributeValue,
+    },
     roles::Role,
     roles_permissions::RolePermission,
     seed::Seedable,

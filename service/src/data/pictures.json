@@ -1,0 +1,62 @@
+[
+  {
+    "id": 201,
+    "pid": "f93e1e08-7f3a-44cb-8f83-3b5539723601",
+    "productId": 201,
+    "variantId": 201,
+    "imageLink": "https://cdn.example.com/products/classic-cotton-tshirt-black.png",
+    "displayOrder": 1,
+    "createdAt": "2026-07-02T15:50:00+03:00",
+    "updatedAt": "2026-07-02T15:50:00+03:00"
+  },
+  {
+    "id": 202,
+    "pid": "61622c81-0bf9-47d4-92bd-db020a543602",
+    "productId": 201,
+    "variantId": 202,
+    "imageLink": "https://cdn.example.com/products/classic-cotton-tshirt-blue.png",
+    "displayOrder": 2,
+    "createdAt": "2026-07-02T15:51:00+03:00",
+    "updatedAt": "2026-07-02T15:51:00+03:00"
+  },
+  {
+    "id": 203,
+    "pid": "7553f285-7649-46ab-9e7d-2aca3ccf3603",
+    "productId": 202,
+    "variantId": 203,
+    "imageLink": "https://cdn.example.com/products/tailored-chino-trousers-black.png",
+    "displayOrder": 1,
+    "createdAt": "2026-07-02T15:52:00+03:00",
+    "updatedAt": "2026-07-02T15:52:00+03:00"
+  },
+  {
+    "id": 204,
+    "pid": "859c9238-cab5-4f29-b08f-04c8c4243604",
+    "productId": 202,
+    "variantId": 204,
+    "imageLink": "https://cdn.example.com/products/tailored-chino-trousers-blue.png",
+    "displayOrder": 2,
+    "createdAt": "2026-07-02T15:53:00+03:00",
+    "updatedAt": "2026-07-02T15:53:00+03:00"
+  },
+  {
+    "id": 205,
+    "pid": "9963a6f5-ce17-47fe-b69c-a07588f73605",
+    "productId": 203,
+    "variantId": 205,
+    "imageLink": "https://cdn.example.com/products/court-leather-sneakers-white.png",
+    "displayOrder": 1,
+    "createdAt": "2026-07-02T15:54:00+03:00",
+    "updatedAt": "2026-07-02T15:54:00+03:00"
+  },
+  {
+    "id": 206,
+    "pid": "8c7d48f2-a443-40f5-8624-f55091df3606",
+    "productId": 203,
+    "variantId": 206,
+    "imageLink": "https://cdn.example.com/products/court-leather-sneakers-black.png",
+    "displayOrder": 2,
+    "createdAt": "2026-07-02T15:55:00+03:00",
+    "updatedAt": "2026-07-02T15:55:00+03:00"
+  }
+]

@@ -1,0 +1,98 @@
+[
+  {
+    "id": 201,
+    "pid": "a245ebdc-2b96-4c52-b40e-b43d39583501",
+    "variantId": 201,
+    "attributeId": 201,
+    "attributeValueId": 201,
+    "createdAt": "2026-07-02T15:38:00+03:00"
+  },
+  {
+    "id": 202,
+    "pid": "97f37f1c-87eb-462f-a349-79bc87ce3502",
+    "variantId": 201,
+    "attributeId": 202,
+    "attributeValueId": 205,
+    "createdAt": "2026-07-02T15:39:00+03:00"
+  },
+  {
+    "id": 203,
+    "pid": "6a75c984-9917-4c3f-8d3c-0b401f443503",
+    "variantId": 202,
+    "attributeId": 201,
+    "attributeValueId": 202,
+    "createdAt": "2026-07-02T15:40:00+03:00"
+  },
+  {
+    "id": 204,
+    "pid": "fa1a9f82-4e7e-4417-8095-27c95d663504",
+    "variantId": 202,
+    "attributeId": 202,
+    "attributeValueId": 206,
+    "createdAt": "2026-07-02T15:41:00+03:00"
+  },
+  {
+    "id": 205,
+    "pid": "925ee0f8-7709-4692-9400-b8fb73043505",
+    "variantId": 203,
+    "attributeId": 201,
+    "attributeValueId": 201,
+    "createdAt": "2026-07-02T15:42:00+03:00"
+  },
+  {
+    "id": 206,
+    "pid": "ab2cc595-ac21-4b8e-a0c1-faf4bdf13506",
+    "variantId": 203,
+    "attributeId": 202,
+    "attributeValueId": 205,
+    "createdAt": "2026-07-02T15:43:00+03:00"
+  },
+  {
+    "id": 207,
+    "pid": "a8345d60-e814-4a43-af7b-0c843bc53507",
+    "variantId": 204,
+    "attributeId": 201,
+    "attributeValueId": 202,
+    "createdAt": "2026-07-02T15:44:00+03:00"
+  },
+  {
+    "id": 208,
+    "pid": "a9a4f756-3f07-49ef-b5f0-13226f173508",
+    "variantId": 204,
+    "attributeId": 202,
+    "attributeValueId": 206,
+    "createdAt": "2026-07-02T15:45:00+03:00"
+  },
+  {
+    "id": 209,
+    "pid": "6d90c4f0-765b-4bfb-874a-ec2f89bb3509",
+    "variantId": 205,
+    "attributeId": 201,
+    "attributeValueId": 203,
+    "createdAt": "2026-07-02T15:46:00+03:00"
+  },
+  {
+    "id": 210,
+    "pid": "3429ea13-18d8-4534-b057-1d010c983510",
+    "variantId": 205,
+    "attributeId": 202,
+    "attributeValueId": 207,
+    "createdAt": "2026-07-02T15:47:00+03:00"
+  },
+  {
+    "id": 211,
+    "pid": "e40bb997-32c6-4430-90d6-d2eaeed03511",
+    "variantId": 206,
+    "attributeId": 201,
+    "attributeValueId": 201,
+    "createdAt": "2026-07-02T15:48:00+03:00"
+  },
+  {
+    "id": 212,
+    "pid": "bdf1cc35-26d7-4ffa-936b-f23ac7e53512",
+    "variantId": 206,
+    "attributeId": 202,
+    "attributeValueId": 208,
+    "createdAt": "2026-07-02T15:49:00+03:00"
+  }
+]

@@ -1,0 +1,50 @@
+[
+  {
+    "id": 201,
+    "pid": "a41e81af-0ec1-4194-b91a-1065da7d3301",
+    "productId": 201,
+    "attributeId": 201,
+    "displayOrder": 1,
+    "createdAt": "2026-07-02T15:26:00+03:00"
+  },
+  {
+    "id": 202,
+    "pid": "0eaf53b7-903d-499a-ae11-66b1d7d53302",
+    "productId": 201,
+    "attributeId": 202,
+    "displayOrder": 2,
+    "createdAt": "2026-07-02T15:27:00+03:00"
+  },
+  {
+    "id": 203,
+    "pid": "358fe662-6651-46b6-80dd-1e42de123303",
+    "productId": 202,
+    "attributeId": 201,
+    "displayOrder": 1,
+    "createdAt": "2026-07-02T15:28:00+03:00"
+  },
+  {
+    "id": 204,
+    "pid": "ed9cd6a3-5d5b-445e-a014-3cd5ed163304",
+    "productId": 202,
+    "attributeId": 202,
+    "displayOrder": 2,
+    "createdAt": "2026-07-02T15:29:00+03:00"
+  },
+  {
+    "id": 205,
+    "pid": "10dd7bd8-f2bc-463e-8c64-64f914b33305",
+    "productId": 203,
+    "attributeId": 201,
+    "displayOrder": 1,
+    "createdAt": "2026-07-02T15:30:00+03:00"
+  },
+  {
+    "id": 206,
+    "pid": "c38715f5-e657-46cb-b407-33fe1ec03306",
+    "productId": 203,
+    "attributeId": 202,
+    "displayOrder": 2,
+    "createdAt": "2026-07-02T15:31:00+03:00"
+  }
+]

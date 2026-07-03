@@ -1,0 +1,74 @@
+[
+  {
+    "id": 201,
+    "pid": "db365773-2ac1-49aa-a4b9-03dcf8ac3401",
+    "productId": 201,
+    "sku": "TSHIRT-BLK-M",
+    "price": 24.99,
+    "stockQuantity": 32,
+    "isDefault": true,
+    "createdAt": "2026-07-02T15:32:00+03:00",
+    "updatedAt": "2026-07-02T15:32:00+03:00",
+    "deletedAt": null
+  },
+  {
+    "id": 202,
+    "pid": "6bf1821a-35d9-42cc-a2d8-b42fcf4f3402",
+    "productId": 201,
+    "sku": "TSHIRT-BLU-L",
+    "price": 24.99,
+    "stockQuantity": 18,
+    "isDefault": false,
+    "createdAt": "2026-07-02T15:33:00+03:00",
+    "updatedAt": "2026-07-02T15:33:00+03:00",
+    "deletedAt": null
+  },
+  {
+    "id": 203,
+    "pid": "ba346b5f-1d1f-4143-bc78-fc2319033403",
+    "productId": 202,
+    "sku": "CHINO-BLK-M",
+    "price": 54.99,
+    "stockQuantity": 21,
+    "isDefault": true,
+    "createdAt": "2026-07-02T15:34:00+03:00",
+    "updatedAt": "2026-07-02T15:34:00+03:00",
+    "deletedAt": null
+  },
+  {
+    "id": 204,
+    "pid": "585c7bb9-8a6b-4ec1-8e2e-f5c61a703404",
+    "productId": 202,
+    "sku": "CHINO-BLU-L",
+    "price": 54.99,
+    "stockQuantity": 12,
+    "isDefault": false,
+    "createdAt": "2026-07-02T15:35:00+03:00",
+    "updatedAt": "2026-07-02T15:35:00+03:00",
+    "deletedAt": null
+  },
+  {
+    "id": 205,
+    "pid": "5a3c53d0-35a7-4928-926b-e776f00b3405",
+    "productId": 203,
+    "sku": "SNEAKER-WHT-42",
+    "price": 89.99,
+    "stockQuantity": 9,
+    "isDefault": true,
+    "createdAt": "2026-07-02T15:36:00+03:00",
+    "updatedAt": "2026-07-02T15:36:00+03:00",
+    "deletedAt": null
+  },
+  {
+    "id": 206,
+    "pid": "12395f42-d0bf-4cd2-bb7f-0f61926f3406",
+    "productId": 203,
+    "sku": "SNEAKER-BLK-43",
+    "price": 89.99,
+    "stockQuantity": 7,
+    "isDefault": false,
+    "createdAt": "2026-07-02T15:37:00+03:00",
+    "updatedAt": "2026-07-02T15:37:00+03:00",
+    "deletedAt": null
+  }
+]

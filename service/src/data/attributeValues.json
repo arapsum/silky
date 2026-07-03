@@ -1,0 +1,82 @@
+[
+  {
+    "id": 201,
+    "pid": "9ae5af4e-5174-48f5-ae04-1d74e68f3201",
+    "attributeId": 201,
+    "value": "Black",
+    "createdAt": "2026-07-02T15:16:00+03:00",
+    "updatedAt": "2026-07-02T15:16:00+03:00"
+  },
+  {
+    "id": 202,
+    "pid": "36f80bbb-3ee1-42f1-a9e7-ceae7a633202",
+    "attributeId": 201,
+    "value": "Marine Blue",
+    "createdAt": "2026-07-02T15:17:00+03:00",
+    "updatedAt": "2026-07-02T15:17:00+03:00"
+  },
+  {
+    "id": 203,
+    "pid": "4b664bb1-8431-4da4-86de-0b64705b3203",
+    "attributeId": 201,
+    "value": "White",
+    "createdAt": "2026-07-02T15:18:00+03:00",
+    "updatedAt": "2026-07-02T15:18:00+03:00"
+  },
+  {
+    "id": 204,
+    "pid": "ec44827b-ae12-4e8e-a93d-f792a4263204",
+    "attributeId": 202,
+    "value": "S",
+    "createdAt": "2026-07-02T15:19:00+03:00",
+    "updatedAt": "2026-07-02T15:19:00+03:00"
+  },
+  {
+    "id": 205,
+    "pid": "4cd5e3c1-06e9-485e-bc62-ea9309d93205",
+    "attributeId": 202,
+    "value": "M",
+    "createdAt": "2026-07-02T15:20:00+03:00",
+    "updatedAt": "2026-07-02T15:20:00+03:00"
+  },
+  {
+    "id": 206,
+    "pid": "8f72319b-1587-4133-ac05-a7bf6c2a3206",
+    "attributeId": 202,
+    "value": "L",
+    "createdAt": "2026-07-02T15:21:00+03:00",
+    "updatedAt": "2026-07-02T15:21:00+03:00"
+  },
+  {
+    "id": 207,
+    "pid": "3c3d2fed-d20c-4101-930e-2b744b073207",
+    "attributeId": 202,
+    "value": "42",
+    "createdAt": "2026-07-02T15:22:00+03:00",
+    "updatedAt": "2026-07-02T15:22:00+03:00"
+  },
+  {
+    "id": 208,
+    "pid": "1efb468f-0896-4d57-b285-b28a901c3208",
+    "attributeId": 202,
+    "value": "43",
+    "createdAt": "2026-07-02T15:23:00+03:00",
+    "updatedAt": "2026-07-02T15:23:00+03:00"
+  },
+  {
+    "id": 209,
+    "pid": "9c478aca-c780-43c8-8575-b0272ed33209",
+    "attributeId": 203,
+    "value": "100% Cotton",
+    "createdAt": "2026-07-02T15:24:00+03:00",
+    "updatedAt": "2026-07-02T15:24:00+03:00"
+  },
+  {
+    "id": 210,
+    "pid": "f3ed3955-45dd-4c70-9212-dc82d7643210",
+    "attributeId": 203,
+    "value": "Leather",
+    "createdAt": "2026-07-02T15:25:00+03:00",
+    "updatedAt": "2026-07-02T15:25:00+03:00"
+  }
+]

@@ -1,0 +1,32 @@
+[
+  {
+    "id": 201,
+    "pid": "6d7b16c3-efbf-4e7e-9b70-4f43e1cc3001",
+    "categoryId": 101,
+    "name": "Classic Cotton T-shirt",
+    "description": "Soft everyday cotton t-shirt with a relaxed fit.",
+    "createdAt": "2026-07-02T15:10:00+03:00",
+    "updatedAt": "2026-07-02T15:10:00+03:00",
+    "deletedAt": null
+  },
+  {
+    "id": 202,
+    "pid": "4532debd-67fe-4070-b36c-d5b9392b3002",
+    "categoryId": 102,
+    "name": "Tailored Chino Trousers",
+    "description": "Mid-weight chinos with a tapered leg and stretch waistband.",
+    "createdAt": "2026-07-02T15:11:00+03:00",
+    "updatedAt": "2026-07-02T15:11:00+03:00",
+    "deletedAt": null
+  },
+  {
+    "id": 203,
+    "pid": "e7d4a0c2-e831-4c42-bc5c-7a7ac6863003",
+    "categoryId": 103,
+    "name": "Court Leather Sneakers",
+    "description": "Low-profile leather sneakers with cushioned insoles.",
+    "createdAt": "2026-07-02T15:12:00+03:00",
+    "updatedAt": "2026-07-02T15:12:00+03:00",
+    "deletedAt": null
+  }
+]

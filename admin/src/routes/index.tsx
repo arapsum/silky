@@ -1,4 +1,4 @@
-import { DashboardNavbar } from "#/components/dashboard-navbar";
+import { DashboardNavbar } from "#/components/navbar";
 import { DashboardSidebar } from "#/components/sidebar/app-sidebar";
 import { SidebarInset, SidebarProvider } from "#/components/ui/sidebar";
 import { createFileRoute } from "@tanstack/react-router";

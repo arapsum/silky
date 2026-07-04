@@ -1,50 +1,26 @@
 "use client";
 
-import { useForm } from "react-hook-form";
-import { useRef, useState, type ChangeEvent } from "react";
 import { zodResolver } from "@hookform/resolvers/zod";
+import { CheckIcon, XIcon } from "@phosphor-icons/react";
+import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
+import { useEffect } from "react";
+import { useForm } from "react-hook-form";
+import { toast } from "sonner";
 import { z } from "zod";
-import { CheckIcon, ImageIcon, TrashIcon, UploadSimpleIcon, XIcon } from "@phosphor-icons/react";
 
-import { cn } from "@/lib/utils";
-import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
-import { Button } from "@/components/ui/button";
-import { Label } from "@/components/ui/label";
-import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import FormField from "@/components/form-field";
-import { Separator } from "../ui/separator";
+import {
+  changePassword,
+  getCurrentUser,
+  updateCurrentUser,
+  type CurrentUser,
+} from "#/api/account.ts";
+import FormField from "#/components/form-field";
+import { Button } from "#/components/ui/button";
+import { Separator } from "#/components/ui/separator";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "#/components/ui/tabs";
+import { cn } from "#/lib/utils";
 
-// ---------------------------------------------------------------------------
-// Static data
-// ---------------------------------------------------------------------------
-
-const COUNTRIES = [
-  "United States",
-  "United Kingdom",
-  "Canada",
-  "Kenya",
-  "Nigeria",
-  "South Africa",
-  "Germany",
-  "France",
-  "India",
-  "Australia",
-] as const;
-
-const COUNTRY_OPTIONS = COUNTRIES.map((country) => ({ label: country, value: country }));
-
-const GENDER_OPTIONS = [
-  { label: "Male", value: "male" },
-  { label: "Female", value: "female" },
-  { label: "Other", value: "other" },
-];
-
-const ROLES = ["admin", "editor", "viewer", "member"] as const;
-
-const ROLE_OPTIONS = ROLES.map((role) => ({
-  label: role.charAt(0).toUpperCase() + role.slice(1),
-  value: role,
-}));
+const currentUserQueryKey = ["current-user"] as const;
 
 const PASSWORD_RULES: { id: string; label: string; test: (v: string) => boolean }[] = [
   { id: "length", label: "At least 12 characters", test: (v) => v.length >= 12 },
@@ -57,37 +33,57 @@ const PASSWORD_RULES: { id: string; label: string; test: (v: string) => boolean 
 const tabTriggerClass =
   "relative rounded-none border-b-2 border-transparent bg-transparent px-0.5 pb-3 pt-0 font-medium text-muted-foreground shadow-none transition-colors hover:text-foreground data-[state=active]:border-foreground data-[state=active]:bg-transparent data-[state=active]:text-foreground data-[state=active]:shadow-none";
 
-// ---------------------------------------------------------------------------
-// Schemas
-// ---------------------------------------------------------------------------
-
 const personalInfoSchema = z.object({
-  firstName: z.string().min(1, "First name is required"),
-  lastName: z.string().min(1, "Last name is required"),
-  mobile: z.string().optional(),
-  country: z.string().min(1, "Select a country"),
-  gender: z.enum(["male", "female", "other"]),
-  role: z.enum(ROLES),
+  name: z
+    .string()
+    .trim()
+    .min(6, "Name requires 6 letters")
+    .max(32, "Name must be under 32 letters")
+    .regex(/^[a-zA-Z0-9_ ]+$/, "Only letters, numbers and underscores can be used."),
 });
 
 type PersonalInfoValues = z.infer<typeof personalInfoSchema>;
 
-const emailPasswordSchema = z.object({
-  email: z.string().min(1, "Email is required").email("Enter a valid email address"),
-  currentPassword: z.string().min(1, "Current password is required"),
-  newPassword: z
-    .string()
-    .min(1, "New password is required")
-    .refine((v) => PASSWORD_RULES.every((rule) => rule.test(v)), {
-      message: "Password does not meet all requirements",
-    }),
-});
+const emailPasswordSchema = z
+  .object({
+    email: z.string().min(1, "Email is required").email("Enter a valid email address"),
+    currentPassword: z.string(),
+    newPassword: z.string(),
+  })
+  .superRefine((values, ctx) => {
+    const currentPassword = values.currentPassword.trim();
+    const newPassword = values.newPassword.trim();
+    const changingPassword = currentPassword.length > 0 || newPassword.length > 0;
+
+    if (!changingPassword) return;
+
+    if (!currentPassword) {
+      ctx.addIssue({
+        code: "custom",
+        path: ["currentPassword"],
+        message: "Current password is required",
+      });
+    }
+
+    if (!newPassword) {
+      ctx.addIssue({
+        code: "custom",
+        path: ["newPassword"],
+        message: "New password is required",
+      });
+      return;
+    }
+
+    if (!PASSWORD_RULES.every((rule) => rule.test(newPassword))) {
+      ctx.addIssue({
+        code: "custom",
+        path: ["newPassword"],
+        message: "Password does not meet all requirements",
+      });
+    }
+  });
 
 type EmailPasswordValues = z.infer<typeof emailPasswordSchema>;
-
-// ---------------------------------------------------------------------------
-// Shared bits
-// ---------------------------------------------------------------------------
 
 function SectionHeader({ title, description }: { title: string; description: string }) {
   return (
@@ -98,128 +94,70 @@ function SectionHeader({ title, description }: { title: string; description: str
   );
 }
 
-// ---------------------------------------------------------------------------
-// Personal Information
-// ---------------------------------------------------------------------------
-
-function PersonalInformationSection() {
-  const [avatarUrl, setAvatarUrl] = useState<string | null>(null);
-  const [saving, setSaving] = useState(false);
-  const fileInputRef = useRef<HTMLInputElement>(null);
-
-  const { control, handleSubmit } = useForm<PersonalInfoValues>({
+function PersonalInformationSection({ user }: { user?: CurrentUser }) {
+  const queryClient = useQueryClient();
+  const form = useForm<PersonalInfoValues>({
     resolver: zodResolver(personalInfoSchema),
-    defaultValues: {
-      firstName: "",
-      lastName: "",
-      mobile: "",
-      country: "",
-      gender: "male",
-      role: "admin",
+    defaultValues: { name: "" },
+  });
+
+  useEffect(() => {
+    if (user) {
+      form.reset({ name: user.name });
+    }
+  }, [form, user]);
+
+  const updateProfileMutation = useMutation({
+    mutationFn: async (values: PersonalInfoValues) => {
+      if (!user) throw new Error("Unable to load account details");
+
+      return updateCurrentUser({
+        name: values.name,
+        email: user.email,
+      });
+    },
+    onSuccess: (updatedUser) => {
+      queryClient.setQueryData(currentUserQueryKey, updatedUser);
+      form.reset({ name: updatedUser.name });
+      toast.success("Personal information updated", {
+        id: "settings-profile-success",
+      });
+    },
+    onError: (error) => {
+      toast.error(error.message, {
+        id: "settings-profile-error",
+      });
     },
   });
 
-  function handleAvatarChange(e: ChangeEvent<HTMLInputElement>) {
-    const file = e.target.files?.[0];
-    if (!file) return;
-    setAvatarUrl(URL.createObjectURL(file));
-  }
-
-  function handleRemoveAvatar() {
-    setAvatarUrl(null);
-    if (fileInputRef.current) fileInputRef.current.value = "";
-  }
-
   async function onSubmit(values: PersonalInfoValues) {
-    setSaving(true);
-    // TODO: wire this up to your API
-    console.log("personal info", values);
-    await new Promise((resolve) => setTimeout(resolve, 500));
-    setSaving(false);
+    await updateProfileMutation.mutateAsync(values);
   }
 
   return (
-    <form onSubmit={handleSubmit(onSubmit)} className="grid grid-cols-1 gap-8 lg:grid-cols-3">
+    <form onSubmit={form.handleSubmit(onSubmit)} className="grid grid-cols-1 gap-8 lg:grid-cols-3">
       <SectionHeader
         title="Personal Information"
-        description="Manage your personal information and role."
+        description="Manage your account profile details."
       />
 
       <div className="space-y-6 lg:col-span-2">
-        <div>
-          <Label>Your Avatar</Label>
-          <div className="mt-2 flex items-center gap-3">
-            <Avatar className="h-16 w-16 border">
-              <AvatarImage src={avatarUrl ?? undefined} alt="Avatar" />
-              <AvatarFallback className="bg-muted">
-                <ImageIcon className="h-6 w-6 text-muted-foreground" />
-              </AvatarFallback>
-            </Avatar>
-            <Button
-              type="button"
-              variant="outline"
-              size="sm"
-              onClick={() => fileInputRef.current?.click()}
-            >
-              <UploadSimpleIcon className="mr-2 h-4 w-4" />
-              Upload avatar
-            </Button>
-            <Button
-              type="button"
-              variant="ghost"
-              size="icon"
-              className="text-red-500 hover:bg-red-50 hover:text-red-600"
-              onClick={handleRemoveAvatar}
-            >
-              <TrashIcon className="h-4 w-4" />
-            </Button>
-            <input
-              ref={fileInputRef}
-              type="file"
-              accept="image/*"
-              className="hidden"
-              onChange={handleAvatarChange}
-            />
-          </div>
-          <p className="mt-2 text-xs text-muted-foreground">Pick a photo up to 1MB.</p>
-        </div>
-
-        <div className="grid grid-cols-1 gap-6 sm:grid-cols-2">
-          <FormField control={control} name="firstName" label="First Name" placeholder="John" />
-          <FormField control={control} name="lastName" label="Last Name" placeholder="Doe" />
-          <FormField
-            control={control}
-            name="mobile"
-            label="Mobile"
-            placeholder="+1 (555) 123-4567"
-          />
-          <FormField
-            control={control}
-            name="country"
-            label="Country"
-            type="select"
-            placeholder="Select Country"
-            options={COUNTRY_OPTIONS}
-          />
-          <FormField
-            control={control}
-            name="gender"
-            label="Gender"
-            type="select"
-            options={GENDER_OPTIONS}
-          />
-          <FormField
-            control={control}
-            name="role"
-            label="Role"
-            type="select"
-            options={ROLE_OPTIONS}
-          />
-        </div>
+        <FormField
+          control={form.control}
+          name="name"
+          label="Name"
+          placeholder="Silk Admin"
+          autoComplete="name"
+          required
+        />
 
         <div className="flex justify-end">
-          <Button type="submit" disabled={saving} className="bg-blue-600 hover:bg-blue-700">
-            {saving ? "Saving..." : "Save Changes"}
+          <Button
+            type="submit"
+            disabled={!user || updateProfileMutation.isPending}
+            className="bg-blue-600 hover:bg-blue-700"
+          >
+            {updateProfileMutation.isPending ? "Saving..." : "Save Changes"}
           </Button>
         </div>
       </div>
@@ -227,19 +165,24 @@ function PersonalInformationSection() {
   );
 }
 
-// ---------------------------------------------------------------------------
-// Email & Password
-// ---------------------------------------------------------------------------
-
-function EmailPasswordSection() {
-  const [saving, setSaving] = useState(false);
-
-  const { control, handleSubmit, watch } = useForm<EmailPasswordValues>({
+function EmailPasswordSection({ user }: { user?: CurrentUser }) {
+  const queryClient = useQueryClient();
+  const form = useForm<EmailPasswordValues>({
     resolver: zodResolver(emailPasswordSchema),
     defaultValues: { email: "", currentPassword: "", newPassword: "" },
   });
 
-  const newPassword = watch("newPassword");
+  useEffect(() => {
+    if (user) {
+      form.reset({
+        email: user.email,
+        currentPassword: "",
+        newPassword: "",
+      });
+    }
+  }, [form, user]);
+
+  const newPassword = form.watch("newPassword");
   const satisfiedCount = PASSWORD_RULES.filter((rule) => rule.test(newPassword)).length;
   const strengthColor =
     satisfiedCount === 0
@@ -255,16 +198,73 @@ function EmailPasswordSection() {
     ? Math.max(1, Math.ceil((satisfiedCount / PASSWORD_RULES.length) * 4))
     : 0;
 
+  const updateSecurityMutation = useMutation({
+    mutationFn: async (values: EmailPasswordValues) => {
+      if (!user) throw new Error("Unable to load account details");
+
+      const email = values.email.trim();
+      const currentPassword = values.currentPassword.trim();
+      const password = values.newPassword.trim();
+      const emailChanged = email !== user.email;
+      const passwordChanged = currentPassword.length > 0 || password.length > 0;
+      let updatedUser = user;
+
+      if (passwordChanged) {
+        await changePassword({
+          currentPassword,
+          password,
+          confirmPassword: password,
+        });
+      }
+
+      if (emailChanged) {
+        updatedUser = await updateCurrentUser({
+          name: user.name,
+          email,
+        });
+      }
+
+      return { updatedUser, emailChanged, passwordChanged };
+    },
+    onSuccess: ({ updatedUser, emailChanged, passwordChanged }) => {
+      queryClient.setQueryData(currentUserQueryKey, updatedUser);
+      form.reset({
+        email: updatedUser.email,
+        currentPassword: "",
+        newPassword: "",
+      });
+
+      if (emailChanged && passwordChanged) {
+        toast.success("Email and password updated", {
+          id: "settings-security-success",
+        });
+      } else if (emailChanged) {
+        toast.success("Email updated", {
+          id: "settings-security-success",
+        });
+      } else if (passwordChanged) {
+        toast.success("Password updated", {
+          id: "settings-security-success",
+        });
+      } else {
+        toast.info("No changes to save", {
+          id: "settings-security-info",
+        });
+      }
+    },
+    onError: (error) => {
+      toast.error(error.message, {
+        id: "settings-security-error",
+      });
+    },
+  });
+
   async function onSubmit(values: EmailPasswordValues) {
-    setSaving(true);
-    // TODO: wire this up to your API
-    console.log("email & password", values);
-    await new Promise((resolve) => setTimeout(resolve, 500));
-    setSaving(false);
+    await updateSecurityMutation.mutateAsync(values);
   }
 
   return (
-    <form onSubmit={handleSubmit(onSubmit)} className="grid grid-cols-1 gap-8 lg:grid-cols-3">
+    <form onSubmit={form.handleSubmit(onSubmit)} className="grid grid-cols-1 gap-8 lg:grid-cols-3">
       <SectionHeader
         title="Email & Password"
         description="Manage your email and password settings."
@@ -272,31 +272,32 @@ function EmailPasswordSection() {
 
       <div className="space-y-6 lg:col-span-2">
         <FormField
-          control={control}
+          control={form.control}
           name="email"
           label="Email"
           type="email"
           placeholder="Email address"
+          autoComplete="email"
           required
         />
 
         <FormField
-          control={control}
+          control={form.control}
           name="currentPassword"
           label="Current Password"
           type="password"
           placeholder="Password"
-          required
+          autoComplete="current-password"
         />
 
         <div className="space-y-2">
           <FormField
-            control={control}
+            control={form.control}
             name="newPassword"
             label="New Password"
             type="password"
             placeholder="Password"
-            required
+            autoComplete="new-password"
           />
 
           <div className="flex gap-1.5 pt-1">
@@ -311,7 +312,7 @@ function EmailPasswordSection() {
             ))}
           </div>
 
-          <p className="pt-2 text-sm text-foreground">Enter a password. Must contain :</p>
+          <p className="pt-2 text-sm text-foreground">Enter a password. Must contain:</p>
           <ul className="space-y-1.5">
             {PASSWORD_RULES.map((rule) => {
               const passed = rule.test(newPassword);
@@ -332,8 +333,12 @@ function EmailPasswordSection() {
         </div>
 
         <div className="flex justify-end">
-          <Button type="submit" disabled={saving} className="bg-blue-600 hover:bg-blue-700">
-            {saving ? "Saving..." : "Save Changes"}
+          <Button
+            type="submit"
+            disabled={!user || updateSecurityMutation.isPending}
+            className="bg-blue-600 hover:bg-blue-700"
+          >
+            {updateSecurityMutation.isPending ? "Saving..." : "Save Changes"}
           </Button>
         </div>
       </div>
@@ -341,28 +346,31 @@ function EmailPasswordSection() {
   );
 }
 
-// ---------------------------------------------------------------------------
-// Workspace (placeholder — not specified in the design reference)
-// ---------------------------------------------------------------------------
-
 function WorkspaceSection() {
   return (
     <div className="grid grid-cols-1 gap-8 lg:grid-cols-3">
       <SectionHeader title="Workspace" description="Manage your workspace preferences." />
       <div className="lg:col-span-2">
-        <p className="text-sm text-muted-foreground">
-          No workspace fields were shown in the reference design — drop your own fields in here.
-        </p>
+        <p className="text-sm text-muted-foreground">Workspace settings are not available yet.</p>
       </div>
     </div>
   );
 }
 
-// ---------------------------------------------------------------------------
-// Page
-// ---------------------------------------------------------------------------
-
 export default function AccountSettingsPage() {
+  const currentUserQuery = useQuery({
+    queryKey: currentUserQueryKey,
+    queryFn: getCurrentUser,
+  });
+
+  useEffect(() => {
+    if (currentUserQuery.error) {
+      toast.error(currentUserQuery.error.message, {
+        id: "settings-current-user-error",
+      });
+    }
+  }, [currentUserQuery.error]);
+
   return (
     <div className="w-full pb-10">
       <div className="mb-6">
@@ -383,9 +391,9 @@ export default function AccountSettingsPage() {
         </TabsList>
 
         <TabsContent value="general" className="mt-8 space-y-10">
-          <PersonalInformationSection />
+          <PersonalInformationSection user={currentUserQuery.data} />
           <Separator className="my-2" />
-          <EmailPasswordSection />
+          <EmailPasswordSection user={currentUserQuery.data} />
         </TabsContent>
 
         <TabsContent value="workspace" className="mt-8">

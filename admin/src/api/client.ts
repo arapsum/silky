@@ -15,3 +15,36 @@ export async function getErrorResponse(response: Response, fallback = "Request f
     return fallback;
   }
 }
+
+type ApiRequestOptions = RequestInit & {
+  fallback?: string;
+};
+
+export async function apiRequest<T>(
+  path: string,
+  { fallback = "Request failed", headers, body, ...init }: ApiRequestOptions = {},
+): Promise<T> {
+  const requestHeaders = new Headers(headers);
+  requestHeaders.set("Accept", "application/json");
+
+  if (body && !(body instanceof FormData) && !requestHeaders.has("Content-Type")) {
+    requestHeaders.set("Content-Type", "application/json");
+  }
+
+  const response = await fetch(`${API_BASE_URL}${path}`, {
+    ...init,
+    body,
+    headers: requestHeaders,
+    credentials: "include",
+  });
+
+  if (!response.ok) {
+    throw new Error(await getErrorResponse(response, fallback));
+  }
+
+  if (response.status === 204) {
+    return undefined as T;
+  }
+
+  return (await response.json()) as T;
+}

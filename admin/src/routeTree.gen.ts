@@ -10,7 +10,7 @@
 
 import { Route as rootRouteImport } from './routes/__root'
 import { Route as MainRouteRouteImport } from './routes/_main/route'
-import { Route as IndexRouteImport } from './routes/index'
+import { Route as MainIndexRouteImport } from './routes/_main/index'
 import { Route as MainSettingsIndexRouteImport } from './routes/_main/settings/index'
 import { Route as AuthSignInIndexRouteImport } from './routes/_auth/sign-in/index'
 
@@ -18,10 +18,10 @@ const MainRouteRoute = MainRouteRouteImport.update({
   id: '/_main',
   getParentRoute: () => rootRouteImport,
 } as any)
-const IndexRoute = IndexRouteImport.update({
+const MainIndexRoute = MainIndexRouteImport.update({
   id: '/',
   path: '/',
-  getParentRoute: () => rootRouteImport,
+  getParentRoute: () => MainRouteRoute,
 } as any)
 const MainSettingsIndexRoute = MainSettingsIndexRouteImport.update({
   id: '/settings/',
@@ -35,19 +35,19 @@ const AuthSignInIndexRoute = AuthSignInIndexRouteImport.update({
 } as any)
 
 export interface FileRoutesByFullPath {
-  '/': typeof IndexRoute
+  '/': typeof MainIndexRoute
   '/sign-in/': typeof AuthSignInIndexRoute
   '/settings/': typeof MainSettingsIndexRoute
 }
 export interface FileRoutesByTo {
-  '/': typeof IndexRoute
+  '/': typeof MainIndexRoute
   '/sign-in': typeof AuthSignInIndexRoute
   '/settings': typeof MainSettingsIndexRoute
 }
 export interface FileRoutesById {
   __root__: typeof rootRouteImport
-  '/': typeof IndexRoute
   '/_main': typeof MainRouteRouteWithChildren
+  '/_main/': typeof MainIndexRoute
   '/_auth/sign-in/': typeof AuthSignInIndexRoute
   '/_main/settings/': typeof MainSettingsIndexRoute
 }
@@ -56,11 +56,10 @@ export interface FileRouteTypes {
   fullPaths: '/' | '/sign-in/' | '/settings/'
   fileRoutesByTo: FileRoutesByTo
   to: '/' | '/sign-in' | '/settings'
-  id: '__root__' | '/' | '/_main' | '/_auth/sign-in/' | '/_main/settings/'
+  id: '__root__' | '/_main' | '/_main/' | '/_auth/sign-in/' | '/_main/settings/'
   fileRoutesById: FileRoutesById
 }
 export interface RootRouteChildren {
-  IndexRoute: typeof IndexRoute
   MainRouteRoute: typeof MainRouteRouteWithChildren
   AuthSignInIndexRoute: typeof AuthSignInIndexRoute
 }
@@ -74,12 +73,12 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof MainRouteRouteImport
       parentRoute: typeof rootRouteImport
     }
-    '/': {
-      id: '/'
+    '/_main/': {
+      id: '/_main/'
       path: '/'
       fullPath: '/'
-      preLoaderRoute: typeof IndexRouteImport
-      parentRoute: typeof rootRouteImport
+      preLoaderRoute: typeof MainIndexRouteImport
+      parentRoute: typeof MainRouteRoute
     }
     '/_main/settings/': {
       id: '/_main/settings/'
@@ -99,10 +98,12 @@ declare module '@tanstack/react-router' {
 }
 
 interface MainRouteRouteChildren {
+  MainIndexRoute: typeof MainIndexRoute
   MainSettingsIndexRoute: typeof MainSettingsIndexRoute
 }
 
 const MainRouteRouteChildren: MainRouteRouteChildren = {
+  MainIndexRoute: MainIndexRoute,
   MainSettingsIndexRoute: MainSettingsIndexRoute,
 }
 
@@ -111,7 +112,6 @@ const MainRouteRouteWithChildren = MainRouteRoute._addFileChildren(
 )
 
 const rootRouteChildren: RootRouteChildren = {
-  IndexRoute: IndexRoute,
   MainRouteRoute: MainRouteRouteWithChildren,
   AuthSignInIndexRoute: AuthSignInIndexRoute,
 }

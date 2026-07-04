@@ -186,6 +186,32 @@ impl<'a> ChangePassword<'a> {
     }
 }
 
+#[derive(Debug, Deserialize, Clone, Serialize, Validate)]
+#[serde(rename_all = "camelCase")]
+pub struct UpdateProfile<'a> {
+    #[validate(custom(function = "validate_name"))]
+    name: Cow<'a, str>,
+    #[validate(email(message = "Invalid email address"))]
+    email: Cow<'a, str>,
+}
+
+impl<'a> UpdateProfile<'a> {
+    #[must_use]
+    pub const fn new(name: Cow<'a, str>, email: Cow<'a, str>) -> Self {
+        Self { name, email }
+    }
+
+    #[must_use]
+    pub fn name(&self) -> &str {
+        &self.name
+    }
+
+    #[must_use]
+    pub fn email(&self) -> &str {
+        &self.email
+    }
+}
+
 fn validate_password(password: &str) -> Result<(), ValidationError> {
     const MIN_LENGTH: usize = 8;
     const MAX_LENGTH: usize = 48;

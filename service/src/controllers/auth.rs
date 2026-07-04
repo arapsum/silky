@@ -19,7 +19,10 @@ use crate::{
     context::Claims,
     middlewares::auth::AuthLayer,
     models::{ModelError, User},
-    schemas::{ChangePassword, ForgotPassword, LoginUser, RegisterUser, ResetPassword, Validator},
+    schemas::{
+        ChangePassword, ForgotPassword, LoginUser, RegisterUser, ResetPassword, UpdateProfile,
+        Validator,
+    },
     utils::{AppExtension, AppJson, AppPath},
     views::{AuthResponse, LoginResponse, UserResponse},
 };
@@ -264,6 +267,21 @@ async fn current(
     Ok((StatusCode::OK, Json(UserResponse::new(&user))).into_response())
 }
 
+#[debug_handler]
+#[tracing::instrument(skip(ctx, params))]
+async fn update_current(
+    State(ctx): State<AppState>,
+    AppExtension(claims): AppExtension<Claims>,
+    AppJson(params): AppJson<UpdateProfile<'static>>,
+) -> Result<Response> {
+    let validator = Validator::new(params);
+    let validated = validator.validate()?;
+
+    let user = User::update_profile(ctx.db(), claims.sub(), validated).await?;
+
+    Ok((StatusCode::OK, Json(UserResponse::new(&user))).into_response())
+}
+
 async fn issue_login_response(ctx: &AppState, user: &User, sub: &str) -> Result<Response> {
     let access_token = ctx.auth().access().generate_token(sub)?;
     let (refresh_token, refresh_claims) = ctx.auth().refresh().generate_token_with_claims(sub)?;
@@ -317,6 +335,11 @@ pub fn router(ctx: &AppState) -> Router {
             post(change_password).layer(AuthLayer::new(ctx.clone())),
         )
         .route("/verify/{token}", get(verify))
-        .route("/me", get(current).layer(AuthLayer::new(ctx.clone())))
+        .route(
+            "/me",
+            get(current)
+                .patch(update_current)
+                .layer(AuthLayer::new(ctx.clone())),
+        )
         .with_state(ctx.clone())
 }

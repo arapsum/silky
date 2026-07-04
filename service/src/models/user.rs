@@ -9,7 +9,7 @@ use sha2::{Digest, Sha256};
 use sqlx::{Encode, Executor, PgPool, Postgres, prelude::FromRow};
 use uuid::Uuid;
 
-use crate::schemas::{ChangePassword, LoginUser, RegisterUser};
+use crate::schemas::{ChangePassword, LoginUser, RegisterUser, UpdateProfile};
 
 use super::{ModelError, ModelResult, Seedable};
 
@@ -227,6 +227,56 @@ impl User {
         )
         .bind(user.id)
         .bind(Self::hash_password(params.password())?)
+        .fetch_one(&mut *txn)
+        .await?;
+
+        txn.commit().await?;
+
+        Ok(user)
+    }
+
+    /// Updates a user's profile details.
+    ///
+    /// # Errors
+    ///
+    /// This function will return an error if:
+    /// - The claims key does not resolve to a user.
+    /// - The email is already used by another user.
+    /// - The database transaction fails.
+    pub async fn update_profile(
+        db: &PgPool,
+        claims_key: &str,
+        params: &UpdateProfile<'_>,
+    ) -> ModelResult<Self> {
+        let mut txn = db.begin().await?;
+
+        let user = Self::find_by_claims_key(&mut *txn, claims_key).await?;
+
+        let email_owner = sqlx::query_scalar::<_, i32>("SELECT id FROM users WHERE email = $1")
+            .bind(params.email())
+            .fetch_optional(&mut *txn)
+            .await?;
+
+        if email_owner.is_some_and(|id| id != user.id) {
+            return Err(ModelError::EntityAlreadyExists(
+                "User with email already exists".into(),
+            ));
+        }
+
+        let user = sqlx::query_as::<_, Self>(
+            r"
+            UPDATE users
+            SET
+                name = $2,
+                email = $3,
+                updated_at = NOW()
+            WHERE id = $1
+            RETURNING *
+            ",
+        )
+        .bind(user.id)
+        .bind(params.name())
+        .bind(params.email())
         .fetch_one(&mut *txn)
         .await?;
 

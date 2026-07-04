@@ -118,7 +118,14 @@ impl App {
 
         let cors_layer = CorsLayer::new()
             .allow_origin(allowed_origins)
-            .allow_methods([Method::GET, Method::POST, Method::OPTIONS])
+            .allow_methods([
+                Method::GET,
+                Method::POST,
+                Method::OPTIONS,
+                Method::PATCH,
+                Method::PUT,
+                Method::DELETE,
+            ])
             .allow_credentials(true)
             .allow_headers([CONTENT_TYPE, ACCEPT, COOKIE])
             .expose_headers([AUTHORIZATION, SET_COOKIE]);

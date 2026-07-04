@@ -171,7 +171,7 @@ const dashboardRoutes: Route[] = [
   },
 ];
 
-export function DashboardSidebar() {
+export function AppSidebar() {
   const { state } = useSidebar();
   const isCollapsed = state === "collapsed";
 

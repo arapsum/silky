@@ -97,7 +97,7 @@ const commandSuggestions = [
   },
 ];
 
-export function DashboardNavbar() {
+export function Navbar() {
   const [isCommandOpen, setIsCommandOpen] = useState(false);
 
   useEffect(() => {

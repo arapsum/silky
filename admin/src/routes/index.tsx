@@ -1,5 +1,5 @@
-import { DashboardNavbar } from "#/components/navbar";
-import { DashboardSidebar } from "#/components/sidebar/app-sidebar";
+import { Navbar } from "#/components/navbar";
+import { AppSidebar } from "#/components/sidebar/app-sidebar";
 import { SidebarInset, SidebarProvider } from "#/components/ui/sidebar";
 import { createFileRoute } from "@tanstack/react-router";
 
@@ -9,9 +9,9 @@ function Home() {
   return (
     <SidebarProvider>
       <div className="relative flex h-dvh w-full">
-        <DashboardSidebar />
+        <AppSidebar />
         <SidebarInset className="flex flex-col">
-          <DashboardNavbar />
+          <Navbar />
         </SidebarInset>
       </div>
     </SidebarProvider>

@@ -1,5 +1,14 @@
 import { Field, FieldDescription, FieldError, FieldLabel } from "@/components/ui/field";
 import { Input } from "@/components/ui/input";
+import { Checkbox } from "@/components/ui/checkbox";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
+import { cn } from "@/lib/utils";
 import type React from "react";
 import { useState } from "react";
 import {
@@ -12,14 +21,21 @@ import {
 } from "react-hook-form";
 import { EyeIcon, EyeSlashIcon } from "@phosphor-icons/react";
 
-type Props<TField extends FieldValues> = Omit<
+type SelectOption = { label: string; value: string };
+
+type FieldInputProps = Omit<
   React.ComponentProps<"input">,
   "defaultValue" | "name" | "onBlur" | "onChange" | "ref" | "type" | "value"
 > & {
-  control: Control<TField, any>;
+  type?: HTMLInputElement["type"] | "select";
+  /** Required when type="select" */
+  options?: SelectOption[];
+};
+
+type Props<TField extends FieldValues> = FieldInputProps & {
+  control: Control<TField>;
   name: Path<TField>;
   label?: string;
-  type?: HTMLInputElement["type"];
   description?: string;
 };
 
@@ -31,14 +47,16 @@ export default function FormField<TField extends FieldValues>({
   required,
   ...rest
 }: Props<TField>) {
+  const isCheckbox = rest.type === "checkbox";
+
   return (
     <Controller
       control={control}
       name={name}
       render={({ field, fieldState }) => (
         <Field data-invalid={fieldState.invalid}>
-          {label && (
-            <FieldLabel>
+          {label && !isCheckbox && (
+            <FieldLabel htmlFor={field.name}>
               {label}
               {required && (
                 <span className="ml-0.5 text-destructive" aria-hidden="true">
@@ -48,7 +66,23 @@ export default function FormField<TField extends FieldValues>({
             </FieldLabel>
           )}
 
-          <RenderInput field={field} fieldState={fieldState} input={{ ...rest, required }} />
+          {isCheckbox ? (
+            <div className="flex items-center gap-2">
+              <RenderInput field={field} fieldState={fieldState} input={{ ...rest, required }} />
+              {label && (
+                <FieldLabel htmlFor={field.name} className="font-normal">
+                  {label}
+                  {required && (
+                    <span className="ml-0.5 text-destructive" aria-hidden="true">
+                      *
+                    </span>
+                  )}
+                </FieldLabel>
+              )}
+            </div>
+          ) : (
+            <RenderInput field={field} fieldState={fieldState} input={{ ...rest, required }} />
+          )}
 
           {description && <FieldDescription>{description}</FieldDescription>}
 
@@ -64,7 +98,7 @@ export default function FormField<TField extends FieldValues>({
 type RenderInputProps<TField extends FieldValues> = {
   field: ControllerRenderProps<TField, Path<TField>>;
   fieldState: ControllerFieldState;
-  input: React.ComponentProps<"input">;
+  input: FieldInputProps;
 };
 
 function RenderInput<TField extends FieldValues>({
@@ -73,7 +107,7 @@ function RenderInput<TField extends FieldValues>({
   input,
 }: RenderInputProps<TField>) {
   const [visible, setVisible] = useState(false);
-  const { type = "text", placeholder } = input;
+  const { type = "text", placeholder, options, className, disabled, required, ...rest } = input;
 
   switch (type) {
     case "password": {
@@ -81,10 +115,13 @@ function RenderInput<TField extends FieldValues>({
         <div className="relative">
           <Input
             {...field}
-            {...input}
+            {...rest}
             id={field.name}
             type={visible ? "text" : "password"}
             placeholder={placeholder}
+            className={className}
+            disabled={disabled}
+            required={required}
             aria-label={visible ? "Hide password" : "Show password"}
             aria-invalid={fieldState.invalid}
           />
@@ -104,13 +141,67 @@ function RenderInput<TField extends FieldValues>({
       );
     }
 
+    case "select": {
+      if (process.env.NODE_ENV !== "production" && !options?.length) {
+        console.warn(`FormField: "options" is required for select field "${field.name}"`);
+      }
+
+      return (
+        <Select
+          value={field.value ?? ""}
+          onValueChange={field.onChange}
+          onOpenChange={(open) => {
+            if (!open) field.onBlur();
+          }}
+          disabled={disabled}
+          required={required}
+          name={field.name}
+        >
+          <SelectTrigger
+            id={field.name}
+            aria-invalid={fieldState.invalid}
+            className={cn("w-full", className)}
+          >
+            <SelectValue placeholder={placeholder} />
+          </SelectTrigger>
+          <SelectContent>
+            {options?.map((option) => (
+              <SelectItem key={option.value} value={option.value}>
+                {option.label}
+              </SelectItem>
+            ))}
+          </SelectContent>
+        </Select>
+      );
+    }
+
+    case "checkbox": {
+      return (
+        <Checkbox
+          id={field.name}
+          name={field.name}
+          ref={field.ref}
+          checked={!!field.value}
+          onCheckedChange={field.onChange}
+          onBlur={field.onBlur}
+          disabled={disabled}
+          required={required}
+          className={className}
+          aria-invalid={fieldState.invalid}
+        />
+      );
+    }
+
     default: {
       return (
         <Input
           {...field}
-          {...input}
+          {...rest}
           id={field.name}
           type={type}
+          className={className}
+          disabled={disabled}
+          required={required}
           aria-invalid={fieldState.invalid}
           placeholder={placeholder}
         />

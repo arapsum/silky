@@ -60,30 +60,40 @@ const currentUser = {
 const dashboardRoutes: Route[] = [
   {
     id: "home",
-    title: "Home",
+    title: "Dashboard",
     icon: <HouseIcon className="size-4" />,
-    link: "#",
+    link: "/",
   },
   {
-    id: "products",
-    title: "Products",
+    id: "catalogue",
+    title: "Catalogue",
     icon: <PackageIcon className="size-4" />,
     link: "#",
     subs: [
       {
-        title: "Catalogue",
+        title: "Products",
         link: "#",
         icon: <PackageIcon className="size-4" />,
       },
       {
-        title: "Add",
+        title: "Variants & SKUs",
         link: "#",
         icon: <LinkIcon className="size-4" />,
       },
       {
-        title: "Discounts",
+        title: "Attributes",
         link: "#",
-        icon: <PercentIcon className="size-4" />,
+        icon: <SparkleIcon className="size-4" />,
+      },
+      {
+        title: "Product Options",
+        link: "#",
+        icon: <ChartPieIcon className="size-4" />,
+      },
+      {
+        title: "Media Library",
+        link: "#",
+        icon: <StorefrontIcon className="size-4" />,
       },
     ],
   },
@@ -94,32 +104,66 @@ const dashboardRoutes: Route[] = [
     link: "#",
     subs: [
       {
-        title: "Catalogue",
+        title: "Category List",
         link: "#",
         icon: <ChartPieIcon className="size-4" />,
       },
       {
-        title: "Add",
+        title: "Category Tree",
         link: "#",
         icon: <PulseIcon className="size-4" />,
       },
     ],
   },
   {
-    id: "benefits",
-    title: "Benefits",
-    icon: <SparkleIcon className="size-4" />,
-    link: "#",
-  },
-  {
-    id: "customers",
-    title: "Customers",
+    id: "people",
+    title: "People",
     icon: <UsersIcon className="size-4" />,
     link: "#",
+    subs: [
+      {
+        title: "Customers",
+        link: "#",
+        icon: <UsersIcon className="size-4" />,
+      },
+      {
+        title: "Administrators",
+        link: "#",
+        icon: <GearIcon className="size-4" />,
+      },
+      {
+        title: "Profiles",
+        link: "#",
+        icon: <LinkIcon className="size-4" />,
+      },
+    ],
   },
   {
-    id: "sales",
-    title: "Sales",
+    id: "access-control",
+    title: "Access Control",
+    icon: <GearIcon className="size-4" />,
+    link: "#",
+    subs: [
+      {
+        title: "Roles",
+        link: "#",
+        icon: <GearIcon className="size-4" />,
+      },
+      {
+        title: "Permissions",
+        link: "#",
+        icon: <LinkIcon className="size-4" />,
+      },
+      {
+        title: "Role Assignments",
+        link: "#",
+        icon: <UsersIcon className="size-4" />,
+      },
+    ],
+  },
+  {
+    id: "orders",
+    title: "Orders",
     icon: <ShoppingBagIcon className="size-4" />,
     link: "#",
     subs: [
@@ -133,19 +177,81 @@ const dashboardRoutes: Route[] = [
         link: "#",
         icon: <InfinityIcon className="size-4" />,
       },
+      {
+        title: "Fulfillment",
+        link: "#",
+        icon: <PackageIcon className="size-4" />,
+      },
+      {
+        title: "Returns",
+        link: "#",
+        icon: <LinkIcon className="size-4" />,
+      },
+    ],
+  },
+  {
+    id: "marketing",
+    title: "Marketing",
+    icon: <SparkleIcon className="size-4" />,
+    link: "#",
+    subs: [
+      {
+        title: "Benefits",
+        link: "#",
+        icon: <SparkleIcon className="size-4" />,
+      },
+      {
+        title: "Discounts",
+        link: "#",
+        icon: <PercentIcon className="size-4" />,
+      },
+      {
+        title: "Campaigns",
+        link: "#",
+        icon: <PulseIcon className="size-4" />,
+      },
     ],
   },
   {
     id: "storefront",
-    title: "Store front",
+    title: "Storefront",
     icon: <StorefrontIcon className="size-4" />,
     link: "#",
+    subs: [
+      {
+        title: "Pages",
+        link: "#",
+        icon: <StorefrontIcon className="size-4" />,
+      },
+      {
+        title: "Navigation",
+        link: "#",
+        icon: <LinkIcon className="size-4" />,
+      },
+    ],
   },
   {
     id: "analytics",
     title: "Analytics",
     icon: <ChartLineUpIcon className="size-4" />,
     link: "#",
+    subs: [
+      {
+        title: "Overview",
+        link: "#",
+        icon: <ChartLineUpIcon className="size-4" />,
+      },
+      {
+        title: "Catalogue Health",
+        link: "#",
+        icon: <ChartPieIcon className="size-4" />,
+      },
+      {
+        title: "Inventory",
+        link: "#",
+        icon: <PackageIcon className="size-4" />,
+      },
+    ],
   },
   {
     id: "finance",
@@ -153,9 +259,21 @@ const dashboardRoutes: Route[] = [
     icon: <CurrencyDollarIcon className="size-4" />,
     link: "#",
     subs: [
-      { title: "Incoming", link: "#" },
-      { title: "Outgoing", link: "#" },
-      { title: "Payout Account", link: "#" },
+      {
+        title: "Payments",
+        link: "#",
+        icon: <CurrencyDollarIcon className="size-4" />,
+      },
+      {
+        title: "Refunds",
+        link: "#",
+        icon: <LinkIcon className="size-4" />,
+      },
+      {
+        title: "Payout Accounts",
+        link: "#",
+        icon: <GearIcon className="size-4" />,
+      },
     ],
   },
   {
@@ -164,9 +282,26 @@ const dashboardRoutes: Route[] = [
     icon: <GearIcon className="size-4" />,
     link: "#",
     subs: [
-      { title: "General", link: "#" },
-      { title: "Webhooks", link: "#" },
-      { title: "Custom Fields", link: "#" },
+      {
+        title: "Account",
+        link: "/settings",
+        icon: <GearIcon className="size-4" />,
+      },
+      {
+        title: "Webhooks",
+        link: "#",
+        icon: <LinkIcon className="size-4" />,
+      },
+      {
+        title: "Custom Fields",
+        link: "#",
+        icon: <SparkleIcon className="size-4" />,
+      },
+      {
+        title: "Seed Data",
+        link: "#",
+        icon: <PackageIcon className="size-4" />,
+      },
     ],
   },
 ];
@@ -187,7 +322,7 @@ export function AppSidebar() {
       >
         <a href="#" className="flex items-center gap-2">
           <Logo className="h-8 w-8" />
-          {!isCollapsed && <span className="font-semibold text-black dark:text-white">Acme</span>}
+          {!isCollapsed && <span className="font-semibold text-black dark:text-white">Silk</span>}
         </a>
       </SidebarHeader>
       <SidebarContent className="gap-4 px-2 py-4">

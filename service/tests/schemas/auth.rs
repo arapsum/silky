@@ -2,7 +2,7 @@ use std::borrow::Cow;
 
 use insta::{Settings, assert_debug_snapshot};
 use rstest::rstest;
-use service::schemas::{ChangePassword, Validator};
+use service::schemas::{ChangePassword, UpdateProfile, Validator};
 
 macro_rules! configure_insta {
     ($(expr;expr),*) => {
@@ -24,6 +24,10 @@ fn change_password(
         Cow::Owned(password),
         Cow::Owned(confirm_password),
     )
+}
+
+fn update_profile(name: String, email: String) -> UpdateProfile<'static> {
+    UpdateProfile::new(Cow::Owned(name), Cow::Owned(email))
 }
 
 #[rstest]
@@ -72,6 +76,48 @@ fn can_validate_change_password(
     configure_insta!();
 
     let params = change_password(current_password, password, confirm_password);
+    let result = Validator::new(params)
+        .validate()
+        .map(|_| "valid".to_string())
+        .map_err(|err| err.to_string());
+
+    assert_debug_snapshot!(test_name, result);
+}
+
+#[rstest]
+#[case(
+    "update_profile_validation_accepts_valid_params",
+    "Morgan Grimes".to_string(),
+    "morgan.grimes@silk.io".to_string()
+)]
+#[case(
+    "update_profile_validation_rejects_short_name",
+    "Mo".to_string(),
+    "morgan.grimes@silk.io".to_string()
+)]
+#[case(
+    "update_profile_validation_rejects_long_name",
+    "Morgan Grimes With A Name That Is Too Long".to_string(),
+    "morgan.grimes@silk.io".to_string()
+)]
+#[case(
+    "update_profile_validation_rejects_name_with_special_chars",
+    "Morgan + Grimes".to_string(),
+    "morgan.grimes@silk.io".to_string()
+)]
+#[case(
+    "update_profile_validation_rejects_invalid_email",
+    "Morgan Grimes".to_string(),
+    "morgan:grimes".to_string()
+)]
+fn can_validate_update_profile(
+    #[case] test_name: &str,
+    #[case] name: String,
+    #[case] email: String,
+) {
+    configure_insta!();
+
+    let params = update_profile(name, email);
     let result = Validator::new(params)
         .validate()
         .map(|_| "valid".to_string())

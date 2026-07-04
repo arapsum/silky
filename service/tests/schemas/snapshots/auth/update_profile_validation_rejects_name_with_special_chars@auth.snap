@@ -1,0 +1,7 @@
+---
+source: tests/schemas/auth.rs
+expression: result
+---
+Err(
+    "Validation error: {\"name\":\"Only letters, numbers and underscores can be used.\"}",
+)

@@ -1,0 +1,12 @@
+---
+source: tests/requests/auth.rs
+expression: "(response.status_code(), response.headers(), response.text())"
+---
+(
+    409,
+    {
+        "content-type": "application/json",
+        "content-length": "NUMBER",
+    },
+    "{\"error\":\"Entity already exists\"}",
+)

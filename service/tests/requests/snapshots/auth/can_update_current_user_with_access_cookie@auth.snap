@@ -1,0 +1,12 @@
+---
+source: tests/requests/auth.rs
+expression: "(response.status_code(), response.headers(), response.text())"
+---
+(
+    200,
+    {
+        "content-type": "application/json",
+        "content-length": "NUMBER",
+    },
+    "{\"pid\":\"PID\",\"email\":\"john.updated@acme.com\",\"name\":\"John Updated\",\"verified\":true,\"createdAt\":\"DATEZ\",\"updatedAt\":\"DATEZ\"}",
+)

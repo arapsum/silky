@@ -1,11 +1,12 @@
 use std::borrow::Cow;
 
 use insta::{Settings, assert_debug_snapshot, with_settings};
+use rstest::rstest;
 use serial_test::serial;
 use service::{
     App,
     models::{ModelError, user::User},
-    schemas::{ChangePassword, RegisterUser},
+    schemas::{ChangePassword, RegisterUser, UpdateProfile},
 };
 use uuid::Uuid;
 
@@ -25,6 +26,10 @@ macro_rules! configure_insta {
         settings.set_snapshot_path("snapshots/users");
         let _guard = settings.bind_to_scope();
     };
+}
+
+fn update_profile(name: &str, email: &str) -> UpdateProfile<'static> {
+    UpdateProfile::new(Cow::Owned(name.to_string()), Cow::Owned(email.to_string()))
 }
 
 #[tokio::test]
@@ -241,6 +246,59 @@ async fn can_reset_password() {
         }
     }, {
         assert_debug_snapshot!(result)
+    })
+}
+
+#[rstest]
+#[case(
+    "can_update_profile_name_and_email",
+    "bd6f7c26-d2c9-487e-b837-8f77be468033",
+    update_profile("John Updated", "john.updated@acme.com")
+)]
+#[case(
+    "can_update_profile_with_same_email",
+    "bd6f7c26-d2c9-487e-b837-8f77be468033",
+    update_profile("John Renamed", "john.doe@acme.com")
+)]
+#[case(
+    "cannot_update_profile_when_email_already_exists",
+    "bd6f7c26-d2c9-487e-b837-8f77be468033",
+    update_profile("John Updated", "jane.smith@globex.com")
+)]
+#[case(
+    "cannot_update_profile_when_claims_key_is_invalid",
+    "not-a-uuid",
+    update_profile("John Updated", "john.updated@acme.com")
+)]
+#[case(
+    "cannot_update_profile_when_user_does_not_exist",
+    "00000000-0000-4000-8000-000000000000",
+    update_profile("John Updated", "john.updated@acme.com")
+)]
+#[tokio::test]
+#[serial]
+async fn can_update_profile(
+    #[case] test_name: &str,
+    #[case] claims_key: &str,
+    #[case] params: UpdateProfile<'static>,
+) {
+    configure_insta!();
+
+    let ctx = boot_test().await.unwrap();
+
+    App::seed(ctx.db()).await.unwrap();
+
+    let result = User::update_profile(ctx.db(), claims_key, &params).await;
+
+    with_settings!({
+        filters => {
+            let mut filters = cleanup_date().to_vec();
+            filters.extend(cleanup_password());
+            filters.extend(cleanup_verification_token());
+            filters
+        }
+    }, {
+        assert_debug_snapshot!(test_name, result)
     })
 }
 

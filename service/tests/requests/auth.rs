@@ -35,6 +35,17 @@ enum CurrentUserCredentials {
     UnknownUser,
 }
 
+#[derive(Clone, Copy)]
+enum UpdateCurrentUserCredentials {
+    AuthorizationHeader,
+    AccessCookie,
+    Missing,
+    RefreshCookieOnly,
+    InvalidAuthorizationHeader,
+    InvalidAccessToken,
+    UnknownUser,
+}
+
 macro_rules! configure_insta {
     ($(expr:expr),*) => {
         let mut settings = Settings::clone_current();
@@ -752,6 +763,189 @@ async fn can_get_current_user(
         }
 
         let response = request.await;
+
+        with_settings!({
+            filters => {
+                let mut filters = utils::cleanup_date().to_vec();
+                filters.extend(utils::cleanup_uuid().to_vec());
+                filters.extend(utils::cleanup_jwt().to_vec());
+                filters.extend(utils::cleanup_headers());
+                filters
+            }
+        },  {
+            assert_debug_snapshot!(test_name, (response.status_code(), response.headers(), response.text()))
+        })
+    })
+    .await;
+}
+
+#[rstest]
+#[case(
+    "can_update_current_user_with_authorization_header",
+    UpdateCurrentUserCredentials::AuthorizationHeader
+)]
+#[case(
+    "can_update_current_user_with_access_cookie",
+    UpdateCurrentUserCredentials::AccessCookie
+)]
+#[case(
+    "cannot_update_current_user_without_credentials",
+    UpdateCurrentUserCredentials::Missing
+)]
+#[case(
+    "cannot_update_current_user_with_refresh_cookie_only",
+    UpdateCurrentUserCredentials::RefreshCookieOnly
+)]
+#[case(
+    "cannot_update_current_user_with_invalid_authorization_header",
+    UpdateCurrentUserCredentials::InvalidAuthorizationHeader
+)]
+#[case(
+    "cannot_update_current_user_with_invalid_access_token",
+    UpdateCurrentUserCredentials::InvalidAccessToken
+)]
+#[case(
+    "cannot_update_current_user_when_token_subject_does_not_exist",
+    UpdateCurrentUserCredentials::UnknownUser
+)]
+#[tokio::test]
+#[serial]
+async fn can_update_current_user(
+    #[case] test_name: &str,
+    #[case] credentials: UpdateCurrentUserCredentials,
+) {
+    crate::request(|server, context| async move {
+        configure_insta!();
+
+        crate::seed_data(context.db())
+            .await
+            .expect("Failed to seed data");
+
+        let params = serde_json::json!({
+            "email": "john.doe@acme.com",
+            "password": "Password"
+        });
+        let user: utils::LoggedInUser = utils::login_users(&server, &params).await;
+
+        let mut request = server.patch("/auth/me");
+
+        match credentials {
+            UpdateCurrentUserCredentials::AuthorizationHeader => {
+                let (auth_header, auth_value) = utils::auth_header(user.access_token);
+                request = request.add_header(auth_header, auth_value);
+            }
+            UpdateCurrentUserCredentials::AccessCookie => {
+                request = request.add_cookie(user.access_cookie);
+            }
+            UpdateCurrentUserCredentials::Missing => {}
+            UpdateCurrentUserCredentials::RefreshCookieOnly => {
+                request = request.add_cookie(user.refresh_cookie);
+            }
+            UpdateCurrentUserCredentials::InvalidAuthorizationHeader => {
+                let (auth_header, auth_value) =
+                    utils::auth_header(HeaderValue::from_static("Basic invalid"));
+                request = request.add_header(auth_header, auth_value);
+            }
+            UpdateCurrentUserCredentials::InvalidAccessToken => {
+                let (auth_header, auth_value) =
+                    utils::auth_header(HeaderValue::from_static("Bearer invalid"));
+                request = request.add_header(auth_header, auth_value);
+            }
+            UpdateCurrentUserCredentials::UnknownUser => {
+                let token = context
+                    .auth()
+                    .access()
+                    .generate_token(&Uuid::new_v4().to_string())
+                    .unwrap();
+                let auth_value = HeaderValue::from_str(&format!("Bearer {token}")).unwrap();
+                let (auth_header, auth_value) = utils::auth_header(auth_value);
+                request = request.add_header(auth_header, auth_value);
+            }
+        }
+
+        let response = request
+            .json(&serde_json::json!({
+                "name": "John Updated",
+                "email": "john.updated@acme.com"
+            }))
+            .await;
+
+        with_settings!({
+            filters => {
+                let mut filters = utils::cleanup_date().to_vec();
+                filters.extend(utils::cleanup_uuid().to_vec());
+                filters.extend(utils::cleanup_jwt().to_vec());
+                filters.extend(utils::cleanup_headers());
+                filters
+            }
+        },  {
+            assert_debug_snapshot!(test_name, (response.status_code(), response.headers(), response.text()))
+        })
+    })
+    .await;
+}
+
+#[rstest]
+#[case(
+    "cannot_update_current_user_when_name_is_short",
+    serde_json::json!({
+        "name": "John",
+        "email": "john.updated@acme.com"
+    })
+)]
+#[case(
+    "cannot_update_current_user_when_name_is_too_long",
+    serde_json::json!({
+        "name": "John Updated With A Name That Is Too Long",
+        "email": "john.updated@acme.com"
+    })
+)]
+#[case(
+    "cannot_update_current_user_when_name_has_special_chars",
+    serde_json::json!({
+        "name": "John + Updated",
+        "email": "john.updated@acme.com"
+    })
+)]
+#[case(
+    "cannot_update_current_user_when_email_is_invalid",
+    serde_json::json!({
+        "name": "John Updated",
+        "email": "john:updated"
+    })
+)]
+#[case(
+    "cannot_update_current_user_when_email_already_exists",
+    serde_json::json!({
+        "name": "John Updated",
+        "email": "jane.smith@globex.com"
+    })
+)]
+#[tokio::test]
+#[serial]
+async fn cannot_update_current_user_with_invalid_payload(
+    #[case] test_name: &str,
+    #[case] params: serde_json::Value,
+) {
+    crate::request(|server, context| async move {
+        configure_insta!();
+
+        crate::seed_data(context.db())
+            .await
+            .expect("Failed to seed data");
+
+        let login_params = serde_json::json!({
+            "email": "john.doe@acme.com",
+            "password": "Password"
+        });
+        let user: utils::LoggedInUser = utils::login_users(&server, &login_params).await;
+        let (auth_header, auth_value) = utils::auth_header(user.access_token);
+
+        let response = server
+            .patch("/auth/me")
+            .add_header(auth_header, auth_value)
+            .json(&params)
+            .await;
 
         with_settings!({
             filters => {

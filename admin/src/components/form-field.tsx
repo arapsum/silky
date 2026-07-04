@@ -19,7 +19,7 @@ import {
   type ControllerRenderProps,
   type ControllerFieldState,
 } from "react-hook-form";
-import { EyeIcon, EyeSlashIcon } from "@phosphor-icons/react";
+import { EyeIcon, EyeSlashIcon, EnvelopeSimpleIcon } from "@phosphor-icons/react";
 
 type SelectOption = { label: string; value: string };
 
@@ -119,10 +119,9 @@ function RenderInput<TField extends FieldValues>({
             id={field.name}
             type={visible ? "text" : "password"}
             placeholder={placeholder}
-            className={className}
+            className={cn("pr-10", className)}
             disabled={disabled}
             required={required}
-            aria-label={visible ? "Hide password" : "Show password"}
             aria-invalid={fieldState.invalid}
           />
           <button
@@ -137,6 +136,28 @@ function RenderInput<TField extends FieldValues>({
               <EyeIcon className="size-4" aria-hidden />
             )}
           </button>
+        </div>
+      );
+    }
+
+    case "email": {
+      return (
+        <div className="relative">
+          <Input
+            {...field}
+            {...rest}
+            id={field.name}
+            type="email"
+            placeholder={placeholder}
+            className={cn("pr-10", className)}
+            disabled={disabled}
+            required={required}
+            aria-invalid={fieldState.invalid}
+          />
+          <EnvelopeSimpleIcon
+            className="pointer-events-none absolute right-3 top-1/2 size-4 -translate-y-1/2 text-muted-foreground"
+            aria-hidden
+          />
         </div>
       );
     }

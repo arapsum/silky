@@ -150,7 +150,7 @@ const dashboardRoutes: Route[] = [
       },
       {
         title: "Permissions",
-        link: "#",
+        link: "/access-control/permissions",
         icon: <LinkIcon className="size-4" />,
       },
       {

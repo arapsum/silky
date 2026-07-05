@@ -28,6 +28,7 @@ import {
   TrendUpIcon,
   XIcon,
 } from "@phosphor-icons/react";
+import { useTheme } from "next-themes";
 import { useEffect, useState } from "react";
 
 const notifications = [
@@ -297,18 +298,17 @@ function NotificationsButton() {
 }
 
 function ThemeToggle() {
-  const [isDark, setIsDark] = useState(false);
+  const [isMounted, setIsMounted] = useState(false);
+  const { resolvedTheme, setTheme } = useTheme();
 
   useEffect(() => {
-    setIsDark(document.documentElement.classList.contains("dark"));
+    setIsMounted(true);
   }, []);
 
+  const isDark = isMounted && resolvedTheme === "dark";
+
   const toggleTheme = () => {
-    setIsDark((current) => {
-      const next = !current;
-      document.documentElement.classList.toggle("dark", next);
-      return next;
-    });
+    setTheme(isDark ? "light" : "dark");
   };
 
   return (

@@ -14,6 +14,7 @@ import { Route as MainIndexRouteImport } from './routes/_main/index'
 import { Route as MainSettingsIndexRouteImport } from './routes/_main/settings/index'
 import { Route as AuthSignInIndexRouteImport } from './routes/_auth/sign-in/index'
 import { Route as MainAccessControlRolesIndexRouteImport } from './routes/_main/access-control/roles/index'
+import { Route as MainAccessControlRoleAssignmentsIndexRouteImport } from './routes/_main/access-control/role-assignments/index'
 import { Route as MainAccessControlPermissionsIndexRouteImport } from './routes/_main/access-control/permissions/index'
 
 const MainRouteRoute = MainRouteRouteImport.update({
@@ -41,6 +42,12 @@ const MainAccessControlRolesIndexRoute =
     path: '/access-control/roles/',
     getParentRoute: () => MainRouteRoute,
   } as any)
+const MainAccessControlRoleAssignmentsIndexRoute =
+  MainAccessControlRoleAssignmentsIndexRouteImport.update({
+    id: '/access-control/role-assignments/',
+    path: '/access-control/role-assignments/',
+    getParentRoute: () => MainRouteRoute,
+  } as any)
 const MainAccessControlPermissionsIndexRoute =
   MainAccessControlPermissionsIndexRouteImport.update({
     id: '/access-control/permissions/',
@@ -53,6 +60,7 @@ export interface FileRoutesByFullPath {
   '/sign-in/': typeof AuthSignInIndexRoute
   '/settings/': typeof MainSettingsIndexRoute
   '/access-control/permissions/': typeof MainAccessControlPermissionsIndexRoute
+  '/access-control/role-assignments/': typeof MainAccessControlRoleAssignmentsIndexRoute
   '/access-control/roles/': typeof MainAccessControlRolesIndexRoute
 }
 export interface FileRoutesByTo {
@@ -60,6 +68,7 @@ export interface FileRoutesByTo {
   '/sign-in': typeof AuthSignInIndexRoute
   '/settings': typeof MainSettingsIndexRoute
   '/access-control/permissions': typeof MainAccessControlPermissionsIndexRoute
+  '/access-control/role-assignments': typeof MainAccessControlRoleAssignmentsIndexRoute
   '/access-control/roles': typeof MainAccessControlRolesIndexRoute
 }
 export interface FileRoutesById {
@@ -69,6 +78,7 @@ export interface FileRoutesById {
   '/_auth/sign-in/': typeof AuthSignInIndexRoute
   '/_main/settings/': typeof MainSettingsIndexRoute
   '/_main/access-control/permissions/': typeof MainAccessControlPermissionsIndexRoute
+  '/_main/access-control/role-assignments/': typeof MainAccessControlRoleAssignmentsIndexRoute
   '/_main/access-control/roles/': typeof MainAccessControlRolesIndexRoute
 }
 export interface FileRouteTypes {
@@ -78,6 +88,7 @@ export interface FileRouteTypes {
     | '/sign-in/'
     | '/settings/'
     | '/access-control/permissions/'
+    | '/access-control/role-assignments/'
     | '/access-control/roles/'
   fileRoutesByTo: FileRoutesByTo
   to:
@@ -85,6 +96,7 @@ export interface FileRouteTypes {
     | '/sign-in'
     | '/settings'
     | '/access-control/permissions'
+    | '/access-control/role-assignments'
     | '/access-control/roles'
   id:
     | '__root__'
@@ -93,6 +105,7 @@ export interface FileRouteTypes {
     | '/_auth/sign-in/'
     | '/_main/settings/'
     | '/_main/access-control/permissions/'
+    | '/_main/access-control/role-assignments/'
     | '/_main/access-control/roles/'
   fileRoutesById: FileRoutesById
 }
@@ -138,6 +151,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof MainAccessControlRolesIndexRouteImport
       parentRoute: typeof MainRouteRoute
     }
+    '/_main/access-control/role-assignments/': {
+      id: '/_main/access-control/role-assignments/'
+      path: '/access-control/role-assignments'
+      fullPath: '/access-control/role-assignments/'
+      preLoaderRoute: typeof MainAccessControlRoleAssignmentsIndexRouteImport
+      parentRoute: typeof MainRouteRoute
+    }
     '/_main/access-control/permissions/': {
       id: '/_main/access-control/permissions/'
       path: '/access-control/permissions'
@@ -152,6 +172,7 @@ interface MainRouteRouteChildren {
   MainIndexRoute: typeof MainIndexRoute
   MainSettingsIndexRoute: typeof MainSettingsIndexRoute
   MainAccessControlPermissionsIndexRoute: typeof MainAccessControlPermissionsIndexRoute
+  MainAccessControlRoleAssignmentsIndexRoute: typeof MainAccessControlRoleAssignmentsIndexRoute
   MainAccessControlRolesIndexRoute: typeof MainAccessControlRolesIndexRoute
 }
 
@@ -160,6 +181,8 @@ const MainRouteRouteChildren: MainRouteRouteChildren = {
   MainSettingsIndexRoute: MainSettingsIndexRoute,
   MainAccessControlPermissionsIndexRoute:
     MainAccessControlPermissionsIndexRoute,
+  MainAccessControlRoleAssignmentsIndexRoute:
+    MainAccessControlRoleAssignmentsIndexRoute,
   MainAccessControlRolesIndexRoute: MainAccessControlRolesIndexRoute,
 }
 

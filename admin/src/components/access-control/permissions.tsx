@@ -236,7 +236,7 @@ function PermissionsContent({
   }
 
   return (
-    <div className="grid gap-4 lg:grid-cols-2">
+    <div className="columns-1 gap-4 lg:columns-2">
       {groups.map(([resource, permissions]) => (
         <PermissionGroup key={resource} resource={resource} permissions={permissions} />
       ))}
@@ -254,7 +254,7 @@ function PermissionGroup({
   const [isOpen, setIsOpen] = useState(true);
 
   return (
-    <Collapsible open={isOpen} onOpenChange={setIsOpen}>
+    <Collapsible className="mb-4 break-inside-avoid" open={isOpen} onOpenChange={setIsOpen}>
       <section className="rounded-lg border bg-background p-5">
         <CollapsibleTrigger
           render={

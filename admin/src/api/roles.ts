@@ -24,6 +24,20 @@ export type RoleInput = {
   description?: string;
 };
 
+export type AssignPermissionInput = {
+  roleId: number;
+  permissionId: number;
+};
+
+export type RolePermission = {
+  id: number;
+  pid: string;
+  roleId: number;
+  permissionId: number;
+  createdAt: string;
+  updatedAt: string;
+};
+
 export function listRoles() {
   return apiRequest<Role[]>("/roles", {
     fallback: "Unable to load roles",
@@ -43,5 +57,13 @@ export function updateRole(pid: string, input: RoleInput) {
     method: "PATCH",
     body: JSON.stringify(input),
     fallback: "Unable to update role",
+  });
+}
+
+export function assignPermissionToRole(input: AssignPermissionInput) {
+  return apiRequest<RolePermission>("/roles/permissions", {
+    method: "POST",
+    body: JSON.stringify(input),
+    fallback: "Unable to assign permission",
   });
 }

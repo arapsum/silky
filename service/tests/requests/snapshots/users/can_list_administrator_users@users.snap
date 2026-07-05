@@ -1,0 +1,8 @@
+---
+source: tests/requests/users.rs
+expression: "(response.status_code(), response.text())"
+---
+(
+    200,
+    "[{\"id\":55,\"pid\":\"PID\",\"name\":\"System Administrator\",\"email\":\"admin@silk.com\",\"image\":\"https://cdn.example.com/users/system_admin.png\",\"verified\":true,\"roles\":[{\"id\":11,\"pid\":\"PID\",\"name\":\"administrator\",\"description\":\"System administrator\"}],\"createdAt\":\"DATE\",\"updatedAt\":\"DATE\"},{\"id\":11,\"pid\":\"PID\",\"name\":\"John Doe\",\"email\":\"john.doe@acme.com\",\"image\":\"https://cdn.example.com/users/john_doe.png\",\"verified\":true,\"roles\":[{\"id\":11,\"pid\":\"PID\",\"name\":\"administrator\",\"description\":\"System administrator\"},{\"id\":22,\"pid\":\"PID\",\"name\":\"customer\",\"description\":\"Regular shoppers\"}],\"createdAt\":\"DATE\",\"updatedAt\":\"DATE\"}]",
+)

@@ -1,6 +1,5 @@
 ---
 source: tests/models/user.rs
-assertion_line: 47
 expression: result
 ---
 Ok(
@@ -9,6 +8,9 @@ Ok(
         pid: PID,
         name: "test",
         email: "test@mail.com",
+        image: Some(
+            "https://cdn.example.com/users/test_user.png",
+        ),
         password_hash: "PASSWORD",
         verified_at: None,
         verification_token_hash: None,

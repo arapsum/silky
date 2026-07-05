@@ -63,7 +63,8 @@ macro_rules! configure_insta {
         "email":  "test1@example.com",
         "name": "Test User1",
         "password": "SafePassWord11!",
-        "confirmPassword": "SafePassWord11!"
+        "confirmPassword": "SafePassWord11!",
+        "image": "https://cdn.example.com/users/test_user1.png"
     })
 )]
 #[case(
@@ -127,6 +128,16 @@ macro_rules! configure_insta {
         "name": "test user;+",
         "password": "Password123",
         "confirmPassword": "Password123"
+    })
+)]
+#[case(
+    "when_image_is_invalid_registration_fails",
+    serde_json::json!({
+        "email":  "test1@example.com",
+        "name": "Test User1",
+        "password": "Password123",
+        "confirmPassword": "Password123",
+        "image": "not-a-url"
     })
 )]
 #[tokio::test]
@@ -866,7 +877,8 @@ async fn can_update_current_user(
         let response = request
             .json(&serde_json::json!({
                 "name": "John Updated",
-                "email": "john.updated@acme.com"
+                "email": "john.updated@acme.com",
+                "image": "https://cdn.example.com/users/john_updated.png"
             }))
             .await;
 
@@ -919,6 +931,14 @@ async fn can_update_current_user(
     serde_json::json!({
         "name": "John Updated",
         "email": "jane.smith@globex.com"
+    })
+)]
+#[case(
+    "cannot_update_current_user_when_image_is_invalid",
+    serde_json::json!({
+        "name": "John Updated",
+        "email": "john.updated@acme.com",
+        "image": "not-a-url"
     })
 )]
 #[tokio::test]

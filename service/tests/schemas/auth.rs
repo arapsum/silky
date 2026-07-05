@@ -26,8 +26,8 @@ fn change_password(
     )
 }
 
-fn update_profile(name: String, email: String) -> UpdateProfile<'static> {
-    UpdateProfile::new(Cow::Owned(name), Cow::Owned(email))
+fn update_profile(name: String, email: String, image: Option<String>) -> UpdateProfile<'static> {
+    UpdateProfile::new(Cow::Owned(name), Cow::Owned(email), image.map(Cow::Owned))
 }
 
 #[rstest]
@@ -88,36 +88,54 @@ fn can_validate_change_password(
 #[case(
     "update_profile_validation_accepts_valid_params",
     "Morgan Grimes".to_string(),
-    "morgan.grimes@silk.io".to_string()
+    "morgan.grimes@silk.io".to_string(),
+    Some("https://cdn.example.com/users/morgan_grimes.png".to_string())
+)]
+#[case(
+    "update_profile_validation_accepts_missing_image",
+    "Morgan Grimes".to_string(),
+    "morgan.grimes@silk.io".to_string(),
+    None
 )]
 #[case(
     "update_profile_validation_rejects_short_name",
     "Mo".to_string(),
-    "morgan.grimes@silk.io".to_string()
+    "morgan.grimes@silk.io".to_string(),
+    None
 )]
 #[case(
     "update_profile_validation_rejects_long_name",
     "Morgan Grimes With A Name That Is Too Long".to_string(),
-    "morgan.grimes@silk.io".to_string()
+    "morgan.grimes@silk.io".to_string(),
+    None
 )]
 #[case(
     "update_profile_validation_rejects_name_with_special_chars",
     "Morgan + Grimes".to_string(),
-    "morgan.grimes@silk.io".to_string()
+    "morgan.grimes@silk.io".to_string(),
+    None
 )]
 #[case(
     "update_profile_validation_rejects_invalid_email",
     "Morgan Grimes".to_string(),
-    "morgan:grimes".to_string()
+    "morgan:grimes".to_string(),
+    None
+)]
+#[case(
+    "update_profile_validation_rejects_invalid_image",
+    "Morgan Grimes".to_string(),
+    "morgan.grimes@silk.io".to_string(),
+    Some("not-a-url".to_string())
 )]
 fn can_validate_update_profile(
     #[case] test_name: &str,
     #[case] name: String,
     #[case] email: String,
+    #[case] image: Option<String>,
 ) {
     configure_insta!();
 
-    let params = update_profile(name, email);
+    let params = update_profile(name, email, image);
     let result = Validator::new(params)
         .validate()
         .map(|_| "valid".to_string())

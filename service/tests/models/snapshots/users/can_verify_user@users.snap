@@ -1,6 +1,5 @@
 ---
 source: tests/models/user.rs
-assertion_line: 174
 expression: result
 ---
 Ok(
@@ -9,6 +8,9 @@ Ok(
         pid: 4c008e68-88fa-4072-808e-6888fa60724c,
         name: "Morgan Grimes",
         email: "morgan@silk.io",
+        image: Some(
+            "https://cdn.example.com/users/morgan_grimes.png",
+        ),
         password_hash: "$argon2d$v=19$m=16,t=2,p=1$cTZhOHVtY2dJTzBqYTBudw$/704JvCsW23pidisyXK+Tw",
         verified_at: Some(
             DATE,

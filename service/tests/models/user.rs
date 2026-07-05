@@ -28,8 +28,12 @@ macro_rules! configure_insta {
     };
 }
 
-fn update_profile(name: &str, email: &str) -> UpdateProfile<'static> {
-    UpdateProfile::new(Cow::Owned(name.to_string()), Cow::Owned(email.to_string()))
+fn update_profile(name: &str, email: &str, image: Option<&str>) -> UpdateProfile<'static> {
+    UpdateProfile::new(
+        Cow::Owned(name.to_string()),
+        Cow::Owned(email.to_string()),
+        image.map(|image| Cow::Owned(image.to_string())),
+    )
 }
 
 #[tokio::test]
@@ -44,6 +48,9 @@ async fn can_create_user() {
         Cow::Owned("test".to_string()),
         Cow::Owned("password".to_string()),
         Cow::Owned("password".to_string()),
+        Some(Cow::Owned(
+            "https://cdn.example.com/users/test_user.png".to_string(),
+        )),
     );
 
     let result = User::create(ctx.db(), &params).await;
@@ -75,6 +82,7 @@ async fn cannot_create_user_when_email_already_exists() {
         Cow::Owned("John Doe".to_string()),
         Cow::Owned("password".to_string()),
         Cow::Owned("password".to_string()),
+        None,
     );
 
     let result = User::create(ctx.db(), &params).await;
@@ -253,27 +261,31 @@ async fn can_reset_password() {
 #[case(
     "can_update_profile_name_and_email",
     "bd6f7c26-d2c9-487e-b837-8f77be468033",
-    update_profile("John Updated", "john.updated@acme.com")
+    update_profile(
+        "John Updated",
+        "john.updated@acme.com",
+        Some("https://cdn.example.com/users/john_updated.png")
+    )
 )]
 #[case(
     "can_update_profile_with_same_email",
     "bd6f7c26-d2c9-487e-b837-8f77be468033",
-    update_profile("John Renamed", "john.doe@acme.com")
+    update_profile("John Renamed", "john.doe@acme.com", None)
 )]
 #[case(
     "cannot_update_profile_when_email_already_exists",
     "bd6f7c26-d2c9-487e-b837-8f77be468033",
-    update_profile("John Updated", "jane.smith@globex.com")
+    update_profile("John Updated", "jane.smith@globex.com", None)
 )]
 #[case(
     "cannot_update_profile_when_claims_key_is_invalid",
     "not-a-uuid",
-    update_profile("John Updated", "john.updated@acme.com")
+    update_profile("John Updated", "john.updated@acme.com", None)
 )]
 #[case(
     "cannot_update_profile_when_user_does_not_exist",
     "00000000-0000-4000-8000-000000000000",
-    update_profile("John Updated", "john.updated@acme.com")
+    update_profile("John Updated", "john.updated@acme.com", None)
 )]
 #[tokio::test]
 #[serial]

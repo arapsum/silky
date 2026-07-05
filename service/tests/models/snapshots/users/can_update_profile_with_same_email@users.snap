@@ -8,6 +8,9 @@ Ok(
         pid: bd6f7c26-d2c9-487e-b837-8f77be468033,
         name: "John Renamed",
         email: "john.doe@acme.com",
+        image: Some(
+            "https://cdn.example.com/users/john_doe.png",
+        ),
         password_hash: "PASSWORD",
         verified_at: Some(
             DATE,

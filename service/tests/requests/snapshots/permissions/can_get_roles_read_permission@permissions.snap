@@ -1,0 +1,8 @@
+---
+source: tests/requests/permissions.rs
+expression: "(response.status_code(), response.text())"
+---
+(
+    200,
+    "{\"id\":101,\"pid\":\"PID\",\"name\":\"roles:read\",\"description\":\"View roles\",\"createdAt\":\"DATEZ\",\"updatedAt\":\"DATEZ\"}",
+)

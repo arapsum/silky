@@ -9,6 +9,7 @@ use crate::{AppState, middlewares::auth::AuthLayer};
 
 mod auth;
 mod categories;
+mod permissions;
 mod roles;
 
 #[debug_handler]
@@ -32,6 +33,10 @@ pub fn router(ctx: &AppState) -> Router {
     Router::new()
         .route("/health", get(health_check))
         .nest("/auth", auth::router(ctx))
+        .nest(
+            "/permissions",
+            permissions::router(ctx).layer(AuthLayer::new(ctx.clone())),
+        )
         .nest(
             "/roles",
             roles::router(ctx).layer(AuthLayer::new(ctx.clone())),

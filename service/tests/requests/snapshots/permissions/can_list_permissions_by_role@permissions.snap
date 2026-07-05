@@ -1,0 +1,8 @@
+---
+source: tests/requests/permissions.rs
+expression: "(response.status_code(), response.text())"
+---
+(
+    200,
+    "[{\"id\":113,\"pid\":\"PID\",\"name\":\"categories:read\",\"description\":\"View categories\",\"createdAt\":\"DATEZ\",\"updatedAt\":\"DATEZ\"}]",
+)

@@ -117,6 +117,8 @@ Routes are mounted under `/api` when the binary starts the full application.
 | `GET` | `/api/roles/{pid}` | Return a role by public ID; requires authentication |
 | `POST` | `/api/roles` | Create a role; requires authentication |
 | `PATCH` | `/api/roles/{pid}` | Update a role; requires authentication |
+| `GET` | `/api/permissions` | List permissions; accepts optional `role` query and requires authentication |
+| `GET` | `/api/permissions/{pid}` | Return a permission by public ID; requires authentication |
 
 Request tests mount the controller router directly, so test paths omit the
 outer `/api` prefix. For example, the service route `/api/auth/login` is tested

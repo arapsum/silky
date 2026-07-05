@@ -7,7 +7,7 @@ pub mod validator;
 pub use self::{
     auth::{ChangePassword, ForgotPassword, LoginUser, RegisterUser, ResetPassword, UpdateProfile},
     categories::{NewCategory, UpdateCategory},
-    request::{PaginationQuery, PermissionRoleQuery},
+    request::{PaginationQuery, PermissionListQuery, PermissionRoleQuery},
     roles::{AssignPermission, AssignRole, NewRole, UpdateRole},
     validator::Validator,
 };

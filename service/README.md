@@ -70,13 +70,16 @@ The development API listens on:
 http://127.0.0.1:7150
 ```
 
-Seed initial users:
+Seed initial data:
 
 ```bash
 cargo run -- seed
 ```
 
-Seed data is read from `src/data/users.json`.
+Seed data is read from JSON files in `src/data/`. The seed command currently
+loads users, roles, permissions, role-permission assignments, categories, product
+catalog records, product variants, attributes, pictures, and user-role
+assignments.
 
 ## Commands
 
@@ -104,6 +107,16 @@ Routes are mounted under `/api` when the binary starts the full application.
 | `POST` | `/api/auth/reset-password` | Reset a password with a reset token |
 | `POST` | `/api/auth/change-password` | Change the authenticated user's password |
 | `GET` | `/api/auth/me` | Return the current authenticated user |
+| `PATCH` | `/api/auth/me` | Update the current user's name, email, and optional profile image URL |
+| `GET` | `/api/categories` | List categories with pagination |
+| `GET` | `/api/categories/{pid}` | Return a category by public ID |
+| `POST` | `/api/categories` | Create a category; requires `categories:create` |
+| `PATCH` | `/api/categories/{pid}` | Update a category; requires `categories:update` |
+| `DELETE` | `/api/categories/{pid}` | Soft-delete a category; requires `categories:delete` |
+| `GET` | `/api/roles` | List roles; requires authentication |
+| `GET` | `/api/roles/{pid}` | Return a role by public ID; requires authentication |
+| `POST` | `/api/roles` | Create a role; requires authentication |
+| `PATCH` | `/api/roles/{pid}` | Update a role; requires authentication |
 
 Request tests mount the controller router directly, so test paths omit the
 outer `/api` prefix. For example, the service route `/api/auth/login` is tested
@@ -131,6 +144,18 @@ Password endpoints:
 - `POST /api/auth/change-password` requires authentication and accepts
   `{ "currentPassword": "...", "password": "...", "confirmPassword": "..." }`.
 
+Profile endpoints:
+
+- `GET /api/auth/me` returns the authenticated user, including `pid`, `email`,
+  `name`, optional `image`, `verified`, `createdAt`, and `updatedAt`.
+- `PATCH /api/auth/me` requires authentication and accepts
+  `{ "name": "...", "email": "...", "image": "https://..." }`. The `image`
+  field is optional and must be a valid URL when provided. Omitting it preserves
+  the user's existing profile image.
+
+The service stores only the profile image URL. Uploading image files to a media
+provider is handled by clients before they call `PATCH /api/auth/me`.
+
 ## Testing
 
 Run all service tests:
@@ -150,7 +175,8 @@ can recreate the schema before tests run, so use an isolated development
 database.
 
 Snapshot tests are stored under `tests/**/snapshots/`. When behavior changes,
-review generated `.snap.new` files before accepting them.
+review generated `.snap.new` files before accepting them. To update snapshots
+intentionally, run the relevant test with `INSTA_UPDATE=always`.
 
 ## Project Layout
 
@@ -161,6 +187,7 @@ review generated `.snap.new` files before accepting them.
 |-- secrets/keys/    # Development and testing JWT keys
 |-- src/
 |   |-- controllers/ # HTTP route handlers
+|   |-- data/        # JSON seed data
 |   |-- middlewares/ # Auth and tracing layers
 |   |-- models/      # Database models and persistence logic
 |   |-- schemas/     # Request validation schemas

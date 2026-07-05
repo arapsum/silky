@@ -9,8 +9,9 @@ use uuid::Uuid;
 
 use crate::{
     AppState, Result,
-    models::Role,
-    schemas::{NewRole, UpdateRole, Validator},
+    middlewares::RbacLayer,
+    models::{Role, RolePermission},
+    schemas::{AssignPermission, NewRole, UpdateRole, Validator},
     utils::{AppJson, AppPath},
 };
 
@@ -61,10 +62,28 @@ async fn one(State(ctx): State<AppState>, AppPath(pid): AppPath<Uuid>) -> Result
     Ok((StatusCode::OK, Json(role)).into_response())
 }
 
+#[tracing::instrument(skip(ctx))]
+#[debug_handler]
+async fn assign_permission(
+    State(ctx): State<AppState>,
+    AppJson(params): AppJson<AssignPermission>,
+) -> Result<Response> {
+    let validator = Validator::new(params);
+    let validated = validator.validate()?;
+
+    let role_permission = RolePermission::assign_permission(ctx.db(), validated).await?;
+
+    Ok((StatusCode::CREATED, Json(role_permission)).into_response())
+}
+
 pub fn router(ctx: &AppState) -> Router {
     Router::new()
         .route("/", post(create))
         .route("/", get(list))
+        .route(
+            "/permissions",
+            post(assign_permission).layer(RbacLayer::new(ctx.clone(), "roles:update")),
+        )
         .route("/{pid}", patch(update))
         .route("/{pid}", get(one))
         .with_state(ctx.clone())

@@ -29,12 +29,36 @@ async fn access_token(server: &TestServer) -> HeaderValue {
     utils::login_users(server, &params).await.access_token
 }
 
+async fn revoke_role(db: &sqlx::PgPool, email: &str, role: &str) {
+    sqlx::query(
+        r"
+        DELETE FROM users_roles
+        USING users, roles
+        WHERE users_roles.user_id = users.id
+            AND users_roles.role_id = roles.id
+            AND users.email = $1
+            AND roles.name = $2
+    ",
+    )
+    .bind(email)
+    .bind(role)
+    .execute(db)
+    .await
+    .expect("Failed to revoke role");
+}
+
 fn response_filters() -> Vec<(&'static str, &'static str)> {
     let mut filters = utils::cleanup_date().to_vec();
     filters.extend(utils::cleanup_uuid().to_vec());
     filters.extend(utils::cleanup_headers());
     filters.push((r#""id":\d+"#, r#""id":ID"#));
     filters.push(("DATEZ", "DATE"));
+    filters
+}
+
+fn role_permission_response_filters() -> Vec<(&'static str, &'static str)> {
+    let mut filters = response_filters();
+    filters.push((r#"\\"id\\":\d+"#, r#"\"id\":ID"#));
     filters
 }
 
@@ -100,7 +124,7 @@ async fn can_create_role(#[case] test_name: &str, #[case] params: serde_json::Va
             .await;
 
         with_settings!({
-            filters => response_filters()
+            filters => role_permission_response_filters()
         }, {
             assert_debug_snapshot!(test_name, (response.status_code(), response.text()))
         })
@@ -265,7 +289,62 @@ async fn can_update_role(
 }
 
 #[rstest]
+#[case(
+    "can_assign_permission_to_role",
+    serde_json::json!({
+        "roleId": 22,
+        "permissionId": 114
+    })
+)]
+#[case(
+    "cannot_assign_permission_when_role_already_has_permission",
+    serde_json::json!({
+        "roleId": 22,
+        "permissionId": 113
+    })
+)]
+#[case(
+    "cannot_assign_permission_when_payload_is_invalid",
+    serde_json::json!({
+        "roleId": 0,
+        "permissionId": 0
+    })
+)]
+#[tokio::test]
+#[serial]
+async fn can_assign_permission_to_role(#[case] test_name: &str, #[case] params: serde_json::Value) {
+    crate::request(|server, ctx| async move {
+        configure_insta!();
+
+        crate::seed_data(ctx.db())
+            .await
+            .expect("Failed to seed data");
+
+        let token = access_token(&server).await;
+        let (auth_header, auth_value) = utils::auth_header(token);
+
+        let response = server
+            .post("/roles/permissions")
+            .add_header(auth_header, auth_value)
+            .json(&params)
+            .await;
+
+        with_settings!({
+            filters => response_filters()
+        }, {
+            assert_debug_snapshot!(test_name, (response.status_code(), response.text()))
+        })
+    })
+    .await;
+}
+
+#[rstest]
 #[case("cannot_create_role_without_credentials", "POST", "/roles")]
+#[case(
+    "cannot_assign_permission_to_role_without_credentials",
+    "POST",
+    "/roles/permissions"
+)]
 #[case("cannot_list_roles_without_credentials", "GET", "/roles")]
 #[case(
     "cannot_get_role_without_credentials",
@@ -302,6 +381,41 @@ async fn cannot_access_roles_without_credentials(
             "GET" => server.get(path).await,
             _ => unreachable!("unsupported request method"),
         };
+
+        with_settings!({
+            filters => response_filters()
+        }, {
+            assert_debug_snapshot!(test_name, (response.status_code(), response.text()))
+        })
+    })
+    .await;
+}
+
+#[rstest]
+#[case("cannot_assign_permission_to_role_without_permission")]
+#[tokio::test]
+#[serial]
+async fn cannot_assign_permission_to_role_without_permission(#[case] test_name: &str) {
+    crate::request(|server, ctx| async move {
+        configure_insta!();
+
+        crate::seed_data(ctx.db())
+            .await
+            .expect("Failed to seed data");
+        revoke_role(ctx.db(), "john.doe@acme.com", "administrator").await;
+
+        let token = access_token(&server).await;
+        let (auth_header, auth_value) = utils::auth_header(token);
+        let body = serde_json::json!({
+            "roleId": 22,
+            "permissionId": 114
+        });
+
+        let response = server
+            .post("/roles/permissions")
+            .add_header(auth_header, auth_value)
+            .json(&body)
+            .await;
 
         with_settings!({
             filters => response_filters()

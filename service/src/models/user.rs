@@ -6,7 +6,7 @@ use argon2::{
 use chrono::{DateTime, Duration, FixedOffset, Utc};
 use serde::{Deserialize, Serialize};
 use sha2::{Digest, Sha256};
-use sqlx::{Encode, Executor, PgPool, Postgres, prelude::FromRow};
+use sqlx::{Encode, Executor, PgPool, Postgres, Row, prelude::FromRow};
 use uuid::Uuid;
 
 use crate::schemas::{ChangePassword, LoginUser, RegisterUser, UpdateProfile};
@@ -35,6 +35,29 @@ pub struct User {
     created_at: DateTime<FixedOffset>,
     updated_at: DateTime<FixedOffset>,
     deleted_at: Option<DateTime<FixedOffset>>,
+}
+
+#[derive(Debug, Deserialize, Serialize, Clone)]
+#[serde(rename_all = "camelCase")]
+pub struct UserRoleSummary {
+    id: i32,
+    pid: Uuid,
+    name: String,
+    description: Option<String>,
+}
+
+#[derive(Debug, Deserialize, Serialize, Clone)]
+#[serde(rename_all = "camelCase")]
+pub struct UserWithRoles {
+    id: i32,
+    pid: Uuid,
+    name: String,
+    email: String,
+    image: Option<String>,
+    verified: bool,
+    roles: Vec<UserRoleSummary>,
+    created_at: DateTime<FixedOffset>,
+    updated_at: DateTime<FixedOffset>,
 }
 
 impl User {
@@ -516,6 +539,90 @@ impl User {
             .fetch_one(db)
             .await
             .map_err(|e| ModelError::EntityNotFound)
+    }
+
+    /// Lists users with their assigned roles.
+    ///
+    /// When `role` is provided, only users assigned to that role are returned.
+    ///
+    /// # Errors
+    ///
+    /// Returns a database error if the lookup fails or role aggregation cannot
+    /// be decoded.
+    pub async fn find_list_with_roles(
+        db: &PgPool,
+        role: Option<&str>,
+    ) -> ModelResult<Vec<UserWithRoles>> {
+        let rows = sqlx::query(
+            r"
+            SELECT
+                users.id,
+                users.pid,
+                users.name,
+                users.email,
+                users.image,
+                users.verified_at IS NOT NULL AS verified,
+                COALESCE(
+                    jsonb_agg(
+                        jsonb_build_object(
+                            'id', roles.id,
+                            'pid', roles.pid,
+                            'name', roles.name,
+                            'description', roles.description
+                        )
+                        ORDER BY roles.name
+                    ) FILTER (WHERE roles.id IS NOT NULL),
+                    '[]'::jsonb
+                ) AS roles,
+                users.created_at,
+                users.updated_at
+            FROM users
+            LEFT JOIN users_roles ON users_roles.user_id = users.id
+            LEFT JOIN roles ON roles.id = users_roles.role_id
+            WHERE users.deleted_at IS NULL
+                AND (
+                    $1::TEXT IS NULL
+                    OR EXISTS (
+                        SELECT 1
+                        FROM users_roles role_filter_users_roles
+                        INNER JOIN roles role_filter_roles
+                            ON role_filter_roles.id = role_filter_users_roles.role_id
+                        WHERE role_filter_users_roles.user_id = users.id
+                            AND role_filter_roles.name = LOWER(TRIM($1))
+                    )
+                )
+            GROUP BY users.id
+            ORDER BY users.created_at DESC, users.id DESC
+        ",
+        )
+        .bind(role)
+        .fetch_all(db)
+        .await?;
+
+        rows.into_iter()
+            .map(|row| {
+                let roles_json = row.try_get::<serde_json::Value, _>("roles")?;
+                let roles = serde_json::from_value(roles_json).map_err(|err| {
+                    sqlx::Error::ColumnDecode {
+                        index: "roles".into(),
+                        source: Box::new(err),
+                    }
+                })?;
+
+                Ok(UserWithRoles {
+                    id: row.try_get("id")?,
+                    pid: row.try_get("pid")?,
+                    name: row.try_get("name")?,
+                    email: row.try_get("email")?,
+                    image: row.try_get("image")?,
+                    verified: row.try_get("verified")?,
+                    roles,
+                    created_at: row.try_get("created_at")?,
+                    updated_at: row.try_get("updated_at")?,
+                })
+            })
+            .collect::<Result<Vec<_>, sqlx::Error>>()
+            .map_err(Into::into)
     }
 
     #[must_use]

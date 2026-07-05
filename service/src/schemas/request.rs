@@ -41,6 +41,18 @@ impl PermissionListQuery {
     }
 }
 
+#[derive(Debug, Deserialize, Serialize, Clone, Validate)]
+pub struct UserListQuery {
+    role: Option<String>,
+}
+
+impl UserListQuery {
+    #[must_use]
+    pub fn role(&self) -> Option<&str> {
+        self.role.as_deref()
+    }
+}
+
 impl PermissionRoleQuery {
     #[must_use]
     pub const fn role_id(&self) -> Option<i32> {

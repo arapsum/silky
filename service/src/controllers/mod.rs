@@ -11,6 +11,7 @@ mod auth;
 mod categories;
 mod permissions;
 mod roles;
+mod users;
 
 #[debug_handler]
 async fn health_check() -> impl IntoResponse {
@@ -40,6 +41,10 @@ pub fn router(ctx: &AppState) -> Router {
         .nest(
             "/roles",
             roles::router(ctx).layer(AuthLayer::new(ctx.clone())),
+        )
+        .nest(
+            "/users",
+            users::router(ctx).layer(AuthLayer::new(ctx.clone())),
         )
         .nest("/categories", categories::router(ctx))
         .fallback(not_found)

@@ -10,43 +10,44 @@ END;
 $$ LANGUAGE plpgsql;
 
 CREATE TABLE users (
-  id SERIAL PRIMARY KEY,
+    id SERIAL PRIMARY KEY,
 
-  pid UUID NOT NULL UNIQUE DEFAULT gen_random_uuid(),
+    pid UUID NOT NULL UNIQUE DEFAULT gen_random_uuid(),
 
-  name VARCHAR(255) NOT NULL CHECK (char_length(name) > 0),
-  email CITEXT NOT NULL UNIQUE,
+    name VARCHAR(255) NOT NULL CHECK (char_length(name) > 0),
+    email CITEXT NOT NULL UNIQUE,
+    image TEXT,
 
-  password_hash TEXT NOT NULL CHECK (char_length(password_hash) > 0),
+    password_hash TEXT NOT NULL CHECK (char_length(password_hash) > 0),
 
-  verified_at TIMESTAMPTZ,
+    verified_at TIMESTAMPTZ,
 
-  verification_token_hash TEXT,
-  verification_token_expires_at TIMESTAMPTZ,
+    verification_token_hash TEXT,
+    verification_token_expires_at TIMESTAMPTZ,
 
-  reset_token_hash TEXT,
-  reset_token_expires_at TIMESTAMPTZ,
+    reset_token_hash TEXT,
+    reset_token_expires_at TIMESTAMPTZ,
 
-  created_at TIMESTAMPTZ NOT NULL DEFAULT now(),
-  updated_at TIMESTAMPTZ NOT NULL DEFAULT now(),
+    created_at TIMESTAMPTZ NOT NULL DEFAULT now(),
+    updated_at TIMESTAMPTZ NOT NULL DEFAULT now(),
 
-  deleted_at TIMESTAMPTZ
+    deleted_at TIMESTAMPTZ
 );
 
 ALTER TABLE users
 ADD CONSTRAINT verification_token_consistency
 CHECK (
-  (verification_token_hash IS NULL AND verification_token_expires_at IS NULL)
-  OR
-  (verification_token_hash IS NOT NULL AND verification_token_expires_at IS NOT NULL)
+    (verification_token_hash IS NULL AND verification_token_expires_at IS NULL)
+    OR
+    (verification_token_hash IS NOT NULL AND verification_token_expires_at IS NOT NULL)
 );
 
 ALTER TABLE users
 ADD CONSTRAINT reset_token_consistency
 CHECK (
-  (reset_token_hash IS NULL AND reset_token_expires_at IS NULL)
-  OR
-  (reset_token_hash IS NOT NULL AND reset_token_expires_at IS NOT NULL)
+    (reset_token_hash IS NULL AND reset_token_expires_at IS NULL)
+    OR
+    (reset_token_hash IS NOT NULL AND reset_token_expires_at IS NOT NULL)
 );
 
 

@@ -1,4 +1,4 @@
-import { API_BASE_URL, getErrorResponse } from "#/api/client.ts";
+import { API_BASE_URL, apiRequest, getErrorResponse } from "#/api/client.ts";
 
 export type LoginCredentials = {
   email: string;
@@ -11,6 +11,10 @@ export type LoginResponse = {
   name: string;
   token: string;
   verified: boolean;
+};
+
+type MessageResponse = {
+  message: string;
 };
 
 export async function login(credentials: LoginCredentials): Promise<LoginResponse> {
@@ -30,4 +34,11 @@ export async function login(credentials: LoginCredentials): Promise<LoginRespons
   }
 
   return (await response.json()) as LoginResponse;
+}
+
+export function logout() {
+  return apiRequest<MessageResponse>("/auth/logout", {
+    method: "POST",
+    fallback: "Unable to sign out",
+  });
 }

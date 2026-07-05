@@ -1,9 +1,12 @@
 import { apiRequest } from "#/api/client.ts";
 
+export const currentUserQueryKey = ["current-user"] as const;
+
 export type CurrentUser = {
   pid: string;
   email: string;
   name: string;
+  image: string | null;
   verified: boolean;
   createdAt: string;
   updatedAt: string;
@@ -12,6 +15,7 @@ export type CurrentUser = {
 export type UpdateProfileInput = {
   name: string;
   email: string;
+  image?: string;
 };
 
 export type ChangePasswordInput = {

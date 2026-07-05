@@ -122,17 +122,17 @@ const dashboardRoutes: Route[] = [
     subs: [
       {
         title: "Customers",
-        link: "#",
+        link: "/people/customers",
         icon: <UsersIcon className="size-4" />,
       },
       {
         title: "Administrators",
-        link: "#",
+        link: "/people/administrators",
         icon: <GearIcon className="size-4" />,
       },
       {
         title: "Profiles",
-        link: "#",
+        link: "/people/profiles",
         icon: <LinkIcon className="size-4" />,
       },
     ],

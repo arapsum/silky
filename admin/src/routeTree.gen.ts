@@ -13,6 +13,7 @@ import { Route as MainRouteRouteImport } from './routes/_main/route'
 import { Route as MainIndexRouteImport } from './routes/_main/index'
 import { Route as MainSettingsIndexRouteImport } from './routes/_main/settings/index'
 import { Route as AuthSignInIndexRouteImport } from './routes/_auth/sign-in/index'
+import { Route as MainAccessControlRolesIndexRouteImport } from './routes/_main/access-control/roles/index'
 
 const MainRouteRoute = MainRouteRouteImport.update({
   id: '/_main',
@@ -33,16 +34,24 @@ const AuthSignInIndexRoute = AuthSignInIndexRouteImport.update({
   path: '/sign-in/',
   getParentRoute: () => rootRouteImport,
 } as any)
+const MainAccessControlRolesIndexRoute =
+  MainAccessControlRolesIndexRouteImport.update({
+    id: '/access-control/roles/',
+    path: '/access-control/roles/',
+    getParentRoute: () => MainRouteRoute,
+  } as any)
 
 export interface FileRoutesByFullPath {
   '/': typeof MainIndexRoute
   '/sign-in/': typeof AuthSignInIndexRoute
   '/settings/': typeof MainSettingsIndexRoute
+  '/access-control/roles/': typeof MainAccessControlRolesIndexRoute
 }
 export interface FileRoutesByTo {
   '/': typeof MainIndexRoute
   '/sign-in': typeof AuthSignInIndexRoute
   '/settings': typeof MainSettingsIndexRoute
+  '/access-control/roles': typeof MainAccessControlRolesIndexRoute
 }
 export interface FileRoutesById {
   __root__: typeof rootRouteImport
@@ -50,13 +59,20 @@ export interface FileRoutesById {
   '/_main/': typeof MainIndexRoute
   '/_auth/sign-in/': typeof AuthSignInIndexRoute
   '/_main/settings/': typeof MainSettingsIndexRoute
+  '/_main/access-control/roles/': typeof MainAccessControlRolesIndexRoute
 }
 export interface FileRouteTypes {
   fileRoutesByFullPath: FileRoutesByFullPath
-  fullPaths: '/' | '/sign-in/' | '/settings/'
+  fullPaths: '/' | '/sign-in/' | '/settings/' | '/access-control/roles/'
   fileRoutesByTo: FileRoutesByTo
-  to: '/' | '/sign-in' | '/settings'
-  id: '__root__' | '/_main' | '/_main/' | '/_auth/sign-in/' | '/_main/settings/'
+  to: '/' | '/sign-in' | '/settings' | '/access-control/roles'
+  id:
+    | '__root__'
+    | '/_main'
+    | '/_main/'
+    | '/_auth/sign-in/'
+    | '/_main/settings/'
+    | '/_main/access-control/roles/'
   fileRoutesById: FileRoutesById
 }
 export interface RootRouteChildren {
@@ -94,17 +110,26 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AuthSignInIndexRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/_main/access-control/roles/': {
+      id: '/_main/access-control/roles/'
+      path: '/access-control/roles'
+      fullPath: '/access-control/roles/'
+      preLoaderRoute: typeof MainAccessControlRolesIndexRouteImport
+      parentRoute: typeof MainRouteRoute
+    }
   }
 }
 
 interface MainRouteRouteChildren {
   MainIndexRoute: typeof MainIndexRoute
   MainSettingsIndexRoute: typeof MainSettingsIndexRoute
+  MainAccessControlRolesIndexRoute: typeof MainAccessControlRolesIndexRoute
 }
 
 const MainRouteRouteChildren: MainRouteRouteChildren = {
   MainIndexRoute: MainIndexRoute,
   MainSettingsIndexRoute: MainSettingsIndexRoute,
+  MainAccessControlRolesIndexRoute: MainAccessControlRolesIndexRoute,
 }
 
 const MainRouteRouteWithChildren = MainRouteRoute._addFileChildren(

@@ -145,7 +145,7 @@ const dashboardRoutes: Route[] = [
     subs: [
       {
         title: "Roles",
-        link: "#",
+        link: "/access-control/roles",
         icon: <GearIcon className="size-4" />,
       },
       {

@@ -1,6 +1,7 @@
 import { Field, FieldDescription, FieldError, FieldLabel } from "@/components/ui/field";
 import { Input } from "@/components/ui/input";
 import { Checkbox } from "@/components/ui/checkbox";
+import { Textarea } from "@/components/ui/textarea";
 import {
   Select,
   SelectContent,
@@ -23,11 +24,20 @@ import { EyeIcon, EyeSlashIcon, EnvelopeSimpleIcon } from "@phosphor-icons/react
 
 type SelectOption = { label: string; value: string };
 
-type FieldInputProps = Omit<
+type BaseInputProps = Omit<
   React.ComponentProps<"input">,
   "defaultValue" | "name" | "onBlur" | "onChange" | "ref" | "type" | "value"
+>;
+
+type TextareaInputProps = Omit<
+  React.ComponentProps<"textarea">,
+  "defaultValue" | "name" | "onBlur" | "onChange" | "ref" | "value"
 > & {
-  type?: HTMLInputElement["type"] | "select";
+  type: "textarea";
+};
+
+type FieldInputProps = (BaseInputProps | TextareaInputProps) & {
+  type?: HTMLInputElement["type"] | "select" | "textarea";
   /** Required when type="select" */
   options?: SelectOption[];
 };
@@ -107,10 +117,37 @@ function RenderInput<TField extends FieldValues>({
   input,
 }: RenderInputProps<TField>) {
   const [visible, setVisible] = useState(false);
-  const { type = "text", placeholder, options, className, disabled, required, ...rest } = input;
+  const type = input.type ?? "text";
 
   switch (type) {
+    case "textarea": {
+      const {
+        type: _type,
+        options: _options,
+        placeholder,
+        className,
+        disabled,
+        required,
+        ...rest
+      } = input as TextareaInputProps & { options?: SelectOption[] };
+
+      return (
+        <Textarea
+          {...field}
+          {...rest}
+          id={field.name}
+          placeholder={placeholder}
+          className={className}
+          disabled={disabled}
+          required={required}
+          aria-invalid={fieldState.invalid}
+        />
+      );
+    }
+
     case "password": {
+      const { placeholder, className, disabled, required, ...rest } = input as BaseInputProps;
+
       return (
         <div className="relative">
           <Input
@@ -141,6 +178,8 @@ function RenderInput<TField extends FieldValues>({
     }
 
     case "email": {
+      const { placeholder, className, disabled, required, ...rest } = input as BaseInputProps;
+
       return (
         <div className="relative">
           <Input
@@ -163,6 +202,10 @@ function RenderInput<TField extends FieldValues>({
     }
 
     case "select": {
+      const { placeholder, options, className, disabled, required } = input as BaseInputProps & {
+        options?: SelectOption[];
+      };
+
       if (process.env.NODE_ENV !== "production" && !options?.length) {
         console.warn(`FormField: "options" is required for select field "${field.name}"`);
       }
@@ -197,6 +240,8 @@ function RenderInput<TField extends FieldValues>({
     }
 
     case "checkbox": {
+      const { className, disabled, required } = input as BaseInputProps;
+
       return (
         <Checkbox
           id={field.name}
@@ -214,6 +259,15 @@ function RenderInput<TField extends FieldValues>({
     }
 
     default: {
+      const {
+        type = "text",
+        placeholder,
+        className,
+        disabled,
+        required,
+        ...rest
+      } = input as BaseInputProps & { type?: HTMLInputElement["type"] };
+
       return (
         <Input
           {...field}

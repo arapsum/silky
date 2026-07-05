@@ -1,0 +1,7 @@
+---
+source: tests/schemas/auth.rs
+expression: result
+---
+Ok(
+    "valid",
+)

@@ -153,11 +153,6 @@ const dashboardRoutes: Route[] = [
         link: "/access-control/permissions",
         icon: <LinkIcon className="size-4" />,
       },
-      {
-        title: "Role Assignments",
-        link: "/access-control/role-assignments",
-        icon: <UsersIcon className="size-4" />,
-      },
     ],
   },
   {

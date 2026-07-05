@@ -3,19 +3,22 @@
 import {
   ArrowClockwiseIcon,
   CaretDownIcon,
+  CheckCircleIcon,
   KeyIcon,
   MagnifyingGlassIcon,
   ShieldCheckIcon,
   SquaresFourIcon,
 } from "@phosphor-icons/react";
-import { useQuery } from "@tanstack/react-query";
-import { useMemo, useState } from "react";
+import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
+import { useEffect, useMemo, useState } from "react";
+import { toast } from "sonner";
 
 import { listPermissions, permissionsQueryKey, type Permission } from "#/api/permissions.ts";
-import { listRoles, rolesQueryKey } from "#/api/roles.ts";
+import { assignPermissionToRole, listRoles, rolesQueryKey, type Role } from "#/api/roles.ts";
 import { EmptyState } from "#/components/empty-state";
 import { ErrorState } from "#/components/error-state";
 import { Button } from "#/components/ui/button";
+import { Checkbox } from "#/components/ui/checkbox";
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "#/components/ui/collapsible";
 import { Input } from "#/components/ui/input";
 import {
@@ -51,13 +54,13 @@ function formatPermissionName(name: string) {
 function actionBadgeClass(action: string) {
   switch (action.toLowerCase()) {
     case "read":
-      return "bg-blue-50 text-blue-700 ring-blue-200";
+      return "bg-blue-50 text-blue-700 ring-blue-200 dark:bg-blue-950 dark:text-blue-300 dark:ring-blue-900";
     case "create":
-      return "bg-green-50 text-green-700 ring-green-200";
+      return "bg-green-50 text-green-700 ring-green-200 dark:bg-green-950 dark:text-green-300 dark:ring-green-900";
     case "update":
-      return "bg-amber-50 text-amber-700 ring-amber-200";
+      return "bg-amber-50 text-amber-700 ring-amber-200 dark:bg-amber-950 dark:text-amber-300 dark:ring-amber-900";
     case "delete":
-      return "bg-red-50 text-red-700 ring-red-200";
+      return "bg-red-50 text-red-700 ring-red-200 dark:bg-red-950 dark:text-red-300 dark:ring-red-900";
     default:
       return "bg-muted text-muted-foreground ring-border";
   }
@@ -72,14 +75,20 @@ function groupPermissions(permissions: Permission[]) {
   }, {});
 }
 
+function roleLabel(role: Role) {
+  return titleCase(role.name);
+}
+
 export default function PermissionsPage() {
+  const queryClient = useQueryClient();
   const [query, setQuery] = useState("");
   const [selectedRole, setSelectedRole] = useState(ALL_ROLES);
+  const [selectedPermissionIds, setSelectedPermissionIds] = useState<Set<number>>(new Set());
   const roleFilter = selectedRole === ALL_ROLES ? undefined : selectedRole;
 
-  const permissionsQuery = useQuery({
-    queryKey: [...permissionsQueryKey, roleFilter ?? "all"],
-    queryFn: () => listPermissions(roleFilter),
+  const allPermissionsQuery = useQuery({
+    queryKey: [...permissionsQueryKey, "all"],
+    queryFn: () => listPermissions(),
   });
 
   const rolesQuery = useQuery({
@@ -87,7 +96,27 @@ export default function PermissionsPage() {
     queryFn: listRoles,
   });
 
-  const permissions = permissionsQuery.data ?? [];
+  const selectedRoleModel = rolesQuery.data?.find((role) => role.name === roleFilter);
+  const isAssignmentMode = !!selectedRoleModel;
+
+  const assignedPermissionsQuery = useQuery({
+    queryKey: [...permissionsQueryKey, "role", roleFilter ?? "none"],
+    queryFn: () => listPermissions(roleFilter),
+    enabled: isAssignmentMode,
+  });
+
+  const assignedPermissionIds = useMemo(
+    () => new Set((assignedPermissionsQuery.data ?? []).map((permission) => permission.id)),
+    [assignedPermissionsQuery.data],
+  );
+
+  const permissions = allPermissionsQuery.data ?? [];
+  const pendingPermissionIds = useMemo(
+    () =>
+      [...selectedPermissionIds].filter((permissionId) => !assignedPermissionIds.has(permissionId)),
+    [assignedPermissionIds, selectedPermissionIds],
+  );
+
   const filteredPermissions = useMemo(() => {
     const needle = query.trim().toLowerCase();
     if (!needle) return permissions;
@@ -109,6 +138,66 @@ export default function PermissionsPage() {
     [filteredPermissions],
   );
   const groupEntries = Object.entries(groupedPermissions).sort(([a], [b]) => a.localeCompare(b));
+  const permissionsCountLabel = isAssignmentMode
+    ? `${assignedPermissionIds.size} of ${permissions.length} assigned`
+    : `${permissions.length} ${permissions.length === 1 ? "permission" : "permissions"}`;
+
+  const assignmentMutation = useMutation({
+    mutationFn: async () => {
+      if (!selectedRoleModel) return [];
+
+      return Promise.all(
+        pendingPermissionIds.map((permissionId) =>
+          assignPermissionToRole({
+            roleId: selectedRoleModel.id,
+            permissionId,
+          }),
+        ),
+      );
+    },
+    onSuccess: async (assignments) => {
+      await queryClient.invalidateQueries({ queryKey: permissionsQueryKey });
+      setSelectedPermissionIds(new Set());
+
+      toast.success(
+        `${assignments.length} ${assignments.length === 1 ? "permission" : "permissions"} assigned to ${selectedRoleModel ? roleLabel(selectedRoleModel) : "role"}`,
+        { id: "role-permissions-assigned" },
+      );
+    },
+    onError: (error) => {
+      toast.error(error.message, {
+        id: "role-permissions-assign-error",
+      });
+    },
+  });
+
+  useEffect(() => {
+    setSelectedPermissionIds(new Set());
+  }, [selectedRole]);
+
+  function togglePermission(permissionId: number, checked: boolean) {
+    setSelectedPermissionIds((current) => {
+      const next = new Set(current);
+
+      if (checked) {
+        next.add(permissionId);
+      } else {
+        next.delete(permissionId);
+      }
+
+      return next;
+    });
+  }
+
+  function refresh() {
+    void allPermissionsQuery.refetch();
+    void rolesQuery.refetch();
+    void assignedPermissionsQuery.refetch();
+  }
+
+  async function submitAssignments() {
+    await assignmentMutation.mutateAsync();
+  }
 
   return (
     <div className="w-full pb-10">
@@ -123,17 +212,21 @@ export default function PermissionsPage() {
         <Button
           type="button"
           variant="outline"
-          onClick={() => permissionsQuery.refetch()}
-          disabled={permissionsQuery.isFetching}
+          onClick={refresh}
+          disabled={allPermissionsQuery.isFetching || assignedPermissionsQuery.isFetching}
         >
           <ArrowClockwiseIcon
-            className={cn("size-4", permissionsQuery.isFetching && "animate-spin")}
+            className={cn(
+              "size-4",
+              (allPermissionsQuery.isFetching || assignedPermissionsQuery.isFetching) &&
+                "animate-spin",
+            )}
           />
           Refresh
         </Button>
       </div>
 
-      <div className="mb-4 grid gap-3 border-b pb-4 lg:grid-cols-[minmax(0,1fr)_16rem_auto] lg:items-center">
+      <div className="mb-4 grid gap-3 border-b pb-4 xl:grid-cols-[minmax(0,1fr)_16rem_auto_auto] xl:items-center">
         <div className="relative">
           <MagnifyingGlassIcon
             className="pointer-events-none absolute left-3 top-1/2 size-4 -translate-y-1/2 text-muted-foreground"
@@ -161,17 +254,39 @@ export default function PermissionsPage() {
           </SelectContent>
         </Select>
 
-        <div className="text-sm text-muted-foreground">
-          {permissions.length} {permissions.length === 1 ? "permission" : "permissions"}
-        </div>
+        <div className="text-sm text-muted-foreground">{permissionsCountLabel}</div>
+
+        <Button
+          type="button"
+          className="bg-blue-600 hover:bg-blue-700"
+          disabled={
+            !isAssignmentMode || !pendingPermissionIds.length || assignmentMutation.isPending
+          }
+          onClick={submitAssignments}
+        >
+          <CheckCircleIcon className="size-4" />
+          {assignmentMutation.isPending ? "Assigning..." : `Assign ${pendingPermissionIds.length}`}
+        </Button>
       </div>
 
       <PermissionsContent
         groups={groupEntries}
         query={query}
-        isLoading={permissionsQuery.isLoading}
-        isError={permissionsQuery.isError}
-        onRetry={() => permissionsQuery.refetch()}
+        isLoading={
+          allPermissionsQuery.isLoading ||
+          rolesQuery.isLoading ||
+          (isAssignmentMode && assignedPermissionsQuery.isLoading)
+        }
+        isError={
+          allPermissionsQuery.isError ||
+          rolesQuery.isError ||
+          (isAssignmentMode && assignedPermissionsQuery.isError)
+        }
+        isAssignmentMode={isAssignmentMode}
+        assignedPermissionIds={assignedPermissionIds}
+        selectedPermissionIds={selectedPermissionIds}
+        onTogglePermission={togglePermission}
+        onRetry={refresh}
       />
     </div>
   );
@@ -182,12 +297,20 @@ function PermissionsContent({
   query,
   isLoading,
   isError,
+  isAssignmentMode,
+  assignedPermissionIds,
+  selectedPermissionIds,
+  onTogglePermission,
   onRetry,
 }: {
   groups: [string, Permission[]][];
   query: string;
   isLoading: boolean;
   isError: boolean;
+  isAssignmentMode: boolean;
+  assignedPermissionIds: Set<number>;
+  selectedPermissionIds: Set<number>;
+  onTogglePermission: (permissionId: number, checked: boolean) => void;
   onRetry: () => void;
 }) {
   if (isLoading) {
@@ -238,7 +361,15 @@ function PermissionsContent({
   return (
     <div className="columns-1 gap-4 lg:columns-2">
       {groups.map(([resource, permissions]) => (
-        <PermissionGroup key={resource} resource={resource} permissions={permissions} />
+        <PermissionGroup
+          key={resource}
+          resource={resource}
+          permissions={permissions}
+          isAssignmentMode={isAssignmentMode}
+          assignedPermissionIds={assignedPermissionIds}
+          selectedPermissionIds={selectedPermissionIds}
+          onTogglePermission={onTogglePermission}
+        />
       ))}
     </div>
   );
@@ -247,11 +378,22 @@ function PermissionsContent({
 function PermissionGroup({
   resource,
   permissions,
+  isAssignmentMode,
+  assignedPermissionIds,
+  selectedPermissionIds,
+  onTogglePermission,
 }: {
   resource: string;
   permissions: Permission[];
+  isAssignmentMode: boolean;
+  assignedPermissionIds: Set<number>;
+  selectedPermissionIds: Set<number>;
+  onTogglePermission: (permissionId: number, checked: boolean) => void;
 }) {
   const [isOpen, setIsOpen] = useState(true);
+  const assignedCount = isAssignmentMode
+    ? permissions.filter((permission) => assignedPermissionIds.has(permission.id)).length
+    : permissions.length;
 
   return (
     <Collapsible className="mb-4 break-inside-avoid" open={isOpen} onOpenChange={setIsOpen}>
@@ -271,7 +413,9 @@ function PermissionGroup({
             <div className="min-w-0">
               <h2 className="truncate text-lg font-semibold">{titleCase(resource)}</h2>
               <p className="text-sm text-muted-foreground">
-                {permissions.length} {permissions.length === 1 ? "permission" : "permissions"}
+                {isAssignmentMode
+                  ? `${assignedCount} of ${permissions.length} assigned`
+                  : `${permissions.length} ${permissions.length === 1 ? "permission" : "permissions"}`}
               </p>
             </div>
           </div>
@@ -288,7 +432,14 @@ function PermissionGroup({
         <CollapsibleContent>
           <div className="mt-5 grid gap-3">
             {permissions.map((permission) => (
-              <PermissionRow key={permission.pid} permission={permission} />
+              <PermissionRow
+                key={permission.pid}
+                permission={permission}
+                isAssignmentMode={isAssignmentMode}
+                isAssigned={assignedPermissionIds.has(permission.id)}
+                isSelected={selectedPermissionIds.has(permission.id)}
+                onToggle={(checked) => onTogglePermission(permission.id, checked)}
+              />
             ))}
           </div>
         </CollapsibleContent>
@@ -297,14 +448,38 @@ function PermissionGroup({
   );
 }
 
-function PermissionRow({ permission }: { permission: Permission }) {
+function PermissionRow({
+  permission,
+  isAssignmentMode,
+  isAssigned,
+  isSelected,
+  onToggle,
+}: {
+  permission: Permission;
+  isAssignmentMode: boolean;
+  isAssigned: boolean;
+  isSelected: boolean;
+  onToggle: (checked: boolean) => void;
+}) {
   const { action } = splitPermissionName(permission.name);
+  const content = (
+    <>
+      {isAssignmentMode && (
+        <Checkbox
+          className="mt-1"
+          checked={isAssigned || isSelected}
+          disabled={isAssigned}
+          onCheckedChange={(checked) => onToggle(checked === true)}
+          aria-label={formatPermissionName(permission.name)}
+        />
+      )}
 
-  return (
-    <div className="flex items-start gap-3 rounded-lg border bg-muted/20 p-3">
-      <span className="mt-0.5 flex size-8 shrink-0 items-center justify-center rounded-lg bg-background text-muted-foreground">
-        <ShieldCheckIcon className="size-4" aria-hidden />
-      </span>
+      {!isAssignmentMode && (
+        <span className="mt-0.5 flex size-8 shrink-0 items-center justify-center rounded-lg bg-background text-muted-foreground">
+          <ShieldCheckIcon className="size-4" aria-hidden />
+        </span>
+      )}
+
       <div className="min-w-0 flex-1">
         <div className="flex flex-wrap items-center gap-2">
           <h3 className="text-sm font-medium">{formatPermissionName(permission.name)}</h3>
@@ -316,12 +491,32 @@ function PermissionRow({ permission }: { permission: Permission }) {
           >
             {titleCase(action)}
           </span>
+          {isAssigned && (
+            <span className="rounded-full bg-green-50 px-2 py-0.5 text-xs font-medium text-green-700 ring-1 ring-green-200 dark:bg-green-950 dark:text-green-300 dark:ring-green-900">
+              Assigned
+            </span>
+          )}
         </div>
         <p className="mt-1 text-sm text-muted-foreground">
           {permission.description || "No description"}
         </p>
         <p className="mt-2 text-xs text-muted-foreground">{permission.name}</p>
       </div>
-    </div>
+    </>
   );
+
+  if (isAssignmentMode) {
+    return (
+      <label
+        className={cn(
+          "flex items-start gap-3 rounded-lg border bg-muted/20 p-3",
+          isAssigned && "bg-green-50/60 dark:bg-green-950/20",
+        )}
+      >
+        {content}
+      </label>
+    );
+  }
+
+  return <div className="flex items-start gap-3 rounded-lg border bg-muted/20 p-3">{content}</div>;
 }

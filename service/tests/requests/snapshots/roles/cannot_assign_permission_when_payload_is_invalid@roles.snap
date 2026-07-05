@@ -1,0 +1,8 @@
+---
+source: tests/requests/roles.rs
+expression: "(response.status_code(), response.text())"
+---
+(
+    400,
+    "{\"error\":\"{\\\"permission_id\\\":\\\"Permission ID must be a positive integer\\\",\\\"role_id\\\":\\\"Role ID must be a positive integer\\\"}\"}",
+)

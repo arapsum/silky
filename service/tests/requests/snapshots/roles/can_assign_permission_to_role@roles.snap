@@ -1,0 +1,8 @@
+---
+source: tests/requests/roles.rs
+expression: "(response.status_code(), response.text())"
+---
+(
+    201,
+    "{\"id\":17,\"pid\":\"PID\",\"roleId\":22,\"permissionId\":114,\"createdAt\":\"DATE\",\"updatedAt\":\"DATE\"}",
+)

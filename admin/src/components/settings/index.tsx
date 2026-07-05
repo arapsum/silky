@@ -1,26 +1,27 @@
 "use client";
 
 import { zodResolver } from "@hookform/resolvers/zod";
-import { CheckIcon, XIcon } from "@phosphor-icons/react";
+import { CheckIcon, ImageSquareIcon, UploadSimpleIcon, XIcon } from "@phosphor-icons/react";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
-import { useEffect } from "react";
+import { useEffect, useRef, useState, type ChangeEvent, type DragEvent } from "react";
 import { useForm } from "react-hook-form";
 import { toast } from "sonner";
 import { z } from "zod";
 
 import {
   changePassword,
+  currentUserQueryKey,
   getCurrentUser,
   updateCurrentUser,
   type CurrentUser,
 } from "#/api/account.ts";
+import { uploadAvatarImage } from "#/api/uploads.ts";
 import FormField from "#/components/form-field";
+import { Avatar, AvatarFallback, AvatarImage } from "#/components/ui/avatar";
 import { Button } from "#/components/ui/button";
 import { Separator } from "#/components/ui/separator";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "#/components/ui/tabs";
 import { cn } from "#/lib/utils";
-
-const currentUserQueryKey = ["current-user"] as const;
 
 const PASSWORD_RULES: { id: string; label: string; test: (v: string) => boolean }[] = [
   { id: "length", label: "At least 12 characters", test: (v) => v.length >= 12 },
@@ -32,6 +33,9 @@ const PASSWORD_RULES: { id: string; label: string; test: (v: string) => boolean 
 
 const tabTriggerClass =
   "relative rounded-none border-b-2 border-transparent bg-transparent px-0.5 pb-3 pt-0 font-medium text-muted-foreground shadow-none transition-colors hover:text-foreground data-[state=active]:border-foreground data-[state=active]:bg-transparent data-[state=active]:text-foreground data-[state=active]:shadow-none";
+
+const AVATAR_MAX_BYTES = 1024 * 1024;
+const AVATAR_TYPES = new Set(["image/jpeg", "image/png", "image/webp"]);
 
 const personalInfoSchema = z.object({
   name: z
@@ -94,8 +98,34 @@ function SectionHeader({ title, description }: { title: string; description: str
   );
 }
 
+function userInitials(name?: string) {
+  return (name ?? "User")
+    .split(/\s+/)
+    .filter(Boolean)
+    .slice(0, 2)
+    .map((part) => part[0]?.toUpperCase())
+    .join("");
+}
+
+function validateAvatarFile(file: File) {
+  if (!AVATAR_TYPES.has(file.type)) {
+    return "Upload a PNG, JPG or WebP image";
+  }
+
+  if (file.size > AVATAR_MAX_BYTES) {
+    return "Avatar must be 1MB or smaller";
+  }
+
+  return null;
+}
+
 function PersonalInformationSection({ user }: { user?: CurrentUser }) {
   const queryClient = useQueryClient();
+  const fileInputRef = useRef<HTMLInputElement>(null);
+  const [avatarFile, setAvatarFile] = useState<File | null>(null);
+  const [avatarPreviewUrl, setAvatarPreviewUrl] = useState<string>();
+  const [avatarError, setAvatarError] = useState<string>();
+  const [isDraggingAvatar, setIsDraggingAvatar] = useState(false);
   const form = useForm<PersonalInfoValues>({
     resolver: zodResolver(personalInfoSchema),
     defaultValues: { name: "" },
@@ -107,18 +137,64 @@ function PersonalInformationSection({ user }: { user?: CurrentUser }) {
     }
   }, [form, user]);
 
+  useEffect(() => {
+    return () => {
+      if (avatarPreviewUrl) URL.revokeObjectURL(avatarPreviewUrl);
+    };
+  }, [avatarPreviewUrl]);
+
+  const watchedName = form.watch("name");
+  const avatarPreview = avatarPreviewUrl || user?.image || undefined;
+  const initials = userInitials(watchedName || user?.name);
+
+  function selectAvatar(file?: File) {
+    if (!file) return;
+
+    const error = validateAvatarFile(file);
+    if (error) {
+      setAvatarError(error);
+      return;
+    }
+
+    setAvatarError(undefined);
+    setAvatarFile(file);
+    setAvatarPreviewUrl((current) => {
+      if (current) URL.revokeObjectURL(current);
+      return URL.createObjectURL(file);
+    });
+  }
+
+  function onAvatarInputChange(event: ChangeEvent<HTMLInputElement>) {
+    selectAvatar(event.target.files?.[0]);
+    event.target.value = "";
+  }
+
+  function onAvatarDrop(event: DragEvent<HTMLButtonElement>) {
+    event.preventDefault();
+    setIsDraggingAvatar(false);
+    selectAvatar(event.dataTransfer.files[0]);
+  }
+
   const updateProfileMutation = useMutation({
     mutationFn: async (values: PersonalInfoValues) => {
       if (!user) throw new Error("Unable to load account details");
+      const image = avatarFile ? await uploadAvatarImage(avatarFile) : user.image || undefined;
 
       return updateCurrentUser({
         name: values.name,
         email: user.email,
+        image,
       });
     },
     onSuccess: (updatedUser) => {
       queryClient.setQueryData(currentUserQueryKey, updatedUser);
       form.reset({ name: updatedUser.name });
+      setAvatarFile(null);
+      setAvatarError(undefined);
+      setAvatarPreviewUrl((current) => {
+        if (current) URL.revokeObjectURL(current);
+        return undefined;
+      });
       toast.success("Personal information updated", {
         id: "settings-profile-success",
       });
@@ -142,6 +218,59 @@ function PersonalInformationSection({ user }: { user?: CurrentUser }) {
       />
 
       <div className="space-y-6 lg:col-span-2">
+        <div className="grid gap-4 sm:grid-cols-[auto_1fr] sm:items-center">
+          <Avatar className="size-16">
+            <AvatarImage src={avatarPreview} alt={watchedName || user?.name || "User avatar"} />
+            <AvatarFallback>{initials}</AvatarFallback>
+          </Avatar>
+
+          <button
+            type="button"
+            onClick={() => fileInputRef.current?.click()}
+            onDragEnter={(event) => {
+              event.preventDefault();
+              setIsDraggingAvatar(true);
+            }}
+            onDragOver={(event) => {
+              event.preventDefault();
+              setIsDraggingAvatar(true);
+            }}
+            onDragLeave={() => setIsDraggingAvatar(false)}
+            onDrop={onAvatarDrop}
+            className={cn(
+              "flex min-h-24 w-full items-center justify-between gap-4 rounded-lg border border-dashed border-border bg-muted/30 px-4 py-3 text-left transition-colors hover:border-foreground/40 hover:bg-muted/50 focus-visible:outline-none focus-visible:ring-3 focus-visible:ring-ring/30",
+              isDraggingAvatar && "border-foreground/50 bg-muted",
+              avatarError && "border-destructive bg-destructive/5",
+            )}
+          >
+            <span className="flex min-w-0 items-center gap-3">
+              <span className="flex size-10 shrink-0 items-center justify-center rounded-full bg-background text-muted-foreground">
+                <ImageSquareIcon className="size-5" aria-hidden />
+              </span>
+              <span className="min-w-0">
+                <span className="block text-sm font-medium">
+                  {avatarFile ? avatarFile.name : "Upload avatar"}
+                </span>
+                <span className="block truncate text-xs text-muted-foreground">
+                  PNG, JPG or WebP up to 1MB
+                </span>
+                {avatarError && (
+                  <span className="mt-1 block text-xs text-destructive">{avatarError}</span>
+                )}
+              </span>
+            </span>
+            <UploadSimpleIcon className="size-5 shrink-0 text-muted-foreground" aria-hidden />
+          </button>
+
+          <input
+            ref={fileInputRef}
+            type="file"
+            accept="image/png,image/jpeg,image/webp"
+            className="sr-only"
+            onChange={onAvatarInputChange}
+          />
+        </div>
+
         <FormField
           control={form.control}
           name="name"

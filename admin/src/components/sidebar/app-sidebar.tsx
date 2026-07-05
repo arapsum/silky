@@ -10,6 +10,8 @@ import {
   AlertDialogHeader,
   AlertDialogTitle,
 } from "@/components/ui/alert-dialog";
+import { currentUserQueryKey, getCurrentUser, type CurrentUser } from "@/api/account";
+import { logout } from "@/api/auth";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Button } from "@/components/ui/button";
 import {
@@ -27,7 +29,10 @@ import {
   SidebarHeader,
   useSidebar,
 } from "@/components/ui/sidebar";
+import { Skeleton } from "@/components/ui/skeleton";
 import { cn } from "@/lib/utils";
+import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
+import { useNavigate } from "@tanstack/react-router";
 import {
   PulseIcon,
   CurrencyDollarIcon,
@@ -46,16 +51,10 @@ import {
   SignOutIcon,
 } from "@phosphor-icons/react";
 import { useState } from "react";
+import { toast } from "sonner";
 import { Logo } from "./logo";
 import type { Route } from "./nav-main";
 import DashboardNavigation from "./nav-main";
-
-const currentUser = {
-  name: "Silk Admin",
-  email: "admin@silk.local",
-  image: "",
-  fallback: "SA",
-};
 
 const dashboardRoutes: Route[] = [
   {
@@ -306,6 +305,17 @@ const dashboardRoutes: Route[] = [
   },
 ];
 
+function userInitials(name?: string) {
+  const initials = (name ?? "User")
+    .split(/\s+/)
+    .filter(Boolean)
+    .slice(0, 2)
+    .map((part) => part[0]?.toUpperCase())
+    .join("");
+
+  return initials || "U";
+}
+
 export function AppSidebar() {
   const { state } = useSidebar();
   const isCollapsed = state === "collapsed";
@@ -336,11 +346,37 @@ export function AppSidebar() {
 }
 
 function UserAccountMenu({ isCollapsed }: { isCollapsed: boolean }) {
+  const navigate = useNavigate();
+  const queryClient = useQueryClient();
   const [isLogoutDialogOpen, setIsLogoutDialogOpen] = useState(false);
+  const currentUserQuery = useQuery({
+    queryKey: currentUserQueryKey,
+    queryFn: getCurrentUser,
+  });
 
-  const handleConfirmLogout = () => {
-    setIsLogoutDialogOpen(false);
-  };
+  const currentUser = currentUserQuery.data;
+  const fallback = userInitials(currentUser?.name);
+
+  const logoutMutation = useMutation({
+    mutationFn: logout,
+    onSuccess: async (response) => {
+      setIsLogoutDialogOpen(false);
+      queryClient.removeQueries({ queryKey: currentUserQueryKey });
+      toast.success(response.message || "Signed out successfully", {
+        id: "sign-out-success",
+      });
+      await navigate({ to: "/sign-in" });
+    },
+    onError: (error) => {
+      toast.error(error.message, {
+        id: "sign-out-error",
+      });
+    },
+  });
+
+  async function handleConfirmLogout() {
+    await logoutMutation.mutateAsync();
+  }
 
   return (
     <AlertDialog open={isLogoutDialogOpen} onOpenChange={setIsLogoutDialogOpen}>
@@ -357,33 +393,26 @@ function UserAccountMenu({ isCollapsed }: { isCollapsed: boolean }) {
             />
           }
         >
-          <Avatar>
-            <AvatarImage src={currentUser.image} alt={currentUser.name} />
-            <AvatarFallback>{currentUser.fallback}</AvatarFallback>
-          </Avatar>
+          <AccountAvatar user={currentUser} fallback={fallback} />
           {!isCollapsed && (
-            <span className="grid min-w-0 flex-1 text-left">
-              <span className="truncate text-sm font-medium">{currentUser.name}</span>
-              <span className="truncate text-xs text-muted-foreground">{currentUser.email}</span>
-            </span>
+            <AccountSummary
+              user={currentUser}
+              isLoading={currentUserQuery.isLoading}
+              hasError={currentUserQuery.isError}
+            />
           )}
         </DropdownMenuTrigger>
 
         <DropdownMenuContent align="end" side="right" sideOffset={8} className="w-64">
           <DropdownMenuLabel>
             <div className="flex items-center gap-3">
-              <Avatar size="lg">
-                <AvatarImage src={currentUser.image} alt={currentUser.name} />
-                <AvatarFallback>{currentUser.fallback}</AvatarFallback>
-              </Avatar>
-              <div className="grid min-w-0">
-                <span className="truncate text-sm font-medium text-foreground">
-                  {currentUser.name}
-                </span>
-                <span className="truncate text-xs font-normal text-muted-foreground">
-                  {currentUser.email}
-                </span>
-              </div>
+              <AccountAvatar user={currentUser} fallback={fallback} size="lg" />
+              <AccountSummary
+                user={currentUser}
+                isLoading={currentUserQuery.isLoading}
+                hasError={currentUserQuery.isError}
+                className="min-w-0"
+              />
             </div>
           </DropdownMenuLabel>
 
@@ -400,17 +429,77 @@ function UserAccountMenu({ isCollapsed }: { isCollapsed: boolean }) {
         <AlertDialogHeader>
           <AlertDialogTitle>Sign out?</AlertDialogTitle>
           <AlertDialogDescription>
-            You will need to sign in again before continuing in the admin dashboard.
+            {currentUser
+              ? `You are signed in as ${currentUser.email}. You will be redirected to sign in after signing out.`
+              : "You will be redirected to sign in after signing out."}
           </AlertDialogDescription>
         </AlertDialogHeader>
 
         <AlertDialogFooter>
-          <AlertDialogCancel>Cancel</AlertDialogCancel>
-          <AlertDialogAction variant="destructive" onClick={handleConfirmLogout}>
-            Sign out
+          <AlertDialogCancel disabled={logoutMutation.isPending}>Cancel</AlertDialogCancel>
+          <AlertDialogAction
+            variant="destructive"
+            disabled={logoutMutation.isPending}
+            onClick={handleConfirmLogout}
+          >
+            {logoutMutation.isPending ? "Signing out..." : "Sign out"}
           </AlertDialogAction>
         </AlertDialogFooter>
       </AlertDialogContent>
     </AlertDialog>
+  );
+}
+
+function AccountAvatar({
+  user,
+  fallback,
+  size,
+}: {
+  user?: CurrentUser;
+  fallback: string;
+  size?: "default" | "lg";
+}) {
+  return (
+    <Avatar size={size}>
+      <AvatarImage src={user?.image ?? undefined} alt={user?.name ?? "Current user"} />
+      <AvatarFallback>{fallback}</AvatarFallback>
+    </Avatar>
+  );
+}
+
+function AccountSummary({
+  user,
+  isLoading,
+  hasError,
+  className,
+}: {
+  user?: CurrentUser;
+  isLoading: boolean;
+  hasError: boolean;
+  className?: string;
+}) {
+  if (isLoading) {
+    return (
+      <span className={cn("grid min-w-0 flex-1 gap-1", className)}>
+        <Skeleton className="h-4 w-24" />
+        <Skeleton className="h-3 w-32" />
+      </span>
+    );
+  }
+
+  if (hasError || !user) {
+    return (
+      <span className={cn("grid min-w-0 flex-1 text-left", className)}>
+        <span className="truncate text-sm font-medium">Account unavailable</span>
+        <span className="truncate text-xs text-muted-foreground">Sign out and try again</span>
+      </span>
+    );
+  }
+
+  return (
+    <span className={cn("grid min-w-0 flex-1 text-left", className)}>
+      <span className="truncate text-sm font-medium">{user.name}</span>
+      <span className="truncate text-xs text-muted-foreground">{user.email}</span>
+    </span>
   );
 }

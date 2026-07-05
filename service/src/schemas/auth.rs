@@ -25,6 +25,8 @@ pub struct RegisterUser<'a> {
     password: Cow<'a, str>,
     #[validate(must_match(other = "password", message = "Passwords do not match"))]
     confirm_password: Cow<'a, str>,
+    #[validate(url(message = "Invalid image URL"))]
+    image: Option<Cow<'a, str>>,
 }
 
 impl<'a> RegisterUser<'a> {
@@ -34,12 +36,14 @@ impl<'a> RegisterUser<'a> {
         name: Cow<'a, str>,
         password: Cow<'a, str>,
         confirm_password: Cow<'a, str>,
+        image: Option<Cow<'a, str>>,
     ) -> Self {
         Self {
             email,
             name,
             password,
             confirm_password,
+            image,
         }
     }
 
@@ -61,6 +65,11 @@ impl<'a> RegisterUser<'a> {
     #[must_use]
     pub fn confirm_password(&self) -> &str {
         &self.confirm_password
+    }
+
+    #[must_use]
+    pub const fn image(&self) -> Option<&Cow<'a, str>> {
+        self.image.as_ref()
     }
 }
 
@@ -193,12 +202,14 @@ pub struct UpdateProfile<'a> {
     name: Cow<'a, str>,
     #[validate(email(message = "Invalid email address"))]
     email: Cow<'a, str>,
+    #[validate(url(message = "Invalid image URL"))]
+    image: Option<Cow<'a, str>>,
 }
 
 impl<'a> UpdateProfile<'a> {
     #[must_use]
-    pub const fn new(name: Cow<'a, str>, email: Cow<'a, str>) -> Self {
-        Self { name, email }
+    pub const fn new(name: Cow<'a, str>, email: Cow<'a, str>, image: Option<Cow<'a, str>>) -> Self {
+        Self { name, email, image }
     }
 
     #[must_use]
@@ -209,6 +220,11 @@ impl<'a> UpdateProfile<'a> {
     #[must_use]
     pub fn email(&self) -> &str {
         &self.email
+    }
+
+    #[must_use]
+    pub const fn image(&self) -> Option<&Cow<'a, str>> {
+        self.image.as_ref()
     }
 }
 

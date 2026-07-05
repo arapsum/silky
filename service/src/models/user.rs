@@ -22,6 +22,7 @@ pub struct User {
     // user provided details
     name: String,
     email: String,
+    image: Option<String>,
     password_hash: String,
     // email verification
     verified_at: Option<DateTime<FixedOffset>>,
@@ -66,14 +67,15 @@ impl User {
 
         let user = sqlx::query_as::<_, Self>(
             r"
-            INSERT INTO users (name, email, password_hash)
-            VALUES ($1, $2, $3)
+            INSERT INTO users (name, email, password_hash, image)
+            VALUES ($1, $2, $3, $4)
             RETURNING *
         ",
         )
         .bind(params.name())
         .bind(params.email())
         .bind(password_hash)
+        .bind(params.image())
         .fetch_one(&mut *txn)
         .await?;
 
@@ -269,6 +271,7 @@ impl User {
             SET
                 name = $2,
                 email = $3,
+                image = COALESCE($4, image),
                 updated_at = NOW()
             WHERE id = $1
             RETURNING *
@@ -277,6 +280,7 @@ impl User {
         .bind(user.id)
         .bind(params.name())
         .bind(params.email())
+        .bind(params.image())
         .fetch_one(&mut *txn)
         .await?;
 
@@ -573,6 +577,11 @@ impl User {
     pub const fn deleted_at(&self) -> Option<DateTime<FixedOffset>> {
         self.deleted_at
     }
+
+    #[must_use]
+    pub const fn image(&self) -> Option<&String> {
+        self.image.as_ref()
+    }
 }
 
 impl Seedable for User {
@@ -591,18 +600,20 @@ impl Seedable for User {
                     email,
                     name,
                     password_hash,
+                    image,
                     verified_at,
                     verification_token_hash,
                     verification_token_expires_at,
                     created_at,
                     updated_at
                 )
-                VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10)
+                VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11)
                 ON CONFLICT (id) DO UPDATE SET
                     pid = EXCLUDED.pid,
                     email = EXCLUDED.email,
                     name = EXCLUDED.name,
                     password_hash = EXCLUDED.password_hash,
+                    image = EXCLUDED.image,
                     verified_at = EXCLUDED.verified_at,
                     verification_token_hash = EXCLUDED.verification_token_hash,
                     verification_token_expires_at = EXCLUDED.verification_token_expires_at,
@@ -615,6 +626,7 @@ impl Seedable for User {
             .bind(user.email.as_str())
             .bind(user.name.as_str())
             .bind(user.password_hash.as_str())
+            .bind(user.image.as_deref())
             .bind(user.verified_at)
             .bind(verification_token_hash.as_deref())
             .bind(user.verification_token_expires_at)

@@ -24,6 +24,7 @@ async fn create(
     let validated = validator.validate()?;
 
     let new_role = Role::create(ctx.db(), validated).await?;
+    let new_role = Role::find_with_users_by_pid(ctx.db(), new_role.pid()).await?;
 
     Ok((StatusCode::CREATED, Json(new_role)).into_response())
 }
@@ -31,7 +32,7 @@ async fn create(
 #[tracing::instrument(skip(ctx))]
 #[debug_handler]
 async fn list(State(ctx): State<AppState>) -> Result<Response> {
-    let roles = Role::find_list(ctx.db()).await?;
+    let roles = Role::find_list_with_users(ctx.db()).await?;
 
     Ok((StatusCode::OK, Json(roles)).into_response())
 }
@@ -47,6 +48,7 @@ async fn update(
     let validated = validator.validate()?;
 
     let updated_role = Role::update(ctx.db(), pid, validated).await?;
+    let updated_role = Role::find_with_users_by_pid(ctx.db(), updated_role.pid()).await?;
 
     Ok((StatusCode::CREATED, Json(updated_role)).into_response())
 }
@@ -54,7 +56,7 @@ async fn update(
 #[tracing::instrument(skip(ctx))]
 #[debug_handler]
 async fn one(State(ctx): State<AppState>, AppPath(pid): AppPath<Uuid>) -> Result<Response> {
-    let role = Role::find_by_pid(ctx.db(), pid).await?;
+    let role = Role::find_with_users_by_pid(ctx.db(), pid).await?;
 
     Ok((StatusCode::OK, Json(role)).into_response())
 }

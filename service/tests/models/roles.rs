@@ -4,7 +4,7 @@ use insta::{Settings, assert_debug_snapshot, with_settings};
 use rstest::rstest;
 use serial_test::serial;
 use service::{
-    models::Role,
+    models::{Role, User, UserRole},
     schemas::{NewRole, UpdateRole},
 };
 use uuid::Uuid;
@@ -34,6 +34,18 @@ fn update_role(name: Option<String>, description: Option<String>) -> UpdateRole<
 
 fn uuid(value: &str) -> Uuid {
     Uuid::parse_str(value).expect("Failed to parse UUID")
+}
+
+async fn seed_users_roles_and_assignments(db: &sqlx::PgPool) {
+    User::seed_data(db, "users.json")
+        .await
+        .expect("Failed to seed users");
+    Role::seed_data(db, "roles.json")
+        .await
+        .expect("Failed to seed roles");
+    UserRole::seed_data(db, "userRoles.json")
+        .await
+        .expect("Failed to seed user roles");
 }
 
 #[rstest]
@@ -259,6 +271,103 @@ async fn can_find_role_list(#[case] test_name: &str) {
         .expect("Failed to seed roles");
 
     let result = Role::find_list(ctx.db()).await;
+
+    assert_debug_snapshot!(test_name, result);
+}
+
+#[rstest]
+#[case("can_find_role_list_with_users")]
+#[tokio::test]
+#[serial]
+async fn can_find_role_list_with_users(#[case] test_name: &str) {
+    configure_insta!();
+
+    let ctx = boot_test().await.unwrap();
+
+    seed_users_roles_and_assignments(ctx.db()).await;
+
+    let result = Role::find_list_with_users(ctx.db()).await;
+
+    assert_debug_snapshot!(test_name, result);
+}
+
+#[rstest]
+#[case("can_find_role_list_with_empty_users")]
+#[tokio::test]
+#[serial]
+async fn can_find_role_list_with_empty_users(#[case] test_name: &str) {
+    configure_insta!();
+
+    let ctx = boot_test().await.unwrap();
+
+    Role::seed_data(ctx.db(), "roles.json")
+        .await
+        .expect("Failed to seed roles");
+
+    let result = Role::find_list_with_users(ctx.db()).await;
+
+    assert_debug_snapshot!(test_name, result);
+}
+
+#[rstest]
+#[case(
+    "can_find_administrator_role_with_users_by_pid",
+    "7d416019-34c6-4f25-a39a-fa6752f8b319"
+)]
+#[case(
+    "can_find_customer_role_with_users_by_pid",
+    "f028f910-1a4f-4b79-8619-71a8c185e221"
+)]
+#[tokio::test]
+#[serial]
+async fn can_find_role_with_users_by_pid(#[case] test_name: &str, #[case] pid: &str) {
+    configure_insta!();
+
+    let ctx = boot_test().await.unwrap();
+
+    seed_users_roles_and_assignments(ctx.db()).await;
+
+    let result = Role::find_with_users_by_pid(ctx.db(), uuid(pid)).await;
+
+    assert_debug_snapshot!(test_name, result);
+}
+
+#[rstest]
+#[case(
+    "can_find_role_with_empty_users_by_pid",
+    "7d416019-34c6-4f25-a39a-fa6752f8b319"
+)]
+#[tokio::test]
+#[serial]
+async fn can_find_role_with_empty_users_by_pid(#[case] test_name: &str, #[case] pid: &str) {
+    configure_insta!();
+
+    let ctx = boot_test().await.unwrap();
+
+    Role::seed_data(ctx.db(), "roles.json")
+        .await
+        .expect("Failed to seed roles");
+
+    let result = Role::find_with_users_by_pid(ctx.db(), uuid(pid)).await;
+
+    assert_debug_snapshot!(test_name, result);
+}
+
+#[rstest]
+#[case(
+    "cannot_find_role_with_users_when_pid_does_not_exist",
+    "00000000-0000-0000-0000-000000000000"
+)]
+#[tokio::test]
+#[serial]
+async fn cannot_find_role_with_users_by_pid(#[case] test_name: &str, #[case] pid: &str) {
+    configure_insta!();
+
+    let ctx = boot_test().await.unwrap();
+
+    seed_users_roles_and_assignments(ctx.db()).await;
+
+    let result = Role::find_with_users_by_pid(ctx.db(), uuid(pid)).await;
 
     assert_debug_snapshot!(test_name, result);
 }

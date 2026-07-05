@@ -1,6 +1,6 @@
 use chrono::{DateTime, FixedOffset};
 use serde::{Deserialize, Serialize};
-use sqlx::{Encode, Executor, PgPool, Postgres, prelude::FromRow};
+use sqlx::{Encode, Executor, PgPool, Postgres, Row, prelude::FromRow};
 use uuid::Uuid;
 
 use crate::{
@@ -15,6 +15,27 @@ pub struct Role {
     pid: Uuid,
     name: String,
     description: Option<String>,
+    created_at: DateTime<FixedOffset>,
+    updated_at: DateTime<FixedOffset>,
+}
+
+#[derive(Debug, Deserialize, Serialize, Clone)]
+#[serde(rename_all = "camelCase")]
+pub struct RoleUser {
+    pid: Uuid,
+    name: String,
+    email: String,
+    image: Option<String>,
+}
+
+#[derive(Debug, Deserialize, Serialize, Clone)]
+#[serde(rename_all = "camelCase")]
+pub struct RoleWithUsers {
+    id: i32,
+    pid: Uuid,
+    name: String,
+    description: Option<String>,
+    users: Vec<RoleUser>,
     created_at: DateTime<FixedOffset>,
     updated_at: DateTime<FixedOffset>,
 }
@@ -65,6 +86,25 @@ impl Role {
         txn.commit().await?;
 
         Ok(new_role)
+    }
+
+    fn role_with_users_from_row(row: &sqlx::postgres::PgRow) -> Result<RoleWithUsers, sqlx::Error> {
+        let users_json = row.try_get::<serde_json::Value, _>("users")?;
+        let users =
+            serde_json::from_value(users_json).map_err(|err| sqlx::Error::ColumnDecode {
+                index: "users".into(),
+                source: Box::new(err),
+            })?;
+
+        Ok(RoleWithUsers {
+            id: row.try_get("id")?,
+            pid: row.try_get("pid")?,
+            name: row.try_get("name")?,
+            description: row.try_get("description")?,
+            users,
+            created_at: row.try_get("created_at")?,
+            updated_at: row.try_get("updated_at")?,
+        })
     }
 
     /// Updates an existing role by public ID.
@@ -156,6 +196,49 @@ impl Role {
         Ok(role)
     }
 
+    /// Finds a role by public ID with assigned users.
+    ///
+    /// # Errors
+    ///
+    /// Returns [`ModelError::EntityNotFound`] when no role exists for `pid`.
+    /// Returns a database error if the lookup fails.
+    pub async fn find_with_users_by_pid(db: &PgPool, pid: Uuid) -> ModelResult<RoleWithUsers> {
+        let row = sqlx::query(
+            r"
+            SELECT
+                roles.id,
+                roles.pid,
+                roles.name,
+                roles.description,
+                roles.created_at,
+                roles.updated_at,
+                COALESCE(
+                    jsonb_agg(
+                        jsonb_build_object(
+                            'pid', users.pid,
+                            'name', users.name,
+                            'email', users.email,
+                            'image', users.image
+                        )
+                        ORDER BY users.name
+                    ) FILTER (WHERE users.id IS NOT NULL),
+                    '[]'::jsonb
+                ) AS users
+            FROM roles
+            LEFT JOIN users_roles ON users_roles.role_id = roles.id
+            LEFT JOIN users ON users.id = users_roles.user_id
+            WHERE roles.pid = $1
+            GROUP BY roles.id
+        ",
+        )
+        .bind(pid)
+        .fetch_optional(db)
+        .await?
+        .ok_or_else(|| ModelError::EntityNotFound)?;
+
+        Ok(Self::role_with_users_from_row(&row)?)
+    }
+
     /// Lists all roles ordered by newest creation time first.
     ///
     /// # Errors
@@ -177,6 +260,52 @@ impl Role {
         Ok(roles)
     }
 
+    /// Lists all roles ordered by newest creation time first, with assigned
+    /// users aggregated on each role.
+    ///
+    /// # Errors
+    ///
+    /// Returns a database error if the role query fails.
+    pub async fn find_list_with_users(db: &PgPool) -> ModelResult<Vec<RoleWithUsers>> {
+        let rows = sqlx::query(
+            r"
+            SELECT
+                roles.id,
+                roles.pid,
+                roles.name,
+                roles.description,
+                roles.created_at,
+                roles.updated_at,
+                COALESCE(
+                    jsonb_agg(
+                        jsonb_build_object(
+                            'pid', users.pid,
+                            'name', users.name,
+                            'email', users.email,
+                            'image', users.image
+                        )
+                        ORDER BY users.name
+                    ) FILTER (WHERE users.id IS NOT NULL),
+                    '[]'::jsonb
+                ) AS users
+            FROM roles
+            LEFT JOIN users_roles ON users_roles.role_id = roles.id
+            LEFT JOIN users ON users.id = users_roles.user_id
+            GROUP BY roles.id
+            ORDER BY roles.created_at DESC
+        ",
+        )
+        .fetch_all(db)
+        .await?;
+
+        let roles = rows
+            .iter()
+            .map(Self::role_with_users_from_row)
+            .collect::<Result<Vec<_>, sqlx::Error>>()?;
+
+        Ok(roles)
+    }
+
     /// Seeds roles from a file in `src/data`.
     ///
     /// # Errors
@@ -189,6 +318,11 @@ impl Role {
         let roles = Self::load(file).await?;
 
         Self::seed(db, &roles).await
+    }
+
+    #[must_use]
+    pub const fn pid(&self) -> Uuid {
+        self.pid
     }
 }
 

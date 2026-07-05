@@ -4,5 +4,5 @@ expression: "(response.status_code(), response.text())"
 ---
 (
     201,
-    "{\"id\":1,\"pid\":\"PID\",\"name\":\"support agent\",\"description\":null,\"createdAt\":\"DATE\",\"updatedAt\":\"DATE\"}",
+    "{\"id\":1,\"pid\":\"PID\",\"name\":\"support agent\",\"description\":null,\"users\":[],\"createdAt\":\"DATE\",\"updatedAt\":\"DATE\"}",
 )

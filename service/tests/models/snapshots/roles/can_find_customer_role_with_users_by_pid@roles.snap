@@ -1,0 +1,42 @@
+---
+source: tests/models/roles.rs
+expression: result
+---
+Ok(
+    RoleWithUsers {
+        id: 22,
+        pid: f028f910-1a4f-4b79-8619-71a8c185e221,
+        name: "customer",
+        description: Some(
+            "Regular shoppers",
+        ),
+        users: [
+            RoleUser {
+                pid: e761d8e3-fc3e-4a2e-a6c9-7c7a4f2130e8,
+                name: "Jane Smith",
+                email: "jane.smith@globex.com",
+                image: Some(
+                    "https://cdn.example.com/users/jane_smith.png",
+                ),
+            },
+            RoleUser {
+                pid: bd6f7c26-d2c9-487e-b837-8f77be468033,
+                name: "John Doe",
+                email: "john.doe@acme.com",
+                image: Some(
+                    "https://cdn.example.com/users/john_doe.png",
+                ),
+            },
+            RoleUser {
+                pid: 4c008e68-88fa-4072-808e-6888fa60724c,
+                name: "Morgan Grimes",
+                email: "morgan@silk.io",
+                image: Some(
+                    "https://cdn.example.com/users/morgan_grimes.png",
+                ),
+            },
+        ],
+        created_at: 2026-06-21T09:01:00+00:00,
+        updated_at: 2026-06-21T09:02:00+00:00,
+    },
+)

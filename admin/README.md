@@ -65,6 +65,8 @@ Supported variables:
 - `SERVER_URL` - optional server-side API base URL
 - `VITE_SERVER_URL` - optional client/browser API base URL
 - `VITE_APP_TITLE` - optional client/browser app title
+- `VITE_CLOUDINARY_CLOUD_NAME` - optional Cloudinary cloud name for avatar uploads
+- `VITE_CLOUDINARY_UPLOAD_PRESET` - optional unsigned Cloudinary upload preset for avatar uploads
 
 Client-side variables must use the `VITE_` prefix.
 
@@ -74,6 +76,8 @@ Example `.env`:
 SERVER_URL=http://127.0.0.1:7150
 VITE_SERVER_URL=http://127.0.0.1:7150/api
 VITE_APP_TITLE=Silk Admin
+VITE_CLOUDINARY_CLOUD_NAME=silk
+VITE_CLOUDINARY_UPLOAD_PRESET=admin_avatars
 ```
 
 Use environment values through the shared env module:

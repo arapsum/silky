@@ -126,15 +126,6 @@ on_change_strategy = "kill_then_restart"
 # kill = ["pkill", "-TERM", "-P"]
 scroll_anchor = "auto"
 
-[job.run-long-seed]
-command = ["cargo", "run", "--", "--seed"]
-need_stdout = true
-allow_warnings = true
-background = false
-on_change_strategy = "kill_then_restart"
-# kill = ["pkill", "-TERM", "-P"]
-scroll_anchor = "auto"
-
 # This parameterized job runs the example of your choice, as soon
 # as the code compiles.
 # Call it as

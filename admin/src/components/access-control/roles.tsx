@@ -23,6 +23,8 @@ import {
   type RoleInput,
   type RoleUser,
 } from "#/api/roles.ts";
+import { EmptyState } from "#/components/empty-state";
+import { ErrorState } from "#/components/error-state";
 import FormField from "#/components/form-field";
 import { Avatar, AvatarFallback, AvatarImage } from "#/components/ui/avatar";
 import { Button } from "#/components/ui/button";
@@ -199,30 +201,26 @@ function RolesGrid({
 
   if (isError) {
     return (
-      <div className="flex min-h-64 flex-col items-center justify-center border px-6 text-center">
-        <ShieldCheckIcon className="mb-3 size-8 text-muted-foreground" aria-hidden />
-        <h2 className="text-base font-semibold">Roles could not be loaded</h2>
-        <p className="mt-1 max-w-sm text-sm text-muted-foreground">
-          Check your session and retry the request.
-        </p>
-        <Button type="button" variant="outline" className="mt-4" onClick={onRetry}>
-          Retry
-        </Button>
-      </div>
+      <ErrorState
+        icon={<ShieldCheckIcon className="size-8" aria-hidden />}
+        title="Roles could not be loaded"
+        description="Check your session and retry the request."
+        onRetry={onRetry}
+      />
     );
   }
 
   if (!roles.length) {
     return (
-      <div className="flex min-h-64 flex-col items-center justify-center border px-6 text-center">
-        <ShieldCheckIcon className="mb-3 size-8 text-muted-foreground" aria-hidden />
-        <h2 className="text-base font-semibold">{query ? "No matching roles" : "No roles yet"}</h2>
-        <p className="mt-1 max-w-sm text-sm text-muted-foreground">
-          {query
+      <EmptyState
+        icon={<ShieldCheckIcon className="size-8" aria-hidden />}
+        title={query ? "No matching roles" : "No roles yet"}
+        description={
+          query
             ? "Try a different search term."
-            : "Create the first role to start building your access control model."}
-        </p>
-      </div>
+            : "Create the first role to start building your access control model."
+        }
+      />
     );
   }
 

@@ -104,8 +104,13 @@ const dashboardRoutes: Route[] = [
     subs: [
       {
         title: "Category List",
-        link: "#",
+        link: "/categories",
         icon: <ChartPieIcon className="size-4" />,
+      },
+      {
+        title: "Create Category",
+        link: "/categories/create",
+        icon: <StorefrontIcon className="size-4" />,
       },
       {
         title: "Category Tree",

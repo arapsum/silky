@@ -7,6 +7,7 @@ Ok(
         id: ID,
         pid: PID,
         name: "denim jeans",
+        slug: "denim-jeans",
         image_link: "https://cdn.example.com/categories/trousers.png",
         description: Some(
             "Denim trousers",

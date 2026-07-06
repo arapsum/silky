@@ -1,0 +1,20 @@
+---
+source: tests/models/categories.rs
+expression: result
+---
+Ok(
+    Category {
+        id: ID,
+        pid: PID,
+        name: "trousers",
+        slug: "t-shirts-1",
+        image_link: "https://cdn.example.com/categories/trousers.png",
+        description: Some(
+            "Duplicate category",
+        ),
+        parent_id: None,
+        created_at: DATE,
+        updated_at: DATE,
+        deleted_at: None,
+    },
+)

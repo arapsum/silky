@@ -1,0 +1,20 @@
+---
+source: tests/models/categories.rs
+expression: result
+---
+Ok(
+    Category {
+        id: ID,
+        pid: PID,
+        name: "belts",
+        slug: "accessories-1",
+        image_link: "https://cdn.example.com/categories/belts.png",
+        description: Some(
+            "Leather belts",
+        ),
+        parent_id: None,
+        created_at: DATE,
+        updated_at: DATE,
+        deleted_at: None,
+    },
+)

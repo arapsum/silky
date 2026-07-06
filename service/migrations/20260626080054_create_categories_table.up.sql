@@ -4,6 +4,7 @@ CREATE TABLE categories (
     pid UUID NOT NULL UNIQUE DEFAULT gen_random_uuid(),
 
     name VARCHAR(255) NOT NULL UNIQUE CHECK (char_length(name) > 0),
+    slug TEXT NOT NULL UNIQUE CHECK (char_length(slug) > 0),
     description TEXT,
 
     image_link TEXT NOT NULL,

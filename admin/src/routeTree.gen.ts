@@ -12,9 +12,11 @@ import { Route as rootRouteImport } from './routes/__root'
 import { Route as MainRouteRouteImport } from './routes/_main/route'
 import { Route as MainIndexRouteImport } from './routes/_main/index'
 import { Route as MainSettingsIndexRouteImport } from './routes/_main/settings/index'
+import { Route as MainCategoriesIndexRouteImport } from './routes/_main/categories/index'
 import { Route as AuthSignInIndexRouteImport } from './routes/_auth/sign-in/index'
 import { Route as MainPeopleStaffIndexRouteImport } from './routes/_main/people/staff/index'
 import { Route as MainPeopleCustomersIndexRouteImport } from './routes/_main/people/customers/index'
+import { Route as MainCategoriesCreateIndexRouteImport } from './routes/_main/categories/create/index'
 import { Route as MainAccessControlRolesIndexRouteImport } from './routes/_main/access-control/roles/index'
 import { Route as MainAccessControlPermissionsIndexRouteImport } from './routes/_main/access-control/permissions/index'
 
@@ -30,6 +32,11 @@ const MainIndexRoute = MainIndexRouteImport.update({
 const MainSettingsIndexRoute = MainSettingsIndexRouteImport.update({
   id: '/settings/',
   path: '/settings/',
+  getParentRoute: () => MainRouteRoute,
+} as any)
+const MainCategoriesIndexRoute = MainCategoriesIndexRouteImport.update({
+  id: '/categories/',
+  path: '/categories/',
   getParentRoute: () => MainRouteRoute,
 } as any)
 const AuthSignInIndexRoute = AuthSignInIndexRouteImport.update({
@@ -48,6 +55,12 @@ const MainPeopleCustomersIndexRoute =
     path: '/people/customers/',
     getParentRoute: () => MainRouteRoute,
   } as any)
+const MainCategoriesCreateIndexRoute =
+  MainCategoriesCreateIndexRouteImport.update({
+    id: '/categories/create/',
+    path: '/categories/create/',
+    getParentRoute: () => MainRouteRoute,
+  } as any)
 const MainAccessControlRolesIndexRoute =
   MainAccessControlRolesIndexRouteImport.update({
     id: '/access-control/roles/',
@@ -64,18 +77,22 @@ const MainAccessControlPermissionsIndexRoute =
 export interface FileRoutesByFullPath {
   '/': typeof MainIndexRoute
   '/sign-in/': typeof AuthSignInIndexRoute
+  '/categories/': typeof MainCategoriesIndexRoute
   '/settings/': typeof MainSettingsIndexRoute
   '/access-control/permissions/': typeof MainAccessControlPermissionsIndexRoute
   '/access-control/roles/': typeof MainAccessControlRolesIndexRoute
+  '/categories/create/': typeof MainCategoriesCreateIndexRoute
   '/people/customers/': typeof MainPeopleCustomersIndexRoute
   '/people/staff/': typeof MainPeopleStaffIndexRoute
 }
 export interface FileRoutesByTo {
   '/': typeof MainIndexRoute
   '/sign-in': typeof AuthSignInIndexRoute
+  '/categories': typeof MainCategoriesIndexRoute
   '/settings': typeof MainSettingsIndexRoute
   '/access-control/permissions': typeof MainAccessControlPermissionsIndexRoute
   '/access-control/roles': typeof MainAccessControlRolesIndexRoute
+  '/categories/create': typeof MainCategoriesCreateIndexRoute
   '/people/customers': typeof MainPeopleCustomersIndexRoute
   '/people/staff': typeof MainPeopleStaffIndexRoute
 }
@@ -84,9 +101,11 @@ export interface FileRoutesById {
   '/_main': typeof MainRouteRouteWithChildren
   '/_main/': typeof MainIndexRoute
   '/_auth/sign-in/': typeof AuthSignInIndexRoute
+  '/_main/categories/': typeof MainCategoriesIndexRoute
   '/_main/settings/': typeof MainSettingsIndexRoute
   '/_main/access-control/permissions/': typeof MainAccessControlPermissionsIndexRoute
   '/_main/access-control/roles/': typeof MainAccessControlRolesIndexRoute
+  '/_main/categories/create/': typeof MainCategoriesCreateIndexRoute
   '/_main/people/customers/': typeof MainPeopleCustomersIndexRoute
   '/_main/people/staff/': typeof MainPeopleStaffIndexRoute
 }
@@ -95,18 +114,22 @@ export interface FileRouteTypes {
   fullPaths:
     | '/'
     | '/sign-in/'
+    | '/categories/'
     | '/settings/'
     | '/access-control/permissions/'
     | '/access-control/roles/'
+    | '/categories/create/'
     | '/people/customers/'
     | '/people/staff/'
   fileRoutesByTo: FileRoutesByTo
   to:
     | '/'
     | '/sign-in'
+    | '/categories'
     | '/settings'
     | '/access-control/permissions'
     | '/access-control/roles'
+    | '/categories/create'
     | '/people/customers'
     | '/people/staff'
   id:
@@ -114,9 +137,11 @@ export interface FileRouteTypes {
     | '/_main'
     | '/_main/'
     | '/_auth/sign-in/'
+    | '/_main/categories/'
     | '/_main/settings/'
     | '/_main/access-control/permissions/'
     | '/_main/access-control/roles/'
+    | '/_main/categories/create/'
     | '/_main/people/customers/'
     | '/_main/people/staff/'
   fileRoutesById: FileRoutesById
@@ -149,6 +174,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof MainSettingsIndexRouteImport
       parentRoute: typeof MainRouteRoute
     }
+    '/_main/categories/': {
+      id: '/_main/categories/'
+      path: '/categories'
+      fullPath: '/categories/'
+      preLoaderRoute: typeof MainCategoriesIndexRouteImport
+      parentRoute: typeof MainRouteRoute
+    }
     '/_auth/sign-in/': {
       id: '/_auth/sign-in/'
       path: '/sign-in'
@@ -170,6 +202,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof MainPeopleCustomersIndexRouteImport
       parentRoute: typeof MainRouteRoute
     }
+    '/_main/categories/create/': {
+      id: '/_main/categories/create/'
+      path: '/categories/create'
+      fullPath: '/categories/create/'
+      preLoaderRoute: typeof MainCategoriesCreateIndexRouteImport
+      parentRoute: typeof MainRouteRoute
+    }
     '/_main/access-control/roles/': {
       id: '/_main/access-control/roles/'
       path: '/access-control/roles'
@@ -189,19 +228,23 @@ declare module '@tanstack/react-router' {
 
 interface MainRouteRouteChildren {
   MainIndexRoute: typeof MainIndexRoute
+  MainCategoriesIndexRoute: typeof MainCategoriesIndexRoute
   MainSettingsIndexRoute: typeof MainSettingsIndexRoute
   MainAccessControlPermissionsIndexRoute: typeof MainAccessControlPermissionsIndexRoute
   MainAccessControlRolesIndexRoute: typeof MainAccessControlRolesIndexRoute
+  MainCategoriesCreateIndexRoute: typeof MainCategoriesCreateIndexRoute
   MainPeopleCustomersIndexRoute: typeof MainPeopleCustomersIndexRoute
   MainPeopleStaffIndexRoute: typeof MainPeopleStaffIndexRoute
 }
 
 const MainRouteRouteChildren: MainRouteRouteChildren = {
   MainIndexRoute: MainIndexRoute,
+  MainCategoriesIndexRoute: MainCategoriesIndexRoute,
   MainSettingsIndexRoute: MainSettingsIndexRoute,
   MainAccessControlPermissionsIndexRoute:
     MainAccessControlPermissionsIndexRoute,
   MainAccessControlRolesIndexRoute: MainAccessControlRolesIndexRoute,
+  MainCategoriesCreateIndexRoute: MainCategoriesCreateIndexRoute,
   MainPeopleCustomersIndexRoute: MainPeopleCustomersIndexRoute,
   MainPeopleStaffIndexRoute: MainPeopleStaffIndexRoute,
 }

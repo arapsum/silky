@@ -1,0 +1,8 @@
+---
+source: tests/requests/categories.rs
+expression: "(response.status_code(), response.text())"
+---
+(
+    201,
+    "{\"id\":1,\"pid\":\"PID\",\"name\":\"accessories\",\"slug\":\"t-shirts-1\",\"imageLink\":\"https://cdn.example.com/categories/accessories.png\",\"description\":\"Duplicate seeded slug\",\"parentId\":null,\"createdAt\":\"DATE\",\"updatedAt\":\"DATE\",\"deletedAt\":null}",
+)

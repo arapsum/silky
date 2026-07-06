@@ -9,6 +9,7 @@ Ok(
                 id: 101,
                 pid: f63b79c9-4753-40c3-bc78-8c4fd38abd5b,
                 name: "t-shirts",
+                slug: "t-shirts",
                 image_link: "https://cdn.example.com/categories/tshirts.png",
                 description: None,
                 parent_id: None,

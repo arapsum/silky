@@ -5,7 +5,7 @@ use sqlx::{Encode, Executor, PgConnection, PgPool, Postgres, prelude::FromRow};
 use uuid::Uuid;
 
 use crate::{
-    schemas::{CategoryListQuery, NewCategory, PaginationQuery, UpdateCategory},
+    schemas::{CategoryListQuery, NewCategory, UpdateCategory},
     views::CategoryResponse,
 };
 
@@ -234,7 +234,7 @@ impl Category {
     /// with product totals, or committing the transaction fails.
     pub async fn find_all_with_products_count(
         db: &PgPool,
-        query: &PaginationQuery,
+        query: &CategoryListQuery,
     ) -> ModelResult<PaginatedModel<CategoryResponse>> {
         let limit = query.limit().unwrap_or(20).clamp(1, 40);
         let page = query.page().unwrap_or(1).max(1);
@@ -245,8 +245,25 @@ impl Category {
         let total_items = sqlx::query_scalar::<_, i64>(
             r"
             SELECT COUNT(*) FROM categories
+            WHERE
+                ($1::TEXT IS NULL OR name ILIKE '%' || $1 || '%' OR slug ILIKE '%' || $1 || '%')
+                AND ($2::TEXT IS NULL OR name = LOWER(TRIM($2)))
+                AND ($3::TEXT IS NULL OR slug = LOWER(TRIM($3)))
+                AND ($4::INT4 IS NULL OR parent_id = $4)
+                AND (
+                    $5::BOOL IS NULL
+                    OR ($5 = TRUE AND parent_id IS NOT NULL)
+                    OR ($5 = FALSE AND parent_id IS NULL)
+                )
+                AND ($6::BOOL = TRUE OR deleted_at IS NULL)
         ",
         )
+        .bind(query.search())
+        .bind(query.name())
+        .bind(query.slug())
+        .bind(query.parent_id())
+        .bind(query.has_parent())
+        .bind(query.include_deleted())
         .fetch_one(&mut *txn)
         .await?;
 
@@ -268,6 +285,17 @@ impl Category {
                FROM categories c
                LEFT JOIN categories p ON p.id = c.parent_id
                LEFT JOIN products prod ON prod.category_id = c.id
+               WHERE
+                   ($3::TEXT IS NULL OR c.name ILIKE '%' || $3 || '%' OR c.slug ILIKE '%' || $3 || '%')
+                   AND ($4::TEXT IS NULL OR c.name = LOWER(TRIM($4)))
+                   AND ($5::TEXT IS NULL OR c.slug = LOWER(TRIM($5)))
+                   AND ($6::INT4 IS NULL OR c.parent_id = $6)
+                   AND (
+                       $7::BOOL IS NULL
+                       OR ($7 = TRUE AND c.parent_id IS NOT NULL)
+                       OR ($7 = FALSE AND c.parent_id IS NULL)
+                   )
+                   AND ($8::BOOL = TRUE OR c.deleted_at IS NULL)
                GROUP BY c.id, p.name
                ORDER BY c.created_at DESC, c.id DESC
                LIMIT $1 OFFSET $2
@@ -275,6 +303,12 @@ impl Category {
         )
         .bind(limit)
         .bind(offset)
+        .bind(query.search())
+        .bind(query.name())
+        .bind(query.slug())
+        .bind(query.parent_id())
+        .bind(query.has_parent())
+        .bind(query.include_deleted())
         .fetch_all(&mut *txn)
         .await?;
 

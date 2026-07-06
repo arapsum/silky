@@ -6,7 +6,7 @@ use serde_json::{Value, json};
 use serial_test::serial;
 use service::{
     models::{Category, Product},
-    schemas::{CategoryListQuery, NewCategory, PaginationQuery, UpdateCategory},
+    schemas::{CategoryListQuery, NewCategory, UpdateCategory},
 };
 use uuid::Uuid;
 
@@ -92,10 +92,6 @@ fn category_list_query(limit: Option<i64>, page: Option<i64>) -> CategoryListQue
 
 fn category_filter_query(params: serde_json::Value) -> CategoryListQuery {
     serde_json::from_value(params).expect("Failed to parse category filter query")
-}
-
-fn pagination_query(limit: Option<i64>, page: Option<i64>) -> PaginationQuery {
-    serde_json::from_value(query_value(limit, page)).expect("Failed to parse pagination query")
 }
 
 async fn create_child_category(db: &sqlx::PgPool) {
@@ -324,7 +320,7 @@ async fn can_find_all_categories_with_products_count(
         .await
         .expect("Failed to seed products");
 
-    let query = pagination_query(limit, page);
+    let query = category_list_query(limit, page);
     let result = Category::find_all_with_products_count(ctx.db(), &query).await;
 
     assert_debug_snapshot!(test_name, result);

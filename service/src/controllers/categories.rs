@@ -38,7 +38,7 @@ async fn list(
     let validator = Validator::new(query);
     let validated = validator.validate()?;
 
-    let categories = Category::find_all(ctx.db(), validated).await?;
+    let categories = Category::find_all_with_products_count(ctx.db(), validated).await?;
 
     Ok((StatusCode::OK, Json(categories)).into_response())
 }

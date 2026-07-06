@@ -5,18 +5,18 @@ type CloudinaryUploadResponse = {
   url?: string;
 };
 
-export async function uploadAvatarImage(file: File) {
+async function uploadImage(file: File, folder: string, label: string) {
   const cloudName = env.VITE_CLOUDINARY_CLOUD_NAME;
   const uploadPreset = env.VITE_CLOUDINARY_UPLOAD_PRESET;
 
   if (!cloudName || !uploadPreset) {
-    throw new Error("Avatar upload is not configured");
+    throw new Error(`${label} upload is not configured`);
   }
 
   const body = new FormData();
   body.set("file", file);
   body.set("upload_preset", uploadPreset);
-  body.set("folder", "silk/users");
+  body.set("folder", folder);
 
   const response = await fetch(`https://api.cloudinary.com/v1_1/${cloudName}/image/upload`, {
     method: "POST",
@@ -24,15 +24,23 @@ export async function uploadAvatarImage(file: File) {
   });
 
   if (!response.ok) {
-    throw new Error("Unable to upload avatar");
+    throw new Error(`Unable to upload ${label.toLowerCase()}`);
   }
 
   const result = (await response.json()) as CloudinaryUploadResponse;
   const imageUrl = result.secure_url ?? result.url;
 
   if (!imageUrl) {
-    throw new Error("Avatar upload did not return an image URL");
+    throw new Error(`${label} upload did not return an image URL`);
   }
 
   return imageUrl;
+}
+
+export function uploadAvatarImage(file: File) {
+  return uploadImage(file, "silk/users", "Avatar");
+}
+
+export function uploadCategoryImage(file: File) {
+  return uploadImage(file, "silk/categories", "Category image");
 }

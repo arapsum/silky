@@ -1,0 +1,14 @@
+---
+source: tests/models/products/attributes.rs
+assertion_line: 57
+expression: result
+---
+Ok(
+    Attribute {
+        id: 202,
+        pid: 23d5df44-6acf-41a7-96fc-bf0160653102,
+        name: "size",
+        created_at: 2026-07-02T12:14:00+00:00,
+        updated_at: 2026-07-02T12:14:00+00:00,
+    },
+)

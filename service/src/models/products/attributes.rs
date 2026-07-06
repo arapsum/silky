@@ -1,9 +1,9 @@
 use chrono::{DateTime, FixedOffset};
 use serde::{Deserialize, Serialize};
-use sqlx::{Encode, PgPool, prelude::FromRow};
+use sqlx::{Encode, Executor, PgPool, Postgres, prelude::FromRow};
 use uuid::Uuid;
 
-use crate::models::{ModelResult, Seedable};
+use crate::models::{ModelError, ModelResult, Seedable};
 
 #[derive(Debug, Deserialize, Serialize, Clone, FromRow, Encode)]
 #[serde(rename_all = "camelCase")]
@@ -16,6 +16,54 @@ pub struct Attribute {
 }
 
 impl Attribute {
+    /// Finds the [`Attribute`] by its PID
+    ///
+    /// # Errors
+    ///
+    /// This function will return an error if:
+    /// - No [`Attribute`] with that PID is found.
+    /// - The database connection cannot be established.
+    /// - The table has not been created.
+    pub async fn find_by_pid<'e, E>(db: E, pid: Uuid) -> ModelResult<Self>
+    where
+        E: Executor<'e, Database = Postgres>,
+    {
+        let attribute = sqlx::query_as::<_, Self>(
+            r"
+                SELECT * FROM attributes WHERE pid = $1
+        ",
+        )
+        .bind(pid)
+        .fetch_optional(db)
+        .await?;
+
+        attribute.ok_or_else(|| ModelError::EntityNotFound)
+    }
+
+    /// Finds the [`Attribute`] by its name
+    ///
+    /// # Errors
+    ///
+    /// This function will return an error if:
+    /// - No [`Attribute`] with that name is found.
+    /// - The database connection cannot be established.
+    /// - The table has not been created.
+    pub async fn find_by_name<'e, E>(db: E, name: &str) -> ModelResult<Self>
+    where
+        E: Executor<'e, Database = Postgres>,
+    {
+        let attribute = sqlx::query_as::<_, Self>(
+            r"
+                SELECT * FROM attributes WHERE name = $1
+        ",
+        )
+        .bind(name)
+        .fetch_optional(db)
+        .await?;
+
+        attribute.ok_or_else(|| ModelError::EntityNotFound)
+    }
+
     /// Seeds attributes from a file in `src/data`.
     ///
     /// # Errors

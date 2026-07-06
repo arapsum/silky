@@ -1,5 +1,6 @@
 mod categories;
 mod permissions;
+mod products;
 mod roles;
 mod roles_permissions;
 mod seed;

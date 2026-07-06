@@ -1,0 +1,8 @@
+---
+source: tests/models/products/attributes.rs
+assertion_line: 57
+expression: result
+---
+Err(
+    EntityNotFound,
+)

@@ -1,0 +1,14 @@
+---
+source: tests/models/products/attributes.rs
+assertion_line: 39
+expression: result
+---
+Ok(
+    Attribute {
+        id: 201,
+        pid: 3516b141-5ffc-402a-8f7c-557d277b3101,
+        name: "colour",
+        created_at: 2026-07-02T12:13:00+00:00,
+        updated_at: 2026-07-02T12:13:00+00:00,
+    },
+)

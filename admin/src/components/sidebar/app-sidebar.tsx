@@ -108,6 +108,11 @@ const dashboardRoutes: Route[] = [
         icon: <ChartPieIcon className="size-4" />,
       },
       {
+        title: "Create Category",
+        link: "/categories/create",
+        icon: <StorefrontIcon className="size-4" />,
+      },
+      {
         title: "Category Tree",
         link: "#",
         icon: <PulseIcon className="size-4" />,

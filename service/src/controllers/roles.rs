@@ -9,6 +9,7 @@ use uuid::Uuid;
 
 use crate::{
     AppState, Result,
+    access_control::permissions,
     middlewares::RbacLayer,
     models::{Role, RolePermission},
     schemas::{AssignPermission, NewRole, UpdateRole, Validator},
@@ -82,7 +83,7 @@ pub fn router(ctx: &AppState) -> Router {
         .route("/", get(list))
         .route(
             "/permissions",
-            post(assign_permission).layer(RbacLayer::new(ctx.clone(), "roles:update")),
+            post(assign_permission).layer(RbacLayer::new(ctx.clone(), permissions::roles::UPDATE)),
         )
         .route("/{pid}", patch(update))
         .route("/{pid}", get(one))

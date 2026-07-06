@@ -9,6 +9,7 @@ use uuid::Uuid;
 
 use crate::{
     AppState, Result,
+    access_control::permissions,
     middlewares::{AuthLayer, RbacLayer},
     models::Category,
     schemas::{CategoryListQuery, NewCategory, UpdateCategory, Validator},
@@ -78,15 +79,15 @@ fn protected(ctx: &AppState) -> Router {
     Router::new()
         .route(
             "/",
-            post(create).layer(RbacLayer::new(ctx.clone(), "categories:create")),
+            post(create).layer(RbacLayer::new(ctx.clone(), permissions::categories::CREATE)),
         )
         .route(
             "/{pid}",
-            patch(update).layer(RbacLayer::new(ctx.clone(), "categories:update")),
+            patch(update).layer(RbacLayer::new(ctx.clone(), permissions::categories::UPDATE)),
         )
         .route(
             "/{pid}",
-            delete(remove).layer(RbacLayer::new(ctx.clone(), "categories:delete")),
+            delete(remove).layer(RbacLayer::new(ctx.clone(), permissions::categories::DELETE)),
         )
         .with_state(ctx.clone())
 }

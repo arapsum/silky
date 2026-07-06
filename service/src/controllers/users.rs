@@ -8,6 +8,7 @@ use axum::{
 
 use crate::{
     AppState, Result,
+    access_control::permissions,
     middlewares::RbacLayer,
     models::User,
     schemas::{UserListQuery, Validator},
@@ -32,7 +33,7 @@ pub fn router(ctx: &AppState) -> Router {
     Router::new()
         .route(
             "/",
-            get(list).layer(RbacLayer::new(ctx.clone(), "users:read")),
+            get(list).layer(RbacLayer::new(ctx.clone(), permissions::users::READ)),
         )
         .with_state(ctx.clone())
 }

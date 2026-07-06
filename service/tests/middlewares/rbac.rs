@@ -5,6 +5,7 @@ use rstest::rstest;
 use serde_json::json;
 use serial_test::serial;
 use service::{
+    access_control::{PermissionName, permissions},
     controllers,
     middlewares::{auth::AuthLayer, rbac::RbacLayer},
 };
@@ -68,28 +69,28 @@ async fn assign_role(db: &sqlx::PgPool, email: &str, role: &str) {
 #[rstest]
 #[case(
     "can_access_route_when_role_has_permission",
-    "roles:read",
+    permissions::roles::READ,
     Credentials::AuthorizationHeader,
     "administrator",
     true
 )]
 #[case(
     "can_access_route_when_customer_role_has_permission",
-    "roles:read",
+    permissions::roles::READ,
     Credentials::AuthorizationHeader,
     "customer",
     true
 )]
 #[case(
     "can_access_route_when_administrator_has_seeded_permission",
-    "roles:update",
+    permissions::roles::UPDATE,
     Credentials::AuthorizationHeader,
     "administrator",
     true
 )]
 #[case(
     "cannot_access_route_without_credentials",
-    "roles:read",
+    permissions::roles::READ,
     Credentials::Missing,
     "administrator",
     false
@@ -98,7 +99,7 @@ async fn assign_role(db: &sqlx::PgPool, email: &str, role: &str) {
 #[serial]
 async fn can_authorise_with_rbac(
     #[case] test_name: &str,
-    #[case] required_permission: &str,
+    #[case] required_permission: PermissionName,
     #[case] credentials: Credentials,
     #[case] role: &str,
     #[case] assign_user_role: bool,
@@ -110,7 +111,7 @@ async fn can_authorise_with_rbac(
     crate::seed_data(ctx.db())
         .await
         .expect("Failed to seed data");
-    grant_permission(ctx.db(), role, "roles:read").await;
+    grant_permission(ctx.db(), role, permissions::roles::READ.as_str()).await;
     if assign_user_role {
         assign_role(ctx.db(), "john.doe@acme.com", role).await;
     }

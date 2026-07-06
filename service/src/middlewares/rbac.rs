@@ -12,22 +12,19 @@ use futures_util::future::BoxFuture;
 use tower::{Layer, Service};
 use uuid::Uuid;
 
-use crate::{AppContext, Error, context::Claims, models::Permission};
+use crate::{
+    AppContext, Error, access_control::PermissionName, context::Claims, models::Permission,
+};
 
 #[derive(Clone)]
 pub struct RbacLayer {
     state: Arc<AppContext>,
-    required_permission: String,
+    required_permission: PermissionName,
 }
 
 impl RbacLayer {
     #[must_use]
-    pub fn new<P>(state: Arc<AppContext>, required_permission: P) -> Self
-    where
-        P: AsRef<str>,
-    {
-        let required_permission = required_permission.as_ref().trim().to_lowercase();
-
+    pub const fn new(state: Arc<AppContext>, required_permission: PermissionName) -> Self {
         Self {
             state,
             required_permission,
@@ -42,7 +39,7 @@ impl<S> Layer<S> for RbacLayer {
         Self::Service {
             inner,
             state: self.state.clone(),
-            required_permission: self.required_permission.clone(),
+            required_permission: self.required_permission,
         }
     }
 }
@@ -51,12 +48,16 @@ impl<S> Layer<S> for RbacLayer {
 pub struct RbacService<S> {
     inner: S,
     state: Arc<AppContext>,
-    required_permission: String,
+    required_permission: PermissionName,
 }
 
 impl<S> RbacService<S> {
     #[must_use]
-    pub const fn new(inner: S, state: Arc<AppContext>, required_permission: String) -> Self {
+    pub const fn new(
+        inner: S,
+        state: Arc<AppContext>,
+        required_permission: PermissionName,
+    ) -> Self {
         Self {
             inner,
             state,
@@ -81,7 +82,7 @@ where
 
     fn call(&mut self, req: Request<B>) -> Self::Future {
         let state = self.state.clone();
-        let required_permission = self.required_permission.clone();
+        let required_permission = self.required_permission;
         let clone = self.inner.clone();
 
         let mut inner = std::mem::replace(&mut self.inner, clone);
@@ -95,9 +96,12 @@ where
                 return Ok(Error::Forbidden.response());
             };
 
-            let granted =
-                Permission::is_granted_to_user_role(state.db(), user_pid, &required_permission)
-                    .await;
+            let granted = Permission::is_granted_to_user_role(
+                state.db(),
+                user_pid,
+                required_permission.as_str(),
+            )
+            .await;
 
             match granted {
                 Ok(true) => inner.call(req).await,

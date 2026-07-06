@@ -3,6 +3,7 @@ use axum_test::TestServer;
 use insta::{Settings, assert_debug_snapshot, with_settings};
 use rstest::rstest;
 use serial_test::serial;
+use service::access_control::permissions;
 
 use crate::utils;
 
@@ -87,9 +88,24 @@ async fn revoke_role(db: &sqlx::PgPool, email: &str, role: &str) {
 
 async fn allow_category_writes(db: &sqlx::PgPool) {
     assign_role(db, "john.doe@acme.com", "administrator").await;
-    grant_permission(db, "administrator", "categories:create").await;
-    grant_permission(db, "administrator", "categories:update").await;
-    grant_permission(db, "administrator", "categories:delete").await;
+    grant_permission(
+        db,
+        "administrator",
+        permissions::categories::CREATE.as_str(),
+    )
+    .await;
+    grant_permission(
+        db,
+        "administrator",
+        permissions::categories::UPDATE.as_str(),
+    )
+    .await;
+    grant_permission(
+        db,
+        "administrator",
+        permissions::categories::DELETE.as_str(),
+    )
+    .await;
 }
 
 async fn create_child_category(db: &sqlx::PgPool) {

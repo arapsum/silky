@@ -16,6 +16,81 @@ pub struct Attribute {
 }
 
 impl Attribute {
+    /// Creates a new [`Attribute`] and adds it to the database.
+    ///
+    /// Will transform the name to lowercase and trim any white spaces
+    ///
+    /// # Errors
+    ///
+    /// This function will return an error if:
+    ///
+    /// - Database connection fails.
+    /// - Database table has not yet been created.
+    pub async fn create<'e, E>(db: &E, name: &str) -> ModelResult<Self>
+    where
+        for<'a> &'a E: Executor<'e, Database = Postgres>,
+    {
+        if let Some(exists) = sqlx::query_as::<_, Self>(r"SELECT * FROM attributes WHERE name = $1")
+            .bind(name.to_lowercase().trim())
+            .fetch_optional(db)
+            .await?
+        {
+            return Ok(exists);
+        }
+
+        let attr = sqlx::query_as::<_, Self>(
+            r"
+            INSERT INTO attributes (name) VALUES ($1) RETURNING *
+        ",
+        )
+        .bind(name.to_lowercase().trim())
+        .fetch_one(db)
+        .await?;
+
+        Ok(attr)
+    }
+
+    /// Updated an existing [`Attribute`] by its PID.
+    ///
+    /// Will transform the name to lowercase and trim any white spaces
+    ///
+    /// # Errors
+    ///
+    /// This function will return an error if:
+    /// - The new name has already been taken
+    /// - Database connection fails.
+    /// - Database table has not yet been created.
+    pub async fn update<'e, E>(db: &E, pid: Uuid, name: &str) -> ModelResult<Self>
+    where
+        for<'a> &'a E: Executor<'e, Database = Postgres>,
+    {
+        if let Some(exists) = sqlx::query_as::<_, Self>(r"SELECT * FROM attributes WHERE name = $1")
+            .bind(name.to_lowercase().trim())
+            .fetch_optional(db)
+            .await?
+        {
+            return Err(ModelError::EntityAlreadyExists(format!(
+                "Attribute {} already exists!",
+                exists.name()
+            )));
+        }
+
+        let attr = sqlx::query_as::<_, Self>(
+            r"
+            UPDATE attributes
+            SET name = COALESCE($1, name)
+            WHERE pid = $2
+            RETURNING *
+        ",
+        )
+        .bind(name.to_lowercase().trim())
+        .bind(pid)
+        .fetch_one(db)
+        .await?;
+
+        Ok(attr)
+    }
+
     /// Finds the [`Attribute`] by its PID
     ///
     /// # Errors
@@ -57,7 +132,7 @@ impl Attribute {
                 SELECT * FROM attributes WHERE name = $1
         ",
         )
-        .bind(name)
+        .bind(name.to_lowercase().trim())
         .fetch_optional(db)
         .await?;
 

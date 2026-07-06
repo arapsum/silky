@@ -1,0 +1,10 @@
+---
+source: tests/models/products/attributes.rs
+assertion_line: 80
+expression: result
+---
+Err(
+    EntityAlreadyExists(
+        "Attribute colour already exists!",
+    ),
+)

@@ -1,0 +1,14 @@
+---
+source: tests/models/products/attributes.rs
+assertion_line: 44
+expression: result
+---
+Ok(
+    Attribute {
+        id: ID,
+        pid: PID,
+        name: "colour",
+        created_at: DATE,
+        updated_at: DATE,
+    },
+)

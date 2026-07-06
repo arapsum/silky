@@ -16,16 +16,19 @@ pub struct Attribute {
 }
 
 impl Attribute {
-    /// Creates a new [`Attribute`] and adds it to the database.
+    /// Creates an attribute or returns the existing row with the same normalized name.
     ///
-    /// Will transform the name to lowercase and trim any white spaces
+    /// The supplied name is trimmed and stored in lowercase before lookup and
+    /// insertion.
+    ///
+    /// # Parameters
+    ///
+    /// - `db`: Database executor used for the lookup and insert.
+    /// - `name`: Attribute name to normalize and persist.
     ///
     /// # Errors
     ///
-    /// This function will return an error if:
-    ///
-    /// - Database connection fails.
-    /// - Database table has not yet been created.
+    /// Returns a database error if the lookup or insert fails.
     pub async fn create<'e, E>(db: &E, name: &str) -> ModelResult<Self>
     where
         for<'a> &'a E: Executor<'e, Database = Postgres>,
@@ -50,16 +53,21 @@ impl Attribute {
         Ok(attr)
     }
 
-    /// Updated an existing [`Attribute`] by its PID.
+    /// Updates an attribute name by public ID.
     ///
-    /// Will transform the name to lowercase and trim any white spaces
+    /// The supplied name is trimmed and stored in lowercase.
+    ///
+    /// # Parameters
+    ///
+    /// - `db`: Database executor used for the duplicate lookup and update.
+    /// - `pid`: Public ID of the attribute to update.
+    /// - `name`: Replacement attribute name.
     ///
     /// # Errors
     ///
-    /// This function will return an error if:
-    /// - The new name has already been taken
-    /// - Database connection fails.
-    /// - Database table has not yet been created.
+    /// Returns [`ModelError::EntityAlreadyExists`] when another attribute
+    /// already uses the normalized name. Returns a database error if the lookup
+    /// or update fails.
     pub async fn update<'e, E>(db: &E, pid: Uuid, name: &str) -> ModelResult<Self>
     where
         for<'a> &'a E: Executor<'e, Database = Postgres>,
@@ -91,14 +99,17 @@ impl Attribute {
         Ok(attr)
     }
 
-    /// Finds the [`Attribute`] by its PID
+    /// Finds an attribute by public ID.
+    ///
+    /// # Parameters
+    ///
+    /// - `db`: Database executor used for the lookup.
+    /// - `pid`: Public ID of the attribute to find.
     ///
     /// # Errors
     ///
-    /// This function will return an error if:
-    /// - No [`Attribute`] with that PID is found.
-    /// - The database connection cannot be established.
-    /// - The table has not been created.
+    /// Returns [`ModelError::EntityNotFound`] when no attribute has the given
+    /// public ID. Returns a database error if the lookup fails.
     pub async fn find_by_pid<'e, E>(db: E, pid: Uuid) -> ModelResult<Self>
     where
         E: Executor<'e, Database = Postgres>,
@@ -115,14 +126,19 @@ impl Attribute {
         attribute.ok_or_else(|| ModelError::EntityNotFound)
     }
 
-    /// Finds the [`Attribute`] by its name
+    /// Finds an attribute by normalized name.
+    ///
+    /// The supplied name is trimmed and lowercased before lookup.
+    ///
+    /// # Parameters
+    ///
+    /// - `db`: Database executor used for the lookup.
+    /// - `name`: Attribute name to normalize and find.
     ///
     /// # Errors
     ///
-    /// This function will return an error if:
-    /// - No [`Attribute`] with that name is found.
-    /// - The database connection cannot be established.
-    /// - The table has not been created.
+    /// Returns [`ModelError::EntityNotFound`] when no attribute has the
+    /// normalized name. Returns a database error if the lookup fails.
     pub async fn find_by_name<'e, E>(db: E, name: &str) -> ModelResult<Self>
     where
         E: Executor<'e, Database = Postgres>,
@@ -139,38 +155,48 @@ impl Attribute {
         attribute.ok_or_else(|| ModelError::EntityNotFound)
     }
 
-    /// Seeds attributes from a file in `src/data`.
+    /// Loads attributes from a JSON file in `src/data` and seeds them.
+    ///
+    /// # Parameters
+    ///
+    /// - `db`: Database pool used for inserts and updates.
+    /// - `file`: File name relative to `src/data`.
     ///
     /// # Errors
     ///
-    /// Returns a file, deserialisation, or database error if loading or
-    /// inserting the loaded attributes fails.
+    /// Returns a file, deserialization, or database error if loading,
+    /// decoding, inserting, or updating the attributes fails.
     pub async fn seed_data(db: &PgPool, file: &str) -> ModelResult<()> {
         let data = Self::load(file).await?;
 
         Self::seed(db, &data).await
     }
 
+    /// Returns the internal database row ID.
     #[must_use]
     pub const fn id(&self) -> i32 {
         self.id
     }
 
+    /// Returns the public attribute ID.
     #[must_use]
     pub const fn pid(&self) -> Uuid {
         self.pid
     }
 
+    /// Returns the normalized attribute name.
     #[must_use]
     pub fn name(&self) -> &str {
         &self.name
     }
 
+    /// Returns when the attribute was created.
     #[must_use]
     pub const fn created_at(&self) -> DateTime<FixedOffset> {
         self.created_at
     }
 
+    /// Returns when the attribute was last updated.
     #[must_use]
     pub const fn updated_at(&self) -> DateTime<FixedOffset> {
         self.updated_at

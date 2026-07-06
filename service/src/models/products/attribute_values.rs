@@ -17,43 +17,54 @@ pub struct AttributeValue {
 }
 
 impl AttributeValue {
-    /// Seeds attribute values from a file in `src/data`.
+    /// Loads attribute values from a JSON file in `src/data` and seeds them.
+    ///
+    /// # Parameters
+    ///
+    /// - `db`: Database pool used for inserts and updates.
+    /// - `file`: File name relative to `src/data`.
     ///
     /// # Errors
     ///
-    /// Returns a file, deserialisation, or database error if loading or
-    /// inserting the loaded attribute values fails.
+    /// Returns a file, deserialization, or database error if loading,
+    /// decoding, inserting, or updating the attribute values fails.
     pub async fn seed_data(db: &PgPool, file: &str) -> ModelResult<()> {
         let data = Self::load(file).await?;
 
         Self::seed(db, &data).await
     }
 
+    /// Returns the internal database row ID.
     #[must_use]
     pub const fn id(&self) -> i32 {
         self.id
     }
 
+    /// Returns the public attribute value ID.
     #[must_use]
     pub const fn pid(&self) -> Uuid {
         self.pid
     }
 
+    /// Returns the attribute row ID this value belongs to.
     #[must_use]
     pub const fn attribute_id(&self) -> i32 {
         self.attribute_id
     }
 
+    /// Returns the stored attribute value.
     #[must_use]
     pub fn value(&self) -> &str {
         &self.value
     }
 
+    /// Returns when the attribute value was created.
     #[must_use]
     pub const fn created_at(&self) -> DateTime<FixedOffset> {
         self.created_at
     }
 
+    /// Returns when the attribute value was last updated.
     #[must_use]
     pub const fn updated_at(&self) -> DateTime<FixedOffset> {
         self.updated_at

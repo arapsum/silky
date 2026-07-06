@@ -17,43 +17,54 @@ pub struct ProductOption {
 }
 
 impl ProductOption {
-    /// Seeds product options from a file in `src/data`.
+    /// Loads product options from a JSON file in `src/data` and seeds them.
+    ///
+    /// # Parameters
+    ///
+    /// - `db`: Database pool used for inserts and updates.
+    /// - `file`: File name relative to `src/data`.
     ///
     /// # Errors
     ///
-    /// Returns a file, deserialisation, or database error if loading or
-    /// inserting the loaded product options fails.
+    /// Returns a file, deserialization, or database error if loading,
+    /// decoding, inserting, or updating the product options fails.
     pub async fn seed_data(db: &PgPool, file: &str) -> ModelResult<()> {
         let data = Self::load(file).await?;
 
         Self::seed(db, &data).await
     }
 
+    /// Returns the internal database row ID.
     #[must_use]
     pub const fn id(&self) -> i32 {
         self.id
     }
 
+    /// Returns the public product option ID.
     #[must_use]
     pub const fn pid(&self) -> Uuid {
         self.pid
     }
 
+    /// Returns the product row ID this option belongs to.
     #[must_use]
     pub const fn product_id(&self) -> i32 {
         self.product_id
     }
 
+    /// Returns the attribute row ID represented by this option.
     #[must_use]
     pub const fn attribute_id(&self) -> i32 {
         self.attribute_id
     }
 
+    /// Returns the optional display order for this option.
     #[must_use]
     pub const fn display_order(&self) -> Option<i32> {
         self.display_order
     }
 
+    /// Returns when the product option was created.
     #[must_use]
     pub const fn created_at(&self) -> DateTime<FixedOffset> {
         self.created_at

@@ -17,43 +17,55 @@ pub struct VariantAttributeValue {
 }
 
 impl VariantAttributeValue {
-    /// Seeds variant attribute values from a file in `src/data`.
+    /// Loads variant attribute value links from a JSON file in `src/data` and seeds them.
+    ///
+    /// # Parameters
+    ///
+    /// - `db`: Database pool used for inserts and updates.
+    /// - `file`: File name relative to `src/data`.
     ///
     /// # Errors
     ///
-    /// Returns a file, deserialisation, or database error if loading or
-    /// inserting the loaded variant attribute values fails.
+    /// Returns a file, deserialization, or database error if loading,
+    /// decoding, inserting, or updating the variant attribute value links
+    /// fails.
     pub async fn seed_data(db: &PgPool, file: &str) -> ModelResult<()> {
         let data = Self::load(file).await?;
 
         Self::seed(db, &data).await
     }
 
+    /// Returns the internal database row ID.
     #[must_use]
     pub const fn id(&self) -> i32 {
         self.id
     }
 
+    /// Returns the public variant attribute value link ID.
     #[must_use]
     pub const fn pid(&self) -> Uuid {
         self.pid
     }
 
+    /// Returns the product variant row ID this link belongs to.
     #[must_use]
     pub const fn variant_id(&self) -> i32 {
         self.variant_id
     }
 
+    /// Returns the attribute row ID this link represents.
     #[must_use]
     pub const fn attribute_id(&self) -> i32 {
         self.attribute_id
     }
 
+    /// Returns the attribute value row ID selected for the variant.
     #[must_use]
     pub const fn attribute_value_id(&self) -> i32 {
         self.attribute_value_id
     }
 
+    /// Returns when the link was created.
     #[must_use]
     pub const fn created_at(&self) -> DateTime<FixedOffset> {
         self.created_at

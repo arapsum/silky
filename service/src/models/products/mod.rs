@@ -31,53 +31,66 @@ pub struct Product {
 }
 
 impl Product {
-    /// Seeds products from a file in `src/data`.
+    /// Loads products from a JSON file in `src/data` and seeds them.
+    ///
+    /// # Parameters
+    ///
+    /// - `db`: Database pool used for inserts and updates.
+    /// - `file`: File name relative to `src/data`.
     ///
     /// # Errors
     ///
-    /// Returns a file, deserialisation, or database error if loading or
-    /// inserting the loaded products fails.
+    /// Returns a file, deserialization, or database error if loading,
+    /// decoding, inserting, or updating the products fails.
     pub async fn seed_data(db: &PgPool, file: &str) -> ModelResult<()> {
         let data = Self::load(file).await?;
 
         Self::seed(db, &data).await
     }
 
+    /// Returns the internal database row ID.
     #[must_use]
     pub const fn id(&self) -> i32 {
         self.id
     }
 
+    /// Returns the public product ID.
     #[must_use]
     pub const fn pid(&self) -> Uuid {
         self.pid
     }
 
+    /// Returns the category row ID that owns this product.
     #[must_use]
     pub const fn category_id(&self) -> i32 {
         self.category_id
     }
 
+    /// Returns the product name.
     #[must_use]
     pub fn name(&self) -> &str {
         &self.name
     }
 
+    /// Returns the optional product description.
     #[must_use]
     pub const fn description(&self) -> Option<&String> {
         self.description.as_ref()
     }
 
+    /// Returns when the product was created.
     #[must_use]
     pub const fn created_at(&self) -> DateTime<FixedOffset> {
         self.created_at
     }
 
+    /// Returns when the product was last updated.
     #[must_use]
     pub const fn updated_at(&self) -> DateTime<FixedOffset> {
         self.updated_at
     }
 
+    /// Returns when the product was soft-deleted, if it has been deleted.
     #[must_use]
     pub const fn deleted_at(&self) -> Option<DateTime<FixedOffset>> {
         self.deleted_at

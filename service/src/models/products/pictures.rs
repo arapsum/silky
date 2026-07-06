@@ -19,53 +19,66 @@ pub struct Picture {
 }
 
 impl Picture {
-    /// Seeds pictures from a file in `src/data`.
+    /// Loads product pictures from a JSON file in `src/data` and seeds them.
+    ///
+    /// # Parameters
+    ///
+    /// - `db`: Database pool used for inserts and updates.
+    /// - `file`: File name relative to `src/data`.
     ///
     /// # Errors
     ///
-    /// Returns a file, deserialisation, or database error if loading or
-    /// inserting the loaded pictures fails.
+    /// Returns a file, deserialization, or database error if loading,
+    /// decoding, inserting, or updating the pictures fails.
     pub async fn seed_data(db: &PgPool, file: &str) -> ModelResult<()> {
         let data = Self::load(file).await?;
 
         Self::seed(db, &data).await
     }
 
+    /// Returns the internal database row ID.
     #[must_use]
     pub const fn id(&self) -> i32 {
         self.id
     }
 
+    /// Returns the public picture ID.
     #[must_use]
     pub const fn pid(&self) -> Uuid {
         self.pid
     }
 
+    /// Returns the product row ID this picture belongs to.
     #[must_use]
     pub const fn product_id(&self) -> i32 {
         self.product_id
     }
 
+    /// Returns the variant row ID this picture belongs to, if variant-specific.
     #[must_use]
     pub const fn variant_id(&self) -> Option<i32> {
         self.variant_id
     }
 
+    /// Returns the picture URL.
     #[must_use]
     pub fn image_link(&self) -> &str {
         &self.image_link
     }
 
+    /// Returns the optional display order for this picture.
     #[must_use]
     pub const fn display_order(&self) -> Option<i32> {
         self.display_order
     }
 
+    /// Returns when the picture was created.
     #[must_use]
     pub const fn created_at(&self) -> DateTime<FixedOffset> {
         self.created_at
     }
 
+    /// Returns when the picture was last updated.
     #[must_use]
     pub const fn updated_at(&self) -> DateTime<FixedOffset> {
         self.updated_at

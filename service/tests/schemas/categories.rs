@@ -22,6 +22,7 @@ fn new_category(
 ) -> NewCategory<'static> {
     NewCategory::new(
         Cow::Owned(name),
+        Some(Cow::Borrowed("category-slug")),
         Cow::Owned(image_link),
         parent_id,
         description.map(Cow::Owned),
@@ -36,6 +37,7 @@ fn update_category(
 ) -> UpdateCategory<'static> {
     UpdateCategory::new(
         name.map(Cow::Owned),
+        None,
         image_link.map(Cow::Owned),
         parent_id,
         description.map(Cow::Owned),
@@ -93,6 +95,20 @@ fn update_category(
     Some("Short sleeve tops".to_string())
 )]
 #[case(
+    "new_category_validation_accepts_missing_slug",
+    "T-shirts".to_string(),
+    "https://cdn.example.com/categories/tshirts.png".to_string(),
+    None,
+    Some("Short sleeve tops".to_string())
+)]
+#[case(
+    "new_category_validation_accepts_unformatted_slug",
+    "T-shirts".to_string(),
+    "https://cdn.example.com/categories/tshirts.png".to_string(),
+    None,
+    Some("Short sleeve tops".to_string())
+)]
+#[case(
     "new_category_validation_rejects_invalid_image_link",
     "T-shirts".to_string(),
     "not-a-url".to_string(),
@@ -122,7 +138,23 @@ fn can_validate_new_category(
 ) {
     configure_insta!();
 
-    let params = new_category(name, image_link, parent_id, description);
+    let params = match test_name {
+        "new_category_validation_accepts_missing_slug" => NewCategory::new(
+            Cow::Owned(name),
+            None,
+            Cow::Owned(image_link),
+            parent_id,
+            description.map(Cow::Owned),
+        ),
+        "new_category_validation_accepts_unformatted_slug" => NewCategory::new(
+            Cow::Owned(name),
+            Some(Cow::Borrowed("Invalid Slug")),
+            Cow::Owned(image_link),
+            parent_id,
+            description.map(Cow::Owned),
+        ),
+        _ => new_category(name, image_link, parent_id, description),
+    };
     let result = Validator::new(params)
         .validate()
         .map(|_| "valid".to_string())
@@ -159,6 +191,14 @@ fn can_validate_new_category(
     None,
     None,
     Some("Short sleeve tops".to_string())
+)]
+#[case("update_category_validation_accepts_slug_only", None, None, None, None)]
+#[case(
+    "update_category_validation_accepts_unformatted_slug",
+    None,
+    None,
+    None,
+    None
 )]
 #[case(
     "update_category_validation_rejects_empty_name",
@@ -218,7 +258,15 @@ fn can_validate_update_category(
 ) {
     configure_insta!();
 
-    let params = update_category(name, image_link, parent_id, description);
+    let params = match test_name {
+        "update_category_validation_accepts_slug_only" => {
+            UpdateCategory::new(None, Some(Cow::Borrowed("graphic-tees")), None, None, None)
+        }
+        "update_category_validation_accepts_unformatted_slug" => {
+            UpdateCategory::new(None, Some(Cow::Borrowed("Graphic Tees")), None, None, None)
+        }
+        _ => update_category(name, image_link, parent_id, description),
+    };
     let result = Validator::new(params)
         .validate()
         .map(|_| "valid".to_string())

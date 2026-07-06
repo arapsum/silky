@@ -11,7 +11,7 @@ use crate::{
     AppState, Result,
     middlewares::{AuthLayer, RbacLayer},
     models::Category,
-    schemas::{NewCategory, PaginationQuery, UpdateCategory, Validator},
+    schemas::{CategoryListQuery, NewCategory, UpdateCategory, Validator},
     utils::{AppJson, AppPath, AppQuery},
 };
 
@@ -33,7 +33,7 @@ async fn create(
 #[debug_handler]
 async fn list(
     State(ctx): State<AppState>,
-    AppQuery(query): AppQuery<PaginationQuery>,
+    AppQuery(query): AppQuery<CategoryListQuery>,
 ) -> Result<Response> {
     let validator = Validator::new(query);
     let validated = validator.validate()?;

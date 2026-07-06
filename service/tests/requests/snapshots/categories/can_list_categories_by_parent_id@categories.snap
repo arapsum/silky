@@ -1,0 +1,8 @@
+---
+source: tests/requests/categories.rs
+expression: "(response.status_code(), response.text())"
+---
+(
+    200,
+    "{\"data\":[{\"id\":104,\"pid\":\"PID\",\"name\":\"sneakers\",\"slug\":\"sneakers\",\"imageLink\":\"https://cdn.example.com/categories/sneakers.png\",\"description\":\"Casual shoes\",\"parentId\":103,\"createdAt\":\"DATE\",\"updatedAt\":\"DATE\",\"deletedAt\":null}],\"pagination\":{\"page\":1,\"limit\":20,\"totalItems\":1,\"totalPages\":1,\"hasNext\":false,\"hasPrev\":false}}",
+)

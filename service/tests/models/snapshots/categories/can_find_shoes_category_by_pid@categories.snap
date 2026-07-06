@@ -7,6 +7,7 @@ Ok(
         id: 103,
         pid: 6f042674-322f-4933-afc8-1d3fd75599f6,
         name: "shoes",
+        slug: "shoes",
         image_link: "https://cdn.example.com/categories/shoes.png",
         description: None,
         parent_id: None,

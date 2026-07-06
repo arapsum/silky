@@ -92,6 +92,51 @@ async fn allow_category_writes(db: &sqlx::PgPool) {
     grant_permission(db, "administrator", "categories:delete").await;
 }
 
+async fn create_child_category(db: &sqlx::PgPool) {
+    sqlx::query(
+        r"
+        INSERT INTO categories (
+            id,
+            pid,
+            name,
+            slug,
+            image_link,
+            parent_id,
+            description,
+            created_at,
+            updated_at
+        ) VALUES (
+            104,
+            '9a4a662b-2d78-4697-8469-e0b58c7bc4d2',
+            'sneakers',
+            'sneakers',
+            'https://cdn.example.com/categories/sneakers.png',
+            103,
+            'Casual shoes',
+            NOW(),
+            NOW()
+        )
+    ",
+    )
+    .execute(db)
+    .await
+    .expect("Failed to create child category");
+}
+
+async fn soft_delete_category(db: &sqlx::PgPool) {
+    sqlx::query(
+        r"
+        UPDATE categories
+        SET deleted_at = NOW()
+        WHERE pid = $1::uuid
+    ",
+    )
+    .bind(TROUSERS_PID)
+    .execute(db)
+    .await
+    .expect("Failed to soft-delete category");
+}
+
 fn response_filters() -> Vec<(&'static str, &'static str)> {
     let mut filters = utils::cleanup_date().to_vec();
     filters.extend(utils::cleanup_uuid().to_vec());
@@ -104,9 +149,20 @@ fn response_filters() -> Vec<(&'static str, &'static str)> {
 #[rstest]
 #[case("can_list_categories", "/categories")]
 #[case("can_list_categories_with_pagination", "/categories?limit=2&page=2")]
+#[case("can_list_categories_with_search", "/categories?search=rou")]
+#[case("can_list_categories_by_name", "/categories?name=T-shirts")]
+#[case("can_list_categories_by_slug", "/categories?slug=shoes")]
+#[case("can_list_categories_without_parent", "/categories?hasParent=false")]
+#[case("can_list_categories_with_parent", "/categories?hasParent=true")]
+#[case("can_list_categories_by_parent_id", "/categories?parentId=103")]
+#[case("can_list_categories_with_deleted", "/categories?includeDeleted=true")]
 #[case(
     "cannot_list_categories_with_invalid_limit",
     "/categories?limit=0&page=1"
+)]
+#[case(
+    "cannot_list_categories_with_invalid_parent_id",
+    "/categories?parentId=0"
 )]
 #[tokio::test]
 #[serial]
@@ -117,6 +173,14 @@ async fn can_list_categories(#[case] test_name: &str, #[case] path: &str) {
         crate::seed_data(ctx.db())
             .await
             .expect("Failed to seed data");
+
+        if path.contains("hasParent") || path.contains("parentId=103") {
+            create_child_category(ctx.db()).await;
+        }
+
+        if path.contains("includeDeleted=true") {
+            soft_delete_category(ctx.db()).await;
+        }
 
         let response = server.get(path).await;
 
@@ -159,6 +223,7 @@ async fn can_get_category(#[case] test_name: &str, #[case] pid: &str) {
     "can_create_category_with_description",
     serde_json::json!({
         "name": "Accessories",
+        "slug": "accessories",
         "imageLink": "https://cdn.example.com/categories/accessories.png",
         "description": "Bags and belts"
     })
@@ -167,6 +232,7 @@ async fn can_get_category(#[case] test_name: &str, #[case] pid: &str) {
     "can_create_category_without_description",
     serde_json::json!({
         "name": "Hats",
+        "slug": "hats",
         "imageLink": "https://cdn.example.com/categories/hats.png"
     })
 )]
@@ -174,6 +240,7 @@ async fn can_get_category(#[case] test_name: &str, #[case] pid: &str) {
     "can_create_category_and_normalize_name",
     serde_json::json!({
         "name": "  Winter Wear  ",
+        "slug": "winter-wear",
         "imageLink": "  https://cdn.example.com/categories/winter.png  ",
         "description": "Warm layers"
     })
@@ -182,21 +249,48 @@ async fn can_get_category(#[case] test_name: &str, #[case] pid: &str) {
     "cannot_create_category_when_name_already_exists",
     serde_json::json!({
         "name": "T-shirts",
+        "slug": "duplicate-t-shirts",
         "imageLink": "https://cdn.example.com/categories/duplicate.png",
         "description": "Duplicate seeded category"
+    })
+)]
+#[case(
+    "can_create_category_when_slug_already_exists",
+    serde_json::json!({
+        "name": "Accessories",
+        "slug": "t-shirts",
+        "imageLink": "https://cdn.example.com/categories/accessories.png",
+        "description": "Duplicate seeded slug"
     })
 )]
 #[case(
     "cannot_create_category_when_name_is_invalid",
     serde_json::json!({
         "name": "T-shirts+",
+        "slug": "t-shirts-plus",
         "imageLink": "https://cdn.example.com/categories/tshirts.png"
+    })
+)]
+#[case(
+    "can_create_category_with_unformatted_slug",
+    serde_json::json!({
+        "name": "Accessories",
+        "slug": "  New Accessories  ",
+        "imageLink": "https://cdn.example.com/categories/accessories.png"
+    })
+)]
+#[case(
+    "can_create_category_without_slug",
+    serde_json::json!({
+        "name": "New Accessories",
+        "imageLink": "https://cdn.example.com/categories/accessories.png"
     })
 )]
 #[case(
     "cannot_create_category_when_image_link_is_invalid",
     serde_json::json!({
         "name": "Accessories",
+        "slug": "accessories",
         "imageLink": "not-a-url"
     })
 )]
@@ -204,6 +298,7 @@ async fn can_get_category(#[case] test_name: &str, #[case] pid: &str) {
     "cannot_create_category_when_description_is_too_long",
     serde_json::json!({
         "name": "Accessories",
+        "slug": "accessories",
         "imageLink": "https://cdn.example.com/categories/accessories.png",
         "description": "a".repeat(1001)
     })
@@ -253,10 +348,18 @@ async fn can_create_category(#[case] test_name: &str, #[case] params: serde_json
     })
 )]
 #[case(
+    "can_update_category_slug",
+    TROUSERS_PID,
+    serde_json::json!({
+        "slug": "smart-trousers"
+    })
+)]
+#[case(
     "can_update_category_name_image_and_description",
     TROUSERS_PID,
     serde_json::json!({
         "name": "Chinos",
+        "slug": "chinos",
         "imageLink": "https://cdn.example.com/categories/chinos.png",
         "description": "Smart casual trousers"
     })
@@ -270,10 +373,19 @@ async fn can_create_category(#[case] test_name: &str, #[case] params: serde_json
     })
 )]
 #[case(
+    "can_update_category_when_slug_already_exists",
+    TROUSERS_PID,
+    serde_json::json!({
+        "slug": "t-shirts",
+        "description": "Duplicate seeded category"
+    })
+)]
+#[case(
     "cannot_update_category_when_pid_does_not_exist",
     MISSING_PID,
     serde_json::json!({
         "name": "Outerwear",
+        "slug": "outerwear",
         "description": "Jackets and coats"
     })
 )]
@@ -282,6 +394,13 @@ async fn can_create_category(#[case] test_name: &str, #[case] params: serde_json
     TROUSERS_PID,
     serde_json::json!({
         "name": "Pants+"
+    })
+)]
+#[case(
+    "can_update_category_with_unformatted_slug",
+    TROUSERS_PID,
+    serde_json::json!({
+        "slug": "Pants Plus"
     })
 )]
 #[case(
@@ -384,6 +503,7 @@ async fn cannot_write_categories_without_credentials(
 
         let body = serde_json::json!({
             "name": "Accessories",
+            "slug": "accessories",
             "imageLink": "https://cdn.example.com/categories/accessories.png"
         });
 
@@ -420,6 +540,7 @@ async fn cannot_write_category_without_permission(#[case] test_name: &str) {
         let (auth_header, auth_value) = utils::auth_header(token);
         let body = serde_json::json!({
             "name": "Accessories",
+            "slug": "accessories",
             "imageLink": "https://cdn.example.com/categories/accessories.png"
         });
 

@@ -1,0 +1,8 @@
+---
+source: tests/requests/categories.rs
+expression: "(response.status_code(), response.text())"
+---
+(
+    400,
+    "{\"error\":\"{\\\"parent_id\\\":\\\"Parent ID must be a positive integer\\\"}\"}",
+)

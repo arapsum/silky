@@ -12,6 +12,8 @@ pub static RE_NAME: LazyLock<Regex> =
 pub struct NewCategory<'a> {
     #[validate(custom(function = "validate_name"))]
     name: Cow<'a, str>,
+    #[validate(length(max = 96, message = "Slug must be under 96 characters"))]
+    slug: Option<Cow<'a, str>>,
     #[validate(url)]
     image_link: Cow<'a, str>,
     #[validate(range(min = 1, max = 1_000_000))]
@@ -24,12 +26,14 @@ impl<'a> NewCategory<'a> {
     #[must_use]
     pub const fn new(
         name: Cow<'a, str>,
+        slug: Option<Cow<'a, str>>,
         image_link: Cow<'a, str>,
         parent_id: Option<i32>,
         description: Option<Cow<'a, str>>,
     ) -> Self {
         Self {
             name,
+            slug,
             image_link,
             parent_id,
             description,
@@ -39,6 +43,11 @@ impl<'a> NewCategory<'a> {
     #[must_use]
     pub fn name(&self) -> &str {
         &self.name
+    }
+
+    #[must_use]
+    pub const fn slug(&self) -> Option<&Cow<'a, str>> {
+        self.slug.as_ref()
     }
 
     #[must_use]
@@ -62,6 +71,8 @@ impl<'a> NewCategory<'a> {
 pub struct UpdateCategory<'a> {
     #[validate(custom(function = "validate_name"))]
     name: Option<Cow<'a, str>>,
+    #[validate(length(max = 96, message = "Slug must be under 96 characters"))]
+    slug: Option<Cow<'a, str>>,
     #[validate(url)]
     image_link: Option<Cow<'a, str>>,
     #[validate(range(min = 1, max = 1_000_000))]
@@ -74,12 +85,14 @@ impl<'a> UpdateCategory<'a> {
     #[must_use]
     pub const fn new(
         name: Option<Cow<'a, str>>,
+        slug: Option<Cow<'a, str>>,
         image_link: Option<Cow<'a, str>>,
         parent_id: Option<i32>,
         description: Option<Cow<'a, str>>,
     ) -> Self {
         Self {
             name,
+            slug,
             image_link,
             parent_id,
             description,
@@ -88,6 +101,11 @@ impl<'a> UpdateCategory<'a> {
     #[must_use]
     pub const fn name(&self) -> Option<&Cow<'a, str>> {
         self.name.as_ref()
+    }
+
+    #[must_use]
+    pub const fn slug(&self) -> Option<&Cow<'a, str>> {
+        self.slug.as_ref()
     }
 
     #[must_use]

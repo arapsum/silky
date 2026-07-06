@@ -2,6 +2,73 @@ use serde::{Deserialize, Serialize};
 use validator::Validate;
 
 #[derive(Debug, Deserialize, Serialize, Clone, Validate)]
+#[serde(rename_all = "camelCase")]
+pub struct CategoryListQuery {
+    #[validate(range(min = 1, message = "Limit must be a positive integer"))]
+    limit: Option<i64>,
+    #[validate(range(min = 1, message = "Page must be a positive integer"))]
+    page: Option<i64>,
+    search: Option<String>,
+    name: Option<String>,
+    slug: Option<String>,
+    #[validate(range(min = 1, message = "Parent ID must be a positive integer"))]
+    parent_id: Option<i32>,
+    has_parent: Option<bool>,
+    include_deleted: Option<bool>,
+}
+
+impl CategoryListQuery {
+    #[must_use]
+    pub const fn limit(&self) -> Option<i64> {
+        self.limit
+    }
+
+    #[must_use]
+    pub const fn page(&self) -> Option<i64> {
+        self.page
+    }
+
+    #[must_use]
+    pub fn search(&self) -> Option<&str> {
+        self.search
+            .as_deref()
+            .map(str::trim)
+            .filter(|s| !s.is_empty())
+    }
+
+    #[must_use]
+    pub fn name(&self) -> Option<&str> {
+        self.name
+            .as_deref()
+            .map(str::trim)
+            .filter(|s| !s.is_empty())
+    }
+
+    #[must_use]
+    pub fn slug(&self) -> Option<&str> {
+        self.slug
+            .as_deref()
+            .map(str::trim)
+            .filter(|s| !s.is_empty())
+    }
+
+    #[must_use]
+    pub const fn parent_id(&self) -> Option<i32> {
+        self.parent_id
+    }
+
+    #[must_use]
+    pub const fn has_parent(&self) -> Option<bool> {
+        self.has_parent
+    }
+
+    #[must_use]
+    pub const fn include_deleted(&self) -> bool {
+        matches!(self.include_deleted, Some(true))
+    }
+}
+
+#[derive(Debug, Deserialize, Serialize, Clone, Validate)]
 pub struct PaginationQuery {
     #[validate(range(min = 1, message = "Limit must be a positive integer"))]
     limit: Option<i64>,

@@ -7,6 +7,7 @@ Ok(
         id: ID,
         pid: PID,
         name: "winter wear",
+        slug: "winter-wear",
         image_link: "https://cdn.example.com/categories/winter.png",
         description: Some(
             "Warm layers",

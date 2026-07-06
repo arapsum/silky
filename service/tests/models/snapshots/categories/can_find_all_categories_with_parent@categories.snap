@@ -1,0 +1,34 @@
+---
+source: tests/models/categories.rs
+expression: result
+---
+Ok(
+    PaginatedModel {
+        data: [
+            Category {
+                id: ID,
+                pid: PID,
+                name: "sneakers",
+                slug: "sneakers",
+                image_link: "https://cdn.example.com/categories/sneakers.png",
+                description: Some(
+                    "Casual shoes",
+                ),
+                parent_id: Some(
+                    103,
+                ),
+                created_at: DATE,
+                updated_at: DATE,
+                deleted_at: None,
+            },
+        ],
+        pagination: Pagination {
+            page: 1,
+            limit: 20,
+            total_items: 1,
+            total_pages: 1,
+            has_next: false,
+            has_prev: false,
+        },
+    },
+)

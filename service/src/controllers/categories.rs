@@ -74,7 +74,7 @@ async fn remove(State(ctx): State<AppState>, AppPath(pid): AppPath<Uuid>) -> Res
     Ok((StatusCode::NO_CONTENT, Json(category)).into_response())
 }
 
-fn auth_router(ctx: &AppState) -> Router {
+fn protected(ctx: &AppState) -> Router {
     Router::new()
         .route(
             "/",
@@ -91,7 +91,7 @@ fn auth_router(ctx: &AppState) -> Router {
         .with_state(ctx.clone())
 }
 
-fn unauth_router(ctx: &AppState) -> Router {
+fn general(ctx: &AppState) -> Router {
     Router::new()
         .route("/", get(list))
         .route("/{pid}", get(one))
@@ -99,5 +99,5 @@ fn unauth_router(ctx: &AppState) -> Router {
 }
 
 pub fn router(ctx: &AppState) -> Router {
-    unauth_router(ctx).merge(auth_router(ctx).layer(AuthLayer::new(ctx.clone())))
+    general(ctx).merge(protected(ctx).layer(AuthLayer::new(ctx.clone())))
 }

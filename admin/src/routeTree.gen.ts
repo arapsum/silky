@@ -13,9 +13,8 @@ import { Route as MainRouteRouteImport } from './routes/_main/route'
 import { Route as MainIndexRouteImport } from './routes/_main/index'
 import { Route as MainSettingsIndexRouteImport } from './routes/_main/settings/index'
 import { Route as AuthSignInIndexRouteImport } from './routes/_auth/sign-in/index'
-import { Route as MainPeopleProfilesIndexRouteImport } from './routes/_main/people/profiles/index'
+import { Route as MainPeopleStaffIndexRouteImport } from './routes/_main/people/staff/index'
 import { Route as MainPeopleCustomersIndexRouteImport } from './routes/_main/people/customers/index'
-import { Route as MainPeopleAdministratorsIndexRouteImport } from './routes/_main/people/administrators/index'
 import { Route as MainAccessControlRolesIndexRouteImport } from './routes/_main/access-control/roles/index'
 import { Route as MainAccessControlPermissionsIndexRouteImport } from './routes/_main/access-control/permissions/index'
 
@@ -38,21 +37,15 @@ const AuthSignInIndexRoute = AuthSignInIndexRouteImport.update({
   path: '/sign-in/',
   getParentRoute: () => rootRouteImport,
 } as any)
-const MainPeopleProfilesIndexRoute = MainPeopleProfilesIndexRouteImport.update({
-  id: '/people/profiles/',
-  path: '/people/profiles/',
+const MainPeopleStaffIndexRoute = MainPeopleStaffIndexRouteImport.update({
+  id: '/people/staff/',
+  path: '/people/staff/',
   getParentRoute: () => MainRouteRoute,
 } as any)
 const MainPeopleCustomersIndexRoute =
   MainPeopleCustomersIndexRouteImport.update({
     id: '/people/customers/',
     path: '/people/customers/',
-    getParentRoute: () => MainRouteRoute,
-  } as any)
-const MainPeopleAdministratorsIndexRoute =
-  MainPeopleAdministratorsIndexRouteImport.update({
-    id: '/people/administrators/',
-    path: '/people/administrators/',
     getParentRoute: () => MainRouteRoute,
   } as any)
 const MainAccessControlRolesIndexRoute =
@@ -74,9 +67,8 @@ export interface FileRoutesByFullPath {
   '/settings/': typeof MainSettingsIndexRoute
   '/access-control/permissions/': typeof MainAccessControlPermissionsIndexRoute
   '/access-control/roles/': typeof MainAccessControlRolesIndexRoute
-  '/people/administrators/': typeof MainPeopleAdministratorsIndexRoute
   '/people/customers/': typeof MainPeopleCustomersIndexRoute
-  '/people/profiles/': typeof MainPeopleProfilesIndexRoute
+  '/people/staff/': typeof MainPeopleStaffIndexRoute
 }
 export interface FileRoutesByTo {
   '/': typeof MainIndexRoute
@@ -84,9 +76,8 @@ export interface FileRoutesByTo {
   '/settings': typeof MainSettingsIndexRoute
   '/access-control/permissions': typeof MainAccessControlPermissionsIndexRoute
   '/access-control/roles': typeof MainAccessControlRolesIndexRoute
-  '/people/administrators': typeof MainPeopleAdministratorsIndexRoute
   '/people/customers': typeof MainPeopleCustomersIndexRoute
-  '/people/profiles': typeof MainPeopleProfilesIndexRoute
+  '/people/staff': typeof MainPeopleStaffIndexRoute
 }
 export interface FileRoutesById {
   __root__: typeof rootRouteImport
@@ -96,9 +87,8 @@ export interface FileRoutesById {
   '/_main/settings/': typeof MainSettingsIndexRoute
   '/_main/access-control/permissions/': typeof MainAccessControlPermissionsIndexRoute
   '/_main/access-control/roles/': typeof MainAccessControlRolesIndexRoute
-  '/_main/people/administrators/': typeof MainPeopleAdministratorsIndexRoute
   '/_main/people/customers/': typeof MainPeopleCustomersIndexRoute
-  '/_main/people/profiles/': typeof MainPeopleProfilesIndexRoute
+  '/_main/people/staff/': typeof MainPeopleStaffIndexRoute
 }
 export interface FileRouteTypes {
   fileRoutesByFullPath: FileRoutesByFullPath
@@ -108,9 +98,8 @@ export interface FileRouteTypes {
     | '/settings/'
     | '/access-control/permissions/'
     | '/access-control/roles/'
-    | '/people/administrators/'
     | '/people/customers/'
-    | '/people/profiles/'
+    | '/people/staff/'
   fileRoutesByTo: FileRoutesByTo
   to:
     | '/'
@@ -118,9 +107,8 @@ export interface FileRouteTypes {
     | '/settings'
     | '/access-control/permissions'
     | '/access-control/roles'
-    | '/people/administrators'
     | '/people/customers'
-    | '/people/profiles'
+    | '/people/staff'
   id:
     | '__root__'
     | '/_main'
@@ -129,9 +117,8 @@ export interface FileRouteTypes {
     | '/_main/settings/'
     | '/_main/access-control/permissions/'
     | '/_main/access-control/roles/'
-    | '/_main/people/administrators/'
     | '/_main/people/customers/'
-    | '/_main/people/profiles/'
+    | '/_main/people/staff/'
   fileRoutesById: FileRoutesById
 }
 export interface RootRouteChildren {
@@ -169,11 +156,11 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AuthSignInIndexRouteImport
       parentRoute: typeof rootRouteImport
     }
-    '/_main/people/profiles/': {
-      id: '/_main/people/profiles/'
-      path: '/people/profiles'
-      fullPath: '/people/profiles/'
-      preLoaderRoute: typeof MainPeopleProfilesIndexRouteImport
+    '/_main/people/staff/': {
+      id: '/_main/people/staff/'
+      path: '/people/staff'
+      fullPath: '/people/staff/'
+      preLoaderRoute: typeof MainPeopleStaffIndexRouteImport
       parentRoute: typeof MainRouteRoute
     }
     '/_main/people/customers/': {
@@ -181,13 +168,6 @@ declare module '@tanstack/react-router' {
       path: '/people/customers'
       fullPath: '/people/customers/'
       preLoaderRoute: typeof MainPeopleCustomersIndexRouteImport
-      parentRoute: typeof MainRouteRoute
-    }
-    '/_main/people/administrators/': {
-      id: '/_main/people/administrators/'
-      path: '/people/administrators'
-      fullPath: '/people/administrators/'
-      preLoaderRoute: typeof MainPeopleAdministratorsIndexRouteImport
       parentRoute: typeof MainRouteRoute
     }
     '/_main/access-control/roles/': {
@@ -212,9 +192,8 @@ interface MainRouteRouteChildren {
   MainSettingsIndexRoute: typeof MainSettingsIndexRoute
   MainAccessControlPermissionsIndexRoute: typeof MainAccessControlPermissionsIndexRoute
   MainAccessControlRolesIndexRoute: typeof MainAccessControlRolesIndexRoute
-  MainPeopleAdministratorsIndexRoute: typeof MainPeopleAdministratorsIndexRoute
   MainPeopleCustomersIndexRoute: typeof MainPeopleCustomersIndexRoute
-  MainPeopleProfilesIndexRoute: typeof MainPeopleProfilesIndexRoute
+  MainPeopleStaffIndexRoute: typeof MainPeopleStaffIndexRoute
 }
 
 const MainRouteRouteChildren: MainRouteRouteChildren = {
@@ -223,9 +202,8 @@ const MainRouteRouteChildren: MainRouteRouteChildren = {
   MainAccessControlPermissionsIndexRoute:
     MainAccessControlPermissionsIndexRoute,
   MainAccessControlRolesIndexRoute: MainAccessControlRolesIndexRoute,
-  MainPeopleAdministratorsIndexRoute: MainPeopleAdministratorsIndexRoute,
   MainPeopleCustomersIndexRoute: MainPeopleCustomersIndexRoute,
-  MainPeopleProfilesIndexRoute: MainPeopleProfilesIndexRoute,
+  MainPeopleStaffIndexRoute: MainPeopleStaffIndexRoute,
 }
 
 const MainRouteRouteWithChildren = MainRouteRoute._addFileChildren(

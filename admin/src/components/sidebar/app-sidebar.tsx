@@ -126,14 +126,9 @@ const dashboardRoutes: Route[] = [
         icon: <UsersIcon className="size-4" />,
       },
       {
-        title: "Administrators",
-        link: "/people/administrators",
+        title: "Staff",
+        link: "/people/staff",
         icon: <GearIcon className="size-4" />,
-      },
-      {
-        title: "Profiles",
-        link: "/people/profiles",
-        icon: <LinkIcon className="size-4" />,
       },
     ],
   },

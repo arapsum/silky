@@ -10,7 +10,7 @@ function RouteComponent() {
     <PeopleTablePage
       title="Customers"
       description="Review customer accounts and their access status."
-      role="customer"
+      category="customers"
     />
   );
 }

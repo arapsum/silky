@@ -15,7 +15,7 @@ import { cn } from "#/lib/utils";
 type PeopleTablePageProps = {
   title: string;
   description: string;
-  role?: string;
+  category: "customers" | "staff";
 };
 
 const dateFormatter = new Intl.DateTimeFormat(undefined, {
@@ -62,6 +62,14 @@ function verificationBadgeClass(verified: boolean) {
   return verified
     ? "bg-green-50 text-green-700 ring-green-200 dark:bg-green-950 dark:text-green-300 dark:ring-green-900"
     : "bg-amber-50 text-amber-700 ring-amber-200 dark:bg-amber-950 dark:text-amber-300 dark:ring-amber-900";
+}
+
+function hasCustomerRole(user: User) {
+  return user.roles.some((role) => role.name.toLowerCase() === "customer");
+}
+
+function hasStaffRole(user: User) {
+  return user.roles.some((role) => role.name.toLowerCase() !== "customer");
 }
 
 function userColumns(): ColumnDef<User>[] {
@@ -158,14 +166,23 @@ function userColumns(): ColumnDef<User>[] {
   ];
 }
 
-export default function PeopleTablePage({ title, description, role }: PeopleTablePageProps) {
+export default function PeopleTablePage({ title, description, category }: PeopleTablePageProps) {
   const [query, setQuery] = useState("");
   const usersQuery = useQuery({
-    queryKey: [...usersQueryKey, role ?? "all"],
-    queryFn: () => listUsers(role),
+    queryKey: [...usersQueryKey, category],
+    queryFn: () => listUsers(),
   });
 
-  const users = usersQuery.data ?? [];
+  const users = useMemo(() => {
+    const data = usersQuery.data ?? [];
+
+    if (category === "staff") {
+      return data.filter(hasStaffRole);
+    }
+
+    return data.filter((user) => hasCustomerRole(user) && !hasStaffRole(user));
+  }, [category, usersQuery.data]);
+
   const filteredUsers = useMemo(() => {
     const needle = query.trim().toLowerCase();
     if (!needle) return users;

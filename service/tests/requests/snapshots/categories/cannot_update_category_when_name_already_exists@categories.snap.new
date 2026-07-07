@@ -1,9 +1,0 @@
----
-source: tests/requests/categories.rs
-assertion_line: 456
-expression: "(response.status_code(), response.text())"
----
-(
-    409,
-    "{\"error\":\"Category t-shirts already exists!\"}",
-)

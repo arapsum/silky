@@ -93,7 +93,15 @@ impl ModelError {
             Some("attribute_values_attribute_id_value_key") => {
                 "Attribute already has this value.".to_string()
             }
-            Some("attribute_values_attribute_id_fkey") => "Attribute does not exist.".to_string(),
+            Some("attribute_values_attribute_id_fkey" | "product_options_attribute_id_fkey") => {
+                "Attribute does not exist.".to_string()
+            }
+            Some("product_options_product_id_attribute_id_key") => {
+                "Product already has this option attribute.".to_string()
+            }
+            Some("product_options_product_id_fkey" | "product_variants_product_id_fkey") => {
+                "Product does not exist.".to_string()
+            }
             Some("variant_attribute_values_variant_id_attribute_id_key") => {
                 "Variant already has a value for this attribute.".to_string()
             }
@@ -106,7 +114,6 @@ impl ModelError {
             Some("one_default_variant_per_product") => {
                 "Product already has a default variant.".to_string()
             }
-            Some("product_variants_product_id_fkey") => "Product does not exist.".to_string(),
             Some("product_variants_price_check") => {
                 "Product variant price must be greater than or equal to zero.".to_string()
             }

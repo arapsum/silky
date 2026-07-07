@@ -1,9 +1,55 @@
 use chrono::{DateTime, FixedOffset};
 use serde::{Deserialize, Serialize};
-use sqlx::{Encode, PgPool, prelude::FromRow};
+use sqlx::{Encode, Executor, PgPool, Postgres, prelude::FromRow};
 use uuid::Uuid;
 
 use crate::models::{ModelResult, Seedable};
+
+#[derive(Debug, Deserialize, Serialize, Clone)]
+#[serde(rename_all = "camelCase")]
+pub struct NewProductOption {
+    #[serde(rename = "productId")]
+    product: i32,
+    #[serde(rename = "attributeId")]
+    attribute: i32,
+    display_order: Option<i32>,
+}
+
+impl NewProductOption {
+    /// Creates parameters for adding a product option.
+    ///
+    /// # Parameters
+    ///
+    /// - `product_id`: Internal product row ID this option belongs to.
+    /// - `attribute_id`: Internal attribute row ID represented by the option.
+    /// - `display_order`: Optional ordering value for rendering options.
+    #[must_use]
+    pub const fn new(product_id: i32, attribute_id: i32, display_order: Option<i32>) -> Self {
+        Self {
+            product: product_id,
+            attribute: attribute_id,
+            display_order,
+        }
+    }
+
+    /// Returns the product row ID this option belongs to.
+    #[must_use]
+    pub const fn product_id(&self) -> i32 {
+        self.product
+    }
+
+    /// Returns the attribute row ID represented by this option.
+    #[must_use]
+    pub const fn attribute_id(&self) -> i32 {
+        self.attribute
+    }
+
+    /// Returns the optional display order for this option.
+    #[must_use]
+    pub const fn display_order(&self) -> Option<i32> {
+        self.display_order
+    }
+}
 
 #[derive(Debug, Deserialize, Serialize, Clone, FromRow, Encode)]
 #[serde(rename_all = "camelCase")]
@@ -17,6 +63,47 @@ pub struct ProductOption {
 }
 
 impl ProductOption {
+    /// Creates a product option.
+    ///
+    /// # Parameters
+    ///
+    /// - `db`: Database executor used for the insert.
+    /// - `params`: Product option data to persist.
+    ///
+    /// # Errors
+    ///
+    /// Returns [`crate::models::ModelError::EntityAlreadyExists`] when the
+    /// product already has an option for the attribute, and
+    /// [`crate::models::ModelError::InvalidReference`] when the product or
+    /// attribute does not exist. Returns a database error if the insert fails
+    /// for another reason.
+    pub async fn create<'e, E>(db: &E, params: &NewProductOption) -> ModelResult<Self>
+    where
+        for<'a> &'a E: Executor<'e, Database = Postgres>,
+    {
+        let option = sqlx::query_as::<_, Self>(
+            r"
+                INSERT INTO product_options (
+                    product_id,
+                    attribute_id,
+                    display_order
+                ) VALUES (
+                    $1,
+                    $2,
+                    $3
+                )
+                RETURNING *
+        ",
+        )
+        .bind(params.product_id())
+        .bind(params.attribute_id())
+        .bind(params.display_order())
+        .fetch_one(db)
+        .await?;
+
+        Ok(option)
+    }
+
     /// Loads product options from a JSON file in `src/data` and seeds them.
     ///
     /// # Parameters

@@ -15,7 +15,7 @@ mod variants;
 pub use self::{
     attribute_values::AttributeValue,
     attributes::Attribute,
-    options::ProductOption,
+    options::{NewProductOption, ProductOption},
     pictures::Picture,
     variant_attribute_values::{NewVariantAttributeValue, VariantAttributeValue},
     variants::{NewVariant, ProductVariant},

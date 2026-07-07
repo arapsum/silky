@@ -1,0 +1,9 @@
+---
+source: tests/models/products/product_options.rs
+expression: result
+---
+Err(
+    InvalidReference(
+        "Attribute does not exist.",
+    ),
+)

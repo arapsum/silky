@@ -1,0 +1,14 @@
+---
+source: tests/models/products/product_options.rs
+expression: result
+---
+Ok(
+    ProductOption {
+        id: ID,
+        pid: PID,
+        product_id: ID,
+        attribute_id: ID,
+        display_order: None,
+        created_at: DATE,
+    },
+)

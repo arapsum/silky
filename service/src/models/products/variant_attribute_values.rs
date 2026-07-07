@@ -3,7 +3,7 @@ use serde::{Deserialize, Serialize};
 use sqlx::{Encode, Executor, PgPool, Postgres, prelude::FromRow};
 use uuid::Uuid;
 
-use crate::models::{Attribute, AttributeValue, ModelError, ModelResult, ProductVariant, Seedable};
+use crate::models::{ModelResult, Seedable};
 
 #[derive(Debug, Deserialize, Serialize, Clone)]
 #[serde(rename_all = "camelCase")]
@@ -65,73 +65,26 @@ pub struct VariantAttributeValue {
 }
 
 impl VariantAttributeValue {
-    /// Creates a variant attribute value link or returns the existing link.
+    /// Creates a variant attribute value link.
     ///
-    /// A variant can have only one value for a given attribute. If a link
-    /// already exists for the same variant and attribute, that row is returned.
+    /// A variant can have only one value for a given attribute.
     ///
     /// # Parameters
     ///
-    /// - `db`: Database executor used for the lookup and insert.
+    /// - `db`: Database executor used for the insert.
     /// - `params`: Variant, attribute, and attribute value row IDs to link.
     ///
     /// # Errors
     ///
-    /// Returns [`ModelError::EntityNotFound`] if the variant, attribute, or
-    /// attribute value does not exist. Returns a database error if the lookup
-    /// or insert fails.
+    /// Returns [`crate::models::ModelError::EntityAlreadyExists`] when the
+    /// variant already has a value for the attribute. Returns
+    /// [`crate::models::ModelError::InvalidReference`] when the variant,
+    /// attribute, or attribute value does not exist. Returns a database error
+    /// if the insert fails for another reason.
     pub async fn create<'e, E>(db: &E, params: &NewVariantAttributeValue) -> ModelResult<Self>
     where
         for<'a> &'a E: Executor<'e, Database = Postgres>,
     {
-        if let Some(exists) = sqlx::query_as::<_, Self>(
-            r"
-                SELECT * FROM variant_attribute_values
-                WHERE variant_id = $1 AND attribute_id = $2
-        ",
-        )
-        .bind(params.variant_id())
-        .bind(params.attribute_id())
-        .fetch_optional(db)
-        .await?
-        {
-            return Ok(exists);
-        }
-
-        let variant = sqlx::query_as::<_, ProductVariant>(
-            r"
-            SELECT * FROM product_variants
-            WHERE id = $1
-        ",
-        )
-        .bind(params.variant_id())
-        .fetch_optional(db)
-        .await?
-        .ok_or_else(|| ModelError::EntityNotFound)?;
-
-        let attribute = sqlx::query_as::<_, Attribute>(
-            r"
-            SELECT * FROM attributes
-            WHERE id = $1
-        ",
-        )
-        .bind(params.attribute_id())
-        .fetch_optional(db)
-        .await?
-        .ok_or_else(|| ModelError::EntityNotFound)?;
-
-        let attribute_value = sqlx::query_as::<_, AttributeValue>(
-            r"
-            SELECT * FROM attribute_values
-            WHERE id = $1 AND attribute_id = $2
-        ",
-        )
-        .bind(params.attribute_value_id())
-        .bind(params.attribute_id())
-        .fetch_optional(db)
-        .await?
-        .ok_or_else(|| ModelError::EntityNotFound)?;
-
         let value = sqlx::query_as::<_, Self>(
             r"
                 INSERT INTO variant_attribute_values (
@@ -146,9 +99,9 @@ impl VariantAttributeValue {
                 RETURNING *
         ",
         )
-        .bind(variant.id())
-        .bind(attribute.id())
-        .bind(attribute_value.id())
+        .bind(params.variant_id())
+        .bind(params.attribute_id())
+        .bind(params.attribute_value_id())
         .fetch_one(db)
         .await?;
 

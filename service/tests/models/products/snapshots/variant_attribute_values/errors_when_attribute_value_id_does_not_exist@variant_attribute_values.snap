@@ -3,5 +3,7 @@ source: tests/models/products/variant_attribute_values.rs
 expression: result
 ---
 Err(
-    EntityNotFound,
+    InvalidReference(
+        "Attribute value does not exist for the selected attribute. Check that both the attribute and attribute value exist and belong together.",
+    ),
 )

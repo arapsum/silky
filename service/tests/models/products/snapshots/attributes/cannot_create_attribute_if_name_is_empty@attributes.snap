@@ -3,7 +3,7 @@ source: tests/models/products/attributes.rs
 expression: result
 ---
 Err(
-    EntityAlreadyExists(
-        "Product attribute with this name already exists.",
+    InvalidInput(
+        "Product attribute name cannot be empty.",
     ),
 )

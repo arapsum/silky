@@ -21,7 +21,7 @@ macro_rules! configure_insta {
 #[rstest]
 #[case("can_create_variant_attribute_value_successful", 201, 203, 209)]
 #[case(
-    "will_return_variant_attribute_value_if_relation_already_exists",
+    "cannot_create_variant_attribute_value_if_relation_already_exists",
     206,
     201,
     203

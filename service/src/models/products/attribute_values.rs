@@ -17,37 +17,27 @@ pub struct AttributeValue {
 }
 
 impl AttributeValue {
-    /// Creates an attribute value or returns the existing row for the same attribute.
+    /// Creates an attribute value.
     ///
     /// The supplied value is trimmed before lookup and insertion.
     ///
     /// # Parameters
     ///
-    /// - `db`: Database executor used for the lookup and insert.
+    /// - `db`: Database executor used for the insert.
     /// - `attribute_id`: Internal attribute row ID the value belongs to.
     /// - `value`: Attribute value to trim and persist.
     ///
     /// # Errors
     ///
-    /// Returns a database error if the lookup or insert fails.
+    /// Returns [`ModelError::EntityAlreadyExists`] when the attribute already
+    /// has the supplied value, and [`ModelError::InvalidReference`] when the
+    /// attribute does not exist. Returns a database error if the insert fails
+    /// for another reason.
     pub async fn create<'e, E>(db: &E, attribute_id: i32, value: &str) -> ModelResult<Self>
     where
         for<'a> &'a E: Executor<'e, Database = Postgres>,
     {
         let value = value.trim();
-
-        if let Some(exists) = sqlx::query_as::<_, Self>(
-            r"
-                SELECT * FROM attribute_values WHERE attribute_id = $1 AND value = $2
-        ",
-        )
-        .bind(attribute_id)
-        .bind(value)
-        .fetch_optional(db)
-        .await?
-        {
-            return Ok(exists);
-        }
 
         let attribute_value = sqlx::query_as::<_, Self>(
             r"

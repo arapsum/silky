@@ -16,31 +16,25 @@ pub struct Attribute {
 }
 
 impl Attribute {
-    /// Creates an attribute or returns the existing row with the same normalized name.
+    /// Creates an attribute.
     ///
     /// The supplied name is trimmed and stored in lowercase before lookup and
     /// insertion.
     ///
     /// # Parameters
     ///
-    /// - `db`: Database executor used for the lookup and insert.
+    /// - `db`: Database executor used for the insert.
     /// - `name`: Attribute name to normalize and persist.
     ///
     /// # Errors
     ///
-    /// Returns a database error if the lookup or insert fails.
+    /// Returns [`ModelError::EntityAlreadyExists`] when another attribute
+    /// already uses the normalized name. Returns a database error if the insert
+    /// fails for another reason.
     pub async fn create<'e, E>(db: &E, name: &str) -> ModelResult<Self>
     where
         for<'a> &'a E: Executor<'e, Database = Postgres>,
     {
-        if let Some(exists) = sqlx::query_as::<_, Self>(r"SELECT * FROM attributes WHERE name = $1")
-            .bind(name.to_lowercase().trim())
-            .fetch_optional(db)
-            .await?
-        {
-            return Ok(exists);
-        }
-
         let attr = sqlx::query_as::<_, Self>(
             r"
             INSERT INTO attributes (name) VALUES ($1) RETURNING *
@@ -59,30 +53,20 @@ impl Attribute {
     ///
     /// # Parameters
     ///
-    /// - `db`: Database executor used for the duplicate lookup and update.
+    /// - `db`: Database executor used for the update.
     /// - `pid`: Public ID of the attribute to update.
     /// - `name`: Replacement attribute name.
     ///
     /// # Errors
     ///
     /// Returns [`ModelError::EntityAlreadyExists`] when another attribute
-    /// already uses the normalized name. Returns a database error if the lookup
-    /// or update fails.
+    /// already uses the normalized name. Returns [`ModelError::EntityNotFound`]
+    /// when no attribute has the public ID. Returns a database error if the
+    /// update fails for another reason.
     pub async fn update<'e, E>(db: &E, pid: Uuid, name: &str) -> ModelResult<Self>
     where
         for<'a> &'a E: Executor<'e, Database = Postgres>,
     {
-        if let Some(exists) = sqlx::query_as::<_, Self>(r"SELECT * FROM attributes WHERE name = $1")
-            .bind(name.to_lowercase().trim())
-            .fetch_optional(db)
-            .await?
-        {
-            return Err(ModelError::EntityAlreadyExists(format!(
-                "Attribute {} already exists!",
-                exists.name()
-            )));
-        }
-
         let attr = sqlx::query_as::<_, Self>(
             r"
             UPDATE attributes

@@ -1,0 +1,13 @@
+---
+source: tests/models/products/product_create.rs
+expression: "(result, product_count, variant_count)"
+---
+(
+    Err(
+        InvalidReference(
+            "Category does not exist.",
+        ),
+    ),
+    0,
+    0,
+)

@@ -1,0 +1,227 @@
+use axum::http::HeaderValue;
+use axum_test::TestServer;
+use insta::{Settings, assert_debug_snapshot, with_settings};
+use rstest::rstest;
+use serial_test::serial;
+use service::access_control::permissions;
+
+use crate::utils;
+
+macro_rules! configure_insta {
+    ($(expr:expr),*) => {
+        let mut settings = Settings::clone_current();
+        settings.set_prepend_module_to_snapshot(false);
+        settings.set_snapshot_path("snapshots/products");
+        settings.set_snapshot_suffix("products");
+        let _guard = settings.bind_to_scope();
+    };
+}
+
+async fn access_token(server: &TestServer) -> HeaderValue {
+    access_token_for(server, "john.doe@acme.com").await
+}
+
+async fn access_token_for(server: &TestServer, email: &str) -> HeaderValue {
+    let params = serde_json::json!({
+        "email": email,
+        "password": "Password"
+    });
+
+    utils::login_users(server, &params).await.access_token
+}
+
+async fn grant_permission(db: &sqlx::PgPool, role: &str, permission: &str) {
+    sqlx::query(
+        r"
+        INSERT INTO roles_permissions (role_id, permission_id)
+        SELECT roles.id, permissions.id
+        FROM roles
+        CROSS JOIN permissions
+        WHERE roles.name = $1
+            AND permissions.name = $2
+        ON CONFLICT (role_id, permission_id) DO NOTHING
+    ",
+    )
+    .bind(role)
+    .bind(permission)
+    .execute(db)
+    .await
+    .expect("Failed to grant permission");
+}
+
+async fn assign_role(db: &sqlx::PgPool, email: &str, role: &str) {
+    sqlx::query(
+        r"
+        INSERT INTO users_roles (user_id, role_id)
+        SELECT users.id, roles.id
+        FROM users
+        CROSS JOIN roles
+        WHERE users.email = $1
+            AND roles.name = $2
+        ON CONFLICT (user_id, role_id) DO NOTHING
+    ",
+    )
+    .bind(email)
+    .bind(role)
+    .execute(db)
+    .await
+    .expect("Failed to assign role");
+}
+
+async fn allow_product_writes(db: &sqlx::PgPool) {
+    assign_role(db, "john.doe@acme.com", "administrator").await;
+    grant_permission(db, "administrator", permissions::products::CREATE.as_str()).await;
+}
+
+fn response_filters() -> Vec<(&'static str, &'static str)> {
+    let mut filters = utils::cleanup_date().to_vec();
+    filters.extend(utils::cleanup_uuid().to_vec());
+    filters.extend(utils::cleanup_headers());
+    filters.push((r#""id":\d+"#, r#""id":ID"#));
+    filters.push(("DATEZ", "DATE"));
+    filters
+}
+
+fn aggregate_body() -> serde_json::Value {
+    serde_json::json!({
+        "categoryId": 103,
+        "name": "API Aggregate Product",
+        "description": "Created from the aggregate API",
+        "options": [
+            { "attributeId": 201, "displayOrder": 1 },
+            { "attributeId": 202, "displayOrder": 2 }
+        ],
+        "pictures": [
+            {
+                "imageLink": "https://cdn.example.com/products/api-aggregate-main.png",
+                "displayOrder": 1
+            }
+        ],
+        "variants": [
+            {
+                "sku": "API-AGGREGATE-BLK-M",
+                "price": "59.99",
+                "stockQuantity": 12,
+                "isDefault": true,
+                "attributeValues": [
+                    { "attributeId": 201, "attributeValueId": 203 },
+                    { "attributeId": 202, "attributeValueId": 205 }
+                ],
+                "pictures": [
+                    {
+                        "imageLink": "https://cdn.example.com/products/api-aggregate-black.png",
+                        "displayOrder": 2
+                    }
+                ]
+            }
+        ]
+    })
+}
+
+#[rstest]
+#[case("can_create_product_with_setup", aggregate_body())]
+#[case(
+    "cannot_create_product_when_name_is_invalid",
+    serde_json::json!({
+        "categoryId": 103,
+        "name": " ",
+        "variants": []
+    })
+)]
+#[case(
+    "cannot_create_product_when_picture_url_is_invalid",
+    serde_json::json!({
+        "categoryId": 103,
+        "name": "Invalid Picture Product",
+        "pictures": [
+            {
+                "imageLink": "not-a-url",
+                "displayOrder": 1
+            }
+        ]
+    })
+)]
+#[case(
+    "cannot_create_product_when_category_does_not_exist",
+    serde_json::json!({
+        "categoryId": 999,
+        "name": "Missing Category Product"
+    })
+)]
+#[tokio::test]
+#[serial]
+async fn can_create_product(#[case] test_name: &str, #[case] params: serde_json::Value) {
+    crate::request(|server, ctx| async move {
+        configure_insta!();
+
+        crate::seed_data(ctx.db())
+            .await
+            .expect("Failed to seed data");
+        allow_product_writes(ctx.db()).await;
+
+        let token = access_token(&server).await;
+        let (auth_header, auth_value) = utils::auth_header(token);
+
+        let response = server
+            .post("/products")
+            .add_header(auth_header, auth_value)
+            .json(&params)
+            .await;
+
+        with_settings!({
+            filters => response_filters()
+        }, {
+            assert_debug_snapshot!(test_name, (response.status_code(), response.text()))
+        })
+    })
+    .await;
+}
+
+#[tokio::test]
+#[serial]
+async fn cannot_create_product_without_credentials() {
+    crate::request(|server, ctx| async move {
+        configure_insta!();
+
+        crate::seed_data(ctx.db())
+            .await
+            .expect("Failed to seed data");
+
+        let response = server.post("/products").json(&aggregate_body()).await;
+
+        with_settings!({
+            filters => response_filters()
+        }, {
+            assert_debug_snapshot!("cannot_create_product_without_credentials", (response.status_code(), response.text()))
+        })
+    })
+    .await;
+}
+
+#[tokio::test]
+#[serial]
+async fn cannot_create_product_without_permission() {
+    crate::request(|server, ctx| async move {
+        configure_insta!();
+
+        crate::seed_data(ctx.db())
+            .await
+            .expect("Failed to seed data");
+
+        let token = access_token_for(&server, "jane.smith@globex.com").await;
+        let (auth_header, auth_value) = utils::auth_header(token);
+
+        let response = server
+            .post("/products")
+            .add_header(auth_header, auth_value)
+            .json(&aggregate_body())
+            .await;
+
+        with_settings!({
+            filters => response_filters()
+        }, {
+            assert_debug_snapshot!("cannot_create_product_without_permission", (response.status_code(), response.text()))
+        })
+    })
+    .await;
+}

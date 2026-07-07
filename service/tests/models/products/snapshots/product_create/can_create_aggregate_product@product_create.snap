@@ -1,0 +1,106 @@
+---
+source: tests/models/products/product_create.rs
+expression: "(result, product_count, variant_count)"
+---
+(
+    Ok(
+        ProductCreateResponse {
+            product: Product {
+                id: ID,
+                pid: PID,
+                category_id: ID,
+                name: "Aggregate Product",
+                description: Some(
+                    "A product with complete setup records",
+                ),
+                created_at: DATE,
+                updated_at: DATE,
+                deleted_at: None,
+            },
+            options: [
+                ProductOption {
+                    id: ID,
+                    pid: PID,
+                    product_id: ID,
+                    attribute_id: ID,
+                    display_order: Some(
+                        1,
+                    ),
+                    created_at: DATE,
+                },
+                ProductOption {
+                    id: ID,
+                    pid: PID,
+                    product_id: ID,
+                    attribute_id: ID,
+                    display_order: Some(
+                        2,
+                    ),
+                    created_at: DATE,
+                },
+            ],
+            pictures: [
+                Picture {
+                    id: ID,
+                    pid: PID,
+                    product_id: ID,
+                    variant_id: None,
+                    image_link: "https://cdn.example.com/products/aggregate-main.png",
+                    display_order: Some(
+                        1,
+                    ),
+                    created_at: DATE,
+                    updated_at: DATE,
+                },
+                Picture {
+                    id: ID,
+                    pid: PID,
+                    product_id: ID,
+                    variant_id: Some(
+                        1,
+                    ),
+                    image_link: "https://cdn.example.com/products/aggregate-black.png",
+                    display_order: Some(
+                        2,
+                    ),
+                    created_at: DATE,
+                    updated_at: DATE,
+                },
+            ],
+            variants: [
+                ProductVariant {
+                    id: ID,
+                    pid: PID,
+                    product_id: ID,
+                    sku: "AGGREGATE-BLK-M",
+                    price: 59.99,
+                    stock_quantity: 12,
+                    is_default: true,
+                    created_at: DATE,
+                    updated_at: DATE,
+                    deleted_at: None,
+                },
+            ],
+            variant_attribute_values: [
+                VariantAttributeValue {
+                    id: ID,
+                    pid: PID,
+                    variant_id: ID,
+                    attribute_id: ID,
+                    attribute_value_id: ID,
+                    created_at: DATE,
+                },
+                VariantAttributeValue {
+                    id: ID,
+                    pid: PID,
+                    variant_id: ID,
+                    attribute_id: ID,
+                    attribute_value_id: ID,
+                    created_at: DATE,
+                },
+            ],
+        },
+    ),
+    1,
+    1,
+)

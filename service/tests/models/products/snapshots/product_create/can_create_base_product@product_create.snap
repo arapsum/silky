@@ -1,0 +1,28 @@
+---
+source: tests/models/products/product_create.rs
+expression: "(result, product_count, variant_count)"
+---
+(
+    Ok(
+        ProductCreateResponse {
+            product: Product {
+                id: ID,
+                pid: PID,
+                category_id: ID,
+                name: "Minimal Product",
+                description: Some(
+                    "A product without setup records",
+                ),
+                created_at: DATE,
+                updated_at: DATE,
+                deleted_at: None,
+            },
+            options: [],
+            pictures: [],
+            variants: [],
+            variant_attribute_values: [],
+        },
+    ),
+    1,
+    0,
+)

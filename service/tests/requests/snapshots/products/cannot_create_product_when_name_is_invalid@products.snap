@@ -1,0 +1,8 @@
+---
+source: tests/requests/products.rs
+expression: "(response.status_code(), response.text())"
+---
+(
+    400,
+    "{\"error\":\"{\\\"name\\\":\\\"Name is required\\\"}\"}",
+)

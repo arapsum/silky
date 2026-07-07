@@ -18,7 +18,7 @@ pub use self::{
     options::ProductOption,
     pictures::Picture,
     variant_attribute_values::{NewVariantAttributeValue, VariantAttributeValue},
-    variants::ProductVariant,
+    variants::{NewVariant, ProductVariant},
 };
 
 #[derive(Debug, Deserialize, Serialize, Clone, FromRow, Encode)]

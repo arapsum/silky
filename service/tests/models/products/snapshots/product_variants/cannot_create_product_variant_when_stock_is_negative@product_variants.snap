@@ -1,0 +1,9 @@
+---
+source: tests/models/products/product_variants.rs
+expression: result
+---
+Err(
+    InvalidInput(
+        "Product variant stock quantity must be greater than or equal to zero.",
+    ),
+)

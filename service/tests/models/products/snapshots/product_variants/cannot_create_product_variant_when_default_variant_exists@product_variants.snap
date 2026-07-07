@@ -1,0 +1,9 @@
+---
+source: tests/models/products/product_variants.rs
+expression: result
+---
+Err(
+    EntityAlreadyExists(
+        "Product already has a default variant.",
+    ),
+)

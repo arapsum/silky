@@ -1,0 +1,9 @@
+---
+source: tests/models/products/pictures.rs
+expression: result
+---
+Err(
+    InvalidReference(
+        "Product does not exist.",
+    ),
+)

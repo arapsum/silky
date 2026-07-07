@@ -1,0 +1,20 @@
+---
+source: tests/models/products/pictures.rs
+expression: result
+---
+Ok(
+    Picture {
+        id: ID,
+        pid: PID,
+        product_id: ID,
+        variant_id: Some(
+            205,
+        ),
+        image_link: "https://cdn.example.com/products/court-leather-sneakers-alt.png",
+        display_order: Some(
+            2,
+        ),
+        created_at: DATE,
+        updated_at: DATE,
+    },
+)

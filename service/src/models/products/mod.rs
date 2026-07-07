@@ -3,7 +3,11 @@ use serde::{Deserialize, Serialize};
 use sqlx::{Encode, PgPool, prelude::FromRow};
 use uuid::Uuid;
 
-use crate::models::{ModelResult, Seedable};
+use crate::{
+    models::{ModelResult, Seedable},
+    schemas::CreateProduct,
+    views::ProductCreateResponse,
+};
 
 mod attribute_values;
 mod attributes;
@@ -35,6 +39,123 @@ pub struct Product {
 }
 
 impl Product {
+    /// Creates a product and its optional setup records.
+    ///
+    /// The base product, options, pictures, variants, and variant attribute
+    /// value links are inserted in a single transaction. If any nested insert
+    /// fails, the whole transaction is rolled back.
+    ///
+    /// # Parameters
+    ///
+    /// - `db`: Database pool used to open the transaction.
+    /// - `params`: Validated product creation request.
+    ///
+    /// # Errors
+    ///
+    /// Returns [`crate::models::ModelError::EntityAlreadyExists`] for product
+    /// name, SKU, default-variant, option, or variant-attribute uniqueness
+    /// violations. Returns [`crate::models::ModelError::InvalidReference`]
+    /// when a referenced category, attribute, attribute value, product, or
+    /// variant does not exist. Returns a database error if any insert or
+    /// transaction operation fails for another reason.
+    pub async fn create(
+        db: &PgPool,
+        params: &CreateProduct<'_>,
+    ) -> ModelResult<ProductCreateResponse> {
+        let mut txn = db.begin().await?;
+
+        let product = sqlx::query_as::<_, Self>(
+            r"
+            INSERT INTO products (
+                category_id,
+                name,
+                description
+            ) VALUES (
+                $1,
+                $2,
+                $3
+            ) RETURNING *
+        ",
+        )
+        .bind(params.category_id())
+        .bind(params.name().trim())
+        .bind(params.description().map(|description| description.trim()))
+        .fetch_one(&mut *txn)
+        .await?;
+
+        let mut options = Vec::with_capacity(params.options().len());
+        let mut pictures = Vec::with_capacity(params.pictures().len());
+        let mut variants = Vec::with_capacity(params.variants().len());
+        let variant_attribute_capacity = params
+            .variants()
+            .iter()
+            .map(|variant| variant.attribute_values().len())
+            .sum();
+        let mut variant_attribute_values = Vec::with_capacity(variant_attribute_capacity);
+
+        for option in params.options() {
+            let params =
+                NewProductOption::new(product.id(), option.attribute_id(), option.display_order());
+            let option = ProductOption::create(&mut *txn, &params).await?;
+            options.push(option);
+        }
+
+        for picture in params.pictures() {
+            let params = NewPicture::new(
+                product.id(),
+                picture.image_link().trim().to_string(),
+                None,
+                picture.display_order(),
+            );
+            let picture = Picture::create(&mut *txn, &params).await?;
+            pictures.push(picture);
+        }
+
+        for variant in params.variants() {
+            let params = NewVariant::new(
+                product.id(),
+                variant.sku().trim().to_string(),
+                variant.price(),
+                variant.stock_quantity(),
+                variant.is_default(),
+            );
+            let created_variant = ProductVariant::create(&mut *txn, &params).await?;
+
+            for value in variant.attribute_values() {
+                let params = NewVariantAttributeValue::new(
+                    created_variant.id(),
+                    value.attribute_id(),
+                    value.attribute_value_id(),
+                );
+                let value = VariantAttributeValue::create(&mut *txn, &params).await?;
+                variant_attribute_values.push(value);
+            }
+
+            for picture in variant.pictures() {
+                let params = NewPicture::new(
+                    product.id(),
+                    picture.image_link().trim().to_string(),
+                    Some(created_variant.id()),
+                    picture.display_order(),
+                );
+                let picture = Picture::create(&mut *txn, &params).await?;
+                pictures.push(picture);
+            }
+
+            variants.push(created_variant);
+        }
+
+        txn.commit().await?;
+
+        Ok(ProductCreateResponse::new(
+            product,
+            options,
+            pictures,
+            variants,
+            variant_attribute_values,
+        ))
+    }
+
     /// Loads products from a JSON file in `src/data` and seeds them.
     ///
     /// # Parameters

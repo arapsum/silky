@@ -81,9 +81,9 @@ impl VariantAttributeValue {
     /// [`crate::models::ModelError::InvalidReference`] when the variant,
     /// attribute, or attribute value does not exist. Returns a database error
     /// if the insert fails for another reason.
-    pub async fn create<'e, E>(db: &E, params: &NewVariantAttributeValue) -> ModelResult<Self>
+    pub async fn create<'e, E>(db: E, params: &NewVariantAttributeValue) -> ModelResult<Self>
     where
-        for<'a> &'a E: Executor<'e, Database = Postgres>,
+        E: Executor<'e, Database = Postgres>,
     {
         let value = sqlx::query_as::<_, Self>(
             r"

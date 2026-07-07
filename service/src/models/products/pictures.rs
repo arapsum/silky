@@ -85,9 +85,9 @@ impl Picture {
     /// Returns [`crate::models::ModelError::InvalidReference`] when the
     /// product or variant does not exist. Returns a database error if the
     /// insert fails for another reason.
-    pub async fn create<'e, E>(db: &E, params: &NewPicture) -> ModelResult<Self>
+    pub async fn create<'e, E>(db: E, params: &NewPicture) -> ModelResult<Self>
     where
-        for<'a> &'a E: Executor<'e, Database = Postgres>,
+        E: Executor<'e, Database = Postgres>,
     {
         let picture = sqlx::query_as::<_, Self>(
             r"

@@ -1,6 +1,6 @@
-use std::{borrow::Cow, collections::BTreeMap};
+use std::collections::BTreeMap;
 
-use validator::Validate;
+use validator::{Validate, ValidationErrors, ValidationErrorsKind};
 
 use crate::{Error, Result};
 
@@ -47,21 +47,45 @@ where
             Err(val_errors) => {
                 let mut errors: BTreeMap<String, String> = BTreeMap::new();
 
-                val_errors.field_errors().into_iter().for_each(
-                    |(key, value): (Cow<'static, str>, &Vec<validator::ValidationError>)| {
-                        errors.insert(
-                            key.to_string(),
-                            value
-                                .iter()
-                                .map(|err| err.message.as_deref().unwrap_or("Field error"))
-                                .collect::<Vec<&str>>()
-                                .join(", "),
-                        );
-                    },
-                );
+                collect_errors("", &val_errors, &mut errors);
 
                 Err(Error::ValidationError(serde_json::json!(errors).to_string()).into())
             }
         }
+    }
+}
+
+fn collect_errors(prefix: &str, errors: &ValidationErrors, output: &mut BTreeMap<String, String>) {
+    for (field, kind) in errors.errors() {
+        let key = join_key(prefix, field.as_ref());
+
+        match kind {
+            ValidationErrorsKind::Field(field_errors) => {
+                output.insert(
+                    key,
+                    field_errors
+                        .iter()
+                        .map(|err| err.message.as_deref().unwrap_or("Field error"))
+                        .collect::<Vec<&str>>()
+                        .join(", "),
+                );
+            }
+            ValidationErrorsKind::Struct(nested_errors) => {
+                collect_errors(&key, nested_errors, output);
+            }
+            ValidationErrorsKind::List(nested_errors) => {
+                for (index, nested_errors) in nested_errors {
+                    collect_errors(&format!("{key}[{index}]"), nested_errors, output);
+                }
+            }
+        }
+    }
+}
+
+fn join_key(prefix: &str, field: &str) -> String {
+    if prefix.is_empty() {
+        field.to_string()
+    } else {
+        format!("{prefix}.{field}")
     }
 }

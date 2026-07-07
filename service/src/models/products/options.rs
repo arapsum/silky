@@ -77,9 +77,9 @@ impl ProductOption {
     /// [`crate::models::ModelError::InvalidReference`] when the product or
     /// attribute does not exist. Returns a database error if the insert fails
     /// for another reason.
-    pub async fn create<'e, E>(db: &E, params: &NewProductOption) -> ModelResult<Self>
+    pub async fn create<'e, E>(db: E, params: &NewProductOption) -> ModelResult<Self>
     where
-        for<'a> &'a E: Executor<'e, Database = Postgres>,
+        E: Executor<'e, Database = Postgres>,
     {
         let option = sqlx::query_as::<_, Self>(
             r"

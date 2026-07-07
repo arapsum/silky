@@ -104,6 +104,9 @@ impl ModelError {
                 | "product_options_product_id_fkey"
                 | "product_variants_product_id_fkey",
             ) => "Product does not exist.".to_string(),
+            Some("products_category_id_fkey") => "Category does not exist.".to_string(),
+            Some("products_name_key") => "Product with this name already exists.".to_string(),
+            Some("products_name_check") => "Product name cannot be empty.".to_string(),
             Some("pictures_variant_id_fkey") => "Product variant does not exist.".to_string(),
             Some("variant_attribute_values_variant_id_attribute_id_key") => {
                 "Variant already has a value for this attribute.".to_string()

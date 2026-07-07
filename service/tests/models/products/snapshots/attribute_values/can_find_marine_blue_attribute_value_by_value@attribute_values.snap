@@ -1,0 +1,14 @@
+---
+source: tests/models/products/attribute_values.rs
+expression: result
+---
+Ok(
+    AttributeValue {
+        id: 202,
+        pid: 36f80bbb-3ee1-42f1-a9e7-ceae7a633202,
+        attribute_id: 201,
+        value: "Marine Blue",
+        created_at: 2026-07-02T12:17:00+00:00,
+        updated_at: 2026-07-02T12:17:00+00:00,
+    },
+)

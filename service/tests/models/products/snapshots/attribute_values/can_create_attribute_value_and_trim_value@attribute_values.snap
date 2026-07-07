@@ -1,0 +1,14 @@
+---
+source: tests/models/products/attribute_values.rs
+expression: result
+---
+Ok(
+    AttributeValue {
+        id: ID,
+        pid: PID,
+        attribute_id: ID,
+        value: "Charcoal",
+        created_at: DATE,
+        updated_at: DATE,
+    },
+)

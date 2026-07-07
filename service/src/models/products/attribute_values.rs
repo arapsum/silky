@@ -1,9 +1,9 @@
 use chrono::{DateTime, FixedOffset};
 use serde::{Deserialize, Serialize};
-use sqlx::{Encode, PgPool, prelude::FromRow};
+use sqlx::{Encode, Executor, PgPool, Postgres, prelude::FromRow};
 use uuid::Uuid;
 
-use crate::models::{ModelResult, Seedable};
+use crate::models::{ModelError, ModelResult, Seedable};
 
 #[derive(Debug, Deserialize, Serialize, Clone, FromRow, Encode)]
 #[serde(rename_all = "camelCase")]
@@ -17,6 +17,109 @@ pub struct AttributeValue {
 }
 
 impl AttributeValue {
+    /// Creates an attribute value or returns the existing row for the same attribute.
+    ///
+    /// The supplied value is trimmed before lookup and insertion.
+    ///
+    /// # Parameters
+    ///
+    /// - `db`: Database executor used for the lookup and insert.
+    /// - `attribute_id`: Internal attribute row ID the value belongs to.
+    /// - `value`: Attribute value to trim and persist.
+    ///
+    /// # Errors
+    ///
+    /// Returns a database error if the lookup or insert fails.
+    pub async fn create<'e, E>(db: &E, attribute_id: i32, value: &str) -> ModelResult<Self>
+    where
+        for<'a> &'a E: Executor<'e, Database = Postgres>,
+    {
+        let value = value.trim();
+
+        if let Some(exists) = sqlx::query_as::<_, Self>(
+            r"
+                SELECT * FROM attribute_values WHERE attribute_id = $1 AND value = $2
+        ",
+        )
+        .bind(attribute_id)
+        .bind(value)
+        .fetch_optional(db)
+        .await?
+        {
+            return Ok(exists);
+        }
+
+        let attribute_value = sqlx::query_as::<_, Self>(
+            r"
+                INSERT INTO attribute_values (attribute_id, value)
+                VALUES ($1, $2)
+                RETURNING *
+        ",
+        )
+        .bind(attribute_id)
+        .bind(value)
+        .fetch_one(db)
+        .await?;
+
+        Ok(attribute_value)
+    }
+
+    /// Finds an attribute value by public ID.
+    ///
+    /// # Parameters
+    ///
+    /// - `db`: Database executor used for the lookup.
+    /// - `pid`: Public ID of the attribute value to find.
+    ///
+    /// # Errors
+    ///
+    /// Returns [`ModelError::EntityNotFound`] when no attribute value has the
+    /// given public ID. Returns a database error if the lookup fails.
+    pub async fn find_by_pid<'e, E>(db: E, pid: Uuid) -> ModelResult<Self>
+    where
+        E: Executor<'e, Database = Postgres>,
+    {
+        let attribute_value = sqlx::query_as::<_, Self>(
+            r"
+                SELECT * FROM attribute_values WHERE pid = $1
+        ",
+        )
+        .bind(pid)
+        .fetch_optional(db)
+        .await?;
+
+        attribute_value.ok_or_else(|| ModelError::EntityNotFound)
+    }
+
+    /// Finds an attribute value by value.
+    ///
+    /// The supplied value is trimmed before lookup.
+    ///
+    /// # Parameters
+    ///
+    /// - `db`: Database executor used for the lookup.
+    /// - `value`: Attribute value to trim and find.
+    ///
+    /// # Errors
+    ///
+    /// Returns [`ModelError::EntityNotFound`] when no attribute value has the
+    /// given value. Returns a database error if the lookup fails.
+    pub async fn find_by_value<'e, E>(db: E, value: &str) -> ModelResult<Self>
+    where
+        E: Executor<'e, Database = Postgres>,
+    {
+        let attribute_value = sqlx::query_as::<_, Self>(
+            r"
+                SELECT * FROM attribute_values WHERE value = $1
+        ",
+        )
+        .bind(value.trim())
+        .fetch_optional(db)
+        .await?;
+
+        attribute_value.ok_or_else(|| ModelError::EntityNotFound)
+    }
+
     /// Loads attribute values from a JSON file in `src/data` and seeds them.
     ///
     /// # Parameters

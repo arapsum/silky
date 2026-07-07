@@ -1,0 +1,14 @@
+---
+source: tests/models/products/attribute_values.rs
+expression: result
+---
+Ok(
+    AttributeValue {
+        id: 210,
+        pid: f3ed3955-45dd-4c70-9212-dc82d7643210,
+        attribute_id: 203,
+        value: "Leather",
+        created_at: 2026-07-02T12:25:00+00:00,
+        updated_at: 2026-07-02T12:25:00+00:00,
+    },
+)

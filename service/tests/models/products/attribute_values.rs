@@ -22,11 +22,16 @@ macro_rules! configure_insta {
 #[rstest]
 #[case("can_create_attribute_value_successful", 201, "Gold")]
 #[case(
-    "will_return_attribute_value_if_value_exists_for_attribute",
+    "cannot_create_attribute_value_if_value_exists_for_attribute",
     201,
     "Black"
 )]
 #[case("can_create_attribute_value_and_trim_value", 201, "  Charcoal  ")]
+#[case(
+    "cannot_create_attribute_value_if_attribute_does_not_exist",
+    999,
+    "Gold"
+)]
 #[tokio::test]
 #[serial]
 async fn can_create_attribute_value(

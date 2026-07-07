@@ -21,7 +21,8 @@ macro_rules! configure_insta {
 
 #[rstest]
 #[case("can_create_attribute_successful", "texture")]
-#[case("will_return_attribute_if_name_exists", "colour")]
+#[case("cannot_create_attribute_if_name_exists", "colour")]
+#[case("cannot_create_attribute_if_name_is_empty", "   ")]
 #[tokio::test]
 #[serial]
 async fn can_create_attribute(#[case] test_name: &str, #[case] name: &str) {
@@ -55,6 +56,11 @@ async fn can_create_attribute(#[case] test_name: &str, #[case] name: &str) {
     "cannot_update_attribute_if_name_exists",
     "757aeb5b-0a44-4ef7-9d7f-eb4f8ea23103",
     "colour"
+)]
+#[case(
+    "cannot_update_attribute_if_pid_not_exists",
+    "00000000-0000-0000-0000-000000000000",
+    "material"
 )]
 #[tokio::test]
 #[serial]

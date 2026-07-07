@@ -1,9 +1,63 @@
 use chrono::{DateTime, FixedOffset};
 use serde::{Deserialize, Serialize};
-use sqlx::{Encode, PgPool, prelude::FromRow};
+use sqlx::{Encode, Executor, PgPool, Postgres, prelude::FromRow};
 use uuid::Uuid;
 
 use crate::models::{ModelResult, Seedable};
+
+#[derive(Debug, Deserialize, Serialize, Clone)]
+pub struct NewPicture {
+    product: i32,
+    variant: Option<i32>,
+    image_link: String,
+    display_order: Option<i32>,
+}
+
+impl NewPicture {
+    /// Creates parameters for adding a product picture.
+    ///
+    /// # Parameters
+    ///
+    /// - `product`: Internal product row ID this picture belongs to.
+    /// - `image_link`: Public image URL to store.
+    /// - `variant`: Optional internal variant row ID for variant-specific
+    ///   pictures.
+    /// - `display_order`: Optional ordering value for rendering pictures.
+    #[must_use]
+    pub const fn new(
+        product: i32,
+        image_link: String,
+        variant: Option<i32>,
+        display_order: Option<i32>,
+    ) -> Self {
+        Self {
+            product,
+            variant,
+            image_link,
+            display_order,
+        }
+    }
+
+    #[must_use]
+    pub const fn product(&self) -> i32 {
+        self.product
+    }
+
+    #[must_use]
+    pub const fn variant(&self) -> Option<i32> {
+        self.variant
+    }
+
+    #[must_use]
+    pub fn image_link(&self) -> &str {
+        &self.image_link
+    }
+
+    #[must_use]
+    pub const fn display_order(&self) -> Option<i32> {
+        self.display_order
+    }
+}
 
 #[derive(Debug, Deserialize, Serialize, Clone, FromRow, Encode)]
 #[serde(rename_all = "camelCase")]
@@ -19,6 +73,48 @@ pub struct Picture {
 }
 
 impl Picture {
+    /// Creates a product picture.
+    ///
+    /// # Parameters
+    ///
+    /// - `db`: Database executor used for the insert.
+    /// - `params`: Product picture data to persist.
+    ///
+    /// # Errors
+    ///
+    /// Returns [`crate::models::ModelError::InvalidReference`] when the
+    /// product or variant does not exist. Returns a database error if the
+    /// insert fails for another reason.
+    pub async fn create<'e, E>(db: &E, params: &NewPicture) -> ModelResult<Self>
+    where
+        for<'a> &'a E: Executor<'e, Database = Postgres>,
+    {
+        let picture = sqlx::query_as::<_, Self>(
+            r"
+                INSERT INTO pictures (
+                    product_id,
+                    variant_id,
+                    image_link,
+                    display_order
+                ) VALUES (
+                    $1,
+                    $2,
+                    $3,
+                    $4
+                )
+                RETURNING *
+        ",
+        )
+        .bind(params.product())
+        .bind(params.variant())
+        .bind(params.image_link())
+        .bind(params.display_order())
+        .fetch_one(db)
+        .await?;
+
+        Ok(picture)
+    }
+
     /// Loads product pictures from a JSON file in `src/data` and seeds them.
     ///
     /// # Parameters

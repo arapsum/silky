@@ -16,7 +16,7 @@ pub use self::{
     attribute_values::AttributeValue,
     attributes::Attribute,
     options::{NewProductOption, ProductOption},
-    pictures::Picture,
+    pictures::{NewPicture, Picture},
     variant_attribute_values::{NewVariantAttributeValue, VariantAttributeValue},
     variants::{NewVariant, ProductVariant},
 };

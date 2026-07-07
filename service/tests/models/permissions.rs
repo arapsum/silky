@@ -180,7 +180,7 @@ async fn can_find_all_permissions_for_administrator(#[case] test_name: &str) {
 
     let result = Permission::find_list(ctx.db(), Some(" Administrator ")).await;
 
-    assert!(matches!(&result, Ok(permissions) if permissions.len() == 16));
+    assert!(matches!(&result, Ok(permissions) if permissions.len() == 20));
     assert_debug_snapshot!(test_name, result);
 }
 

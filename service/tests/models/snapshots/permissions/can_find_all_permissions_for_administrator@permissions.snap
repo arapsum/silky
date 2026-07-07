@@ -5,6 +5,46 @@ expression: result
 Ok(
     [
         Permission {
+            id: 120,
+            pid: 0b3ec0f0-0822-4d99-ac6c-4ac170db84a0,
+            name: "products:delete",
+            description: Some(
+                "Delete products",
+            ),
+            created_at: 2026-06-21T09:14:00+00:00,
+            updated_at: 2026-06-21T09:15:00+00:00,
+        },
+        Permission {
+            id: 119,
+            pid: 3f421b2c-2391-4023-8982-494880941338,
+            name: "products:update",
+            description: Some(
+                "Update products",
+            ),
+            created_at: 2026-06-21T09:14:00+00:00,
+            updated_at: 2026-06-21T09:15:00+00:00,
+        },
+        Permission {
+            id: 118,
+            pid: ae6cf161-c13e-45ce-9360-78556b434af1,
+            name: "products:create",
+            description: Some(
+                "Create products",
+            ),
+            created_at: 2026-06-21T09:14:00+00:00,
+            updated_at: 2026-06-21T09:15:00+00:00,
+        },
+        Permission {
+            id: 117,
+            pid: 1a0c1635-b7d8-41e9-beb5-d3adcf445e2f,
+            name: "products:read",
+            description: Some(
+                "View products",
+            ),
+            created_at: 2026-06-21T09:14:00+00:00,
+            updated_at: 2026-06-21T09:15:00+00:00,
+        },
+        Permission {
             id: 116,
             pid: f6dcb0c9-6bc1-4a9a-a4a4-e9781bd37b0a,
             name: "categories:delete",

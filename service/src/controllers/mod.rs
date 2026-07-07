@@ -10,6 +10,7 @@ use crate::{AppState, middlewares::auth::AuthLayer};
 mod auth;
 mod categories;
 mod permissions;
+mod products;
 mod roles;
 mod users;
 
@@ -47,5 +48,6 @@ pub fn router(ctx: &AppState) -> Router {
             users::router(ctx).layer(AuthLayer::new(ctx.clone())),
         )
         .nest("/categories", categories::router(ctx))
+        .nest("/products", products::router(ctx))
         .fallback(not_found)
 }

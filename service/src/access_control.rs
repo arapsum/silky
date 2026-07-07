@@ -52,4 +52,13 @@ pub mod permissions {
         pub const UPDATE: PermissionName = PermissionName("categories:update");
         pub const DELETE: PermissionName = PermissionName("categories:delete");
     }
+
+    pub mod products {
+        use super::PermissionName;
+
+        pub const READ: PermissionName = PermissionName("products:read");
+        pub const CREATE: PermissionName = PermissionName("products:create");
+        pub const UPDATE: PermissionName = PermissionName("products:update");
+        pub const DELETE: PermissionName = PermissionName("products:delete");
+    }
 }

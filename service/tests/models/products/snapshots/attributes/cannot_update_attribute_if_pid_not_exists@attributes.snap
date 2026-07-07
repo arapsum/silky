@@ -1,0 +1,7 @@
+---
+source: tests/models/products/attributes.rs
+expression: result
+---
+Err(
+    EntityNotFound,
+)

@@ -1,0 +1,9 @@
+---
+source: tests/models/products/attribute_values.rs
+expression: result
+---
+Err(
+    EntityAlreadyExists(
+        "Attribute already has this value.",
+    ),
+)

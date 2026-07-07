@@ -3,7 +3,7 @@ source: tests/models/products/variant_attribute_values.rs
 expression: result
 ---
 Err(
-    InvalidReference(
-        "Product variant does not exist.",
+    EntityAlreadyExists(
+        "Variant already has a value for this attribute.",
     ),
 )

@@ -8,5 +8,5 @@ expression: "(response.status_code(), response.headers(), response.text())"
         "content-type": "application/json",
         "content-length": "NUMBER",
     },
-    "{\"error\":\"Entity already exists\"}",
+    "{\"error\":\"User with email already exists\"}",
 )

@@ -17,8 +17,8 @@ pub use self::{
     error::{ModelError, ModelResult},
     permissions::Permission,
     products::{
-        Attribute, AttributeValue, Picture, Product, ProductOption, ProductVariant,
-        VariantAttributeValue,
+        Attribute, AttributeValue, NewVariantAttributeValue, Picture, Product, ProductOption,
+        ProductVariant, VariantAttributeValue,
     },
     roles::Role,
     roles_permissions::RolePermission,

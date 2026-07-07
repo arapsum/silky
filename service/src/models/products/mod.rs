@@ -13,8 +13,12 @@ mod variant_attribute_values;
 mod variants;
 
 pub use self::{
-    attribute_values::AttributeValue, attributes::Attribute, options::ProductOption,
-    pictures::Picture, variant_attribute_values::VariantAttributeValue, variants::ProductVariant,
+    attribute_values::AttributeValue,
+    attributes::Attribute,
+    options::ProductOption,
+    pictures::Picture,
+    variant_attribute_values::{NewVariantAttributeValue, VariantAttributeValue},
+    variants::ProductVariant,
 };
 
 #[derive(Debug, Deserialize, Serialize, Clone, FromRow, Encode)]

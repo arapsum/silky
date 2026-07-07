@@ -1,4 +1,5 @@
 use chrono::{DateTime, FixedOffset};
+use rust_decimal::Decimal;
 use serde::{Deserialize, Serialize};
 use sqlx::{Encode, PgPool, prelude::FromRow};
 use uuid::Uuid;
@@ -12,7 +13,7 @@ pub struct ProductVariant {
     pid: Uuid,
     product_id: i32,
     sku: String,
-    price: f64,
+    price: Decimal,
     stock_quantity: i32,
     is_default: bool,
     created_at: DateTime<FixedOffset>,
@@ -64,7 +65,7 @@ impl ProductVariant {
 
     /// Returns the variant price.
     #[must_use]
-    pub const fn price(&self) -> f64 {
+    pub const fn price(&self) -> Decimal {
         self.price
     }
 

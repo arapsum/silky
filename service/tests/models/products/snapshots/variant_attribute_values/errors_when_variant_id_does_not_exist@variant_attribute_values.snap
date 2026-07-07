@@ -1,0 +1,7 @@
+---
+source: tests/models/products/variant_attribute_values.rs
+expression: result
+---
+Err(
+    EntityNotFound,
+)

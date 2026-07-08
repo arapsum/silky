@@ -12,6 +12,7 @@ import { Route as rootRouteImport } from './routes/__root'
 import { Route as MainRouteRouteImport } from './routes/_main/route'
 import { Route as MainIndexRouteImport } from './routes/_main/index'
 import { Route as MainSettingsIndexRouteImport } from './routes/_main/settings/index'
+import { Route as MainProductsIndexRouteImport } from './routes/_main/products/index'
 import { Route as MainCategoriesIndexRouteImport } from './routes/_main/categories/index'
 import { Route as AuthSignInIndexRouteImport } from './routes/_auth/sign-in/index'
 import { Route as MainProductsCreateIndexRouteImport } from './routes/_main/products/create/index'
@@ -33,6 +34,11 @@ const MainIndexRoute = MainIndexRouteImport.update({
 const MainSettingsIndexRoute = MainSettingsIndexRouteImport.update({
   id: '/settings/',
   path: '/settings/',
+  getParentRoute: () => MainRouteRoute,
+} as any)
+const MainProductsIndexRoute = MainProductsIndexRouteImport.update({
+  id: '/products/',
+  path: '/products/',
   getParentRoute: () => MainRouteRoute,
 } as any)
 const MainCategoriesIndexRoute = MainCategoriesIndexRouteImport.update({
@@ -84,6 +90,7 @@ export interface FileRoutesByFullPath {
   '/': typeof MainIndexRoute
   '/sign-in/': typeof AuthSignInIndexRoute
   '/categories/': typeof MainCategoriesIndexRoute
+  '/products/': typeof MainProductsIndexRoute
   '/settings/': typeof MainSettingsIndexRoute
   '/access-control/permissions/': typeof MainAccessControlPermissionsIndexRoute
   '/access-control/roles/': typeof MainAccessControlRolesIndexRoute
@@ -96,6 +103,7 @@ export interface FileRoutesByTo {
   '/': typeof MainIndexRoute
   '/sign-in': typeof AuthSignInIndexRoute
   '/categories': typeof MainCategoriesIndexRoute
+  '/products': typeof MainProductsIndexRoute
   '/settings': typeof MainSettingsIndexRoute
   '/access-control/permissions': typeof MainAccessControlPermissionsIndexRoute
   '/access-control/roles': typeof MainAccessControlRolesIndexRoute
@@ -110,6 +118,7 @@ export interface FileRoutesById {
   '/_main/': typeof MainIndexRoute
   '/_auth/sign-in/': typeof AuthSignInIndexRoute
   '/_main/categories/': typeof MainCategoriesIndexRoute
+  '/_main/products/': typeof MainProductsIndexRoute
   '/_main/settings/': typeof MainSettingsIndexRoute
   '/_main/access-control/permissions/': typeof MainAccessControlPermissionsIndexRoute
   '/_main/access-control/roles/': typeof MainAccessControlRolesIndexRoute
@@ -124,6 +133,7 @@ export interface FileRouteTypes {
     | '/'
     | '/sign-in/'
     | '/categories/'
+    | '/products/'
     | '/settings/'
     | '/access-control/permissions/'
     | '/access-control/roles/'
@@ -136,6 +146,7 @@ export interface FileRouteTypes {
     | '/'
     | '/sign-in'
     | '/categories'
+    | '/products'
     | '/settings'
     | '/access-control/permissions'
     | '/access-control/roles'
@@ -149,6 +160,7 @@ export interface FileRouteTypes {
     | '/_main/'
     | '/_auth/sign-in/'
     | '/_main/categories/'
+    | '/_main/products/'
     | '/_main/settings/'
     | '/_main/access-control/permissions/'
     | '/_main/access-control/roles/'
@@ -184,6 +196,13 @@ declare module '@tanstack/react-router' {
       path: '/settings'
       fullPath: '/settings/'
       preLoaderRoute: typeof MainSettingsIndexRouteImport
+      parentRoute: typeof MainRouteRoute
+    }
+    '/_main/products/': {
+      id: '/_main/products/'
+      path: '/products'
+      fullPath: '/products/'
+      preLoaderRoute: typeof MainProductsIndexRouteImport
       parentRoute: typeof MainRouteRoute
     }
     '/_main/categories/': {
@@ -248,6 +267,7 @@ declare module '@tanstack/react-router' {
 interface MainRouteRouteChildren {
   MainIndexRoute: typeof MainIndexRoute
   MainCategoriesIndexRoute: typeof MainCategoriesIndexRoute
+  MainProductsIndexRoute: typeof MainProductsIndexRoute
   MainSettingsIndexRoute: typeof MainSettingsIndexRoute
   MainAccessControlPermissionsIndexRoute: typeof MainAccessControlPermissionsIndexRoute
   MainAccessControlRolesIndexRoute: typeof MainAccessControlRolesIndexRoute
@@ -260,6 +280,7 @@ interface MainRouteRouteChildren {
 const MainRouteRouteChildren: MainRouteRouteChildren = {
   MainIndexRoute: MainIndexRoute,
   MainCategoriesIndexRoute: MainCategoriesIndexRoute,
+  MainProductsIndexRoute: MainProductsIndexRoute,
   MainSettingsIndexRoute: MainSettingsIndexRoute,
   MainAccessControlPermissionsIndexRoute:
     MainAccessControlPermissionsIndexRoute,

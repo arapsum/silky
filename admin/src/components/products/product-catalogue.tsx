@@ -6,6 +6,7 @@ import {
   CaretDoubleRightIcon,
   CaretLeftIcon,
   CaretRightIcon,
+  EyeIcon,
   GridFourIcon,
   MagnifyingGlassIcon,
   PackageIcon,
@@ -148,6 +149,25 @@ function productColumns(): ColumnDef<ProductListItem>[] {
       accessorKey: "variantCount",
       cell: ({ row }) => <span>{Intl.NumberFormat().format(row.original.variantCount)}</span>,
       size: 120,
+    },
+    {
+      id: "actions",
+      header: "",
+      cell: ({ row }) => (
+        <div className="flex justify-end">
+          <Button
+            type="button"
+            variant="outline"
+            size="icon-sm"
+            aria-label={`View ${row.original.name}`}
+            render={<Link to="/products/$pid" params={{ pid: row.original.pid }} />}
+          >
+            <EyeIcon className="size-4" />
+          </Button>
+        </div>
+      ),
+      enableSorting: false,
+      size: 88,
     },
   ];
 }

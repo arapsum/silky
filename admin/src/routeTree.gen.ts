@@ -16,6 +16,7 @@ import { Route as MainProductsIndexRouteImport } from './routes/_main/products/i
 import { Route as MainCategoriesIndexRouteImport } from './routes/_main/categories/index'
 import { Route as AuthSignInIndexRouteImport } from './routes/_auth/sign-in/index'
 import { Route as MainProductsCreateIndexRouteImport } from './routes/_main/products/create/index'
+import { Route as MainProductsPidIndexRouteImport } from './routes/_main/products/$pid/index'
 import { Route as MainPeopleStaffIndexRouteImport } from './routes/_main/people/staff/index'
 import { Route as MainPeopleCustomersIndexRouteImport } from './routes/_main/people/customers/index'
 import { Route as MainCategoriesCreateIndexRouteImport } from './routes/_main/categories/create/index'
@@ -54,6 +55,11 @@ const AuthSignInIndexRoute = AuthSignInIndexRouteImport.update({
 const MainProductsCreateIndexRoute = MainProductsCreateIndexRouteImport.update({
   id: '/products/create/',
   path: '/products/create/',
+  getParentRoute: () => MainRouteRoute,
+} as any)
+const MainProductsPidIndexRoute = MainProductsPidIndexRouteImport.update({
+  id: '/products/$pid/',
+  path: '/products/$pid/',
   getParentRoute: () => MainRouteRoute,
 } as any)
 const MainPeopleStaffIndexRoute = MainPeopleStaffIndexRouteImport.update({
@@ -97,6 +103,7 @@ export interface FileRoutesByFullPath {
   '/categories/create/': typeof MainCategoriesCreateIndexRoute
   '/people/customers/': typeof MainPeopleCustomersIndexRoute
   '/people/staff/': typeof MainPeopleStaffIndexRoute
+  '/products/$pid/': typeof MainProductsPidIndexRoute
   '/products/create/': typeof MainProductsCreateIndexRoute
 }
 export interface FileRoutesByTo {
@@ -110,6 +117,7 @@ export interface FileRoutesByTo {
   '/categories/create': typeof MainCategoriesCreateIndexRoute
   '/people/customers': typeof MainPeopleCustomersIndexRoute
   '/people/staff': typeof MainPeopleStaffIndexRoute
+  '/products/$pid': typeof MainProductsPidIndexRoute
   '/products/create': typeof MainProductsCreateIndexRoute
 }
 export interface FileRoutesById {
@@ -125,6 +133,7 @@ export interface FileRoutesById {
   '/_main/categories/create/': typeof MainCategoriesCreateIndexRoute
   '/_main/people/customers/': typeof MainPeopleCustomersIndexRoute
   '/_main/people/staff/': typeof MainPeopleStaffIndexRoute
+  '/_main/products/$pid/': typeof MainProductsPidIndexRoute
   '/_main/products/create/': typeof MainProductsCreateIndexRoute
 }
 export interface FileRouteTypes {
@@ -140,6 +149,7 @@ export interface FileRouteTypes {
     | '/categories/create/'
     | '/people/customers/'
     | '/people/staff/'
+    | '/products/$pid/'
     | '/products/create/'
   fileRoutesByTo: FileRoutesByTo
   to:
@@ -153,6 +163,7 @@ export interface FileRouteTypes {
     | '/categories/create'
     | '/people/customers'
     | '/people/staff'
+    | '/products/$pid'
     | '/products/create'
   id:
     | '__root__'
@@ -167,6 +178,7 @@ export interface FileRouteTypes {
     | '/_main/categories/create/'
     | '/_main/people/customers/'
     | '/_main/people/staff/'
+    | '/_main/products/$pid/'
     | '/_main/products/create/'
   fileRoutesById: FileRoutesById
 }
@@ -226,6 +238,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof MainProductsCreateIndexRouteImport
       parentRoute: typeof MainRouteRoute
     }
+    '/_main/products/$pid/': {
+      id: '/_main/products/$pid/'
+      path: '/products/$pid'
+      fullPath: '/products/$pid/'
+      preLoaderRoute: typeof MainProductsPidIndexRouteImport
+      parentRoute: typeof MainRouteRoute
+    }
     '/_main/people/staff/': {
       id: '/_main/people/staff/'
       path: '/people/staff'
@@ -274,6 +293,7 @@ interface MainRouteRouteChildren {
   MainCategoriesCreateIndexRoute: typeof MainCategoriesCreateIndexRoute
   MainPeopleCustomersIndexRoute: typeof MainPeopleCustomersIndexRoute
   MainPeopleStaffIndexRoute: typeof MainPeopleStaffIndexRoute
+  MainProductsPidIndexRoute: typeof MainProductsPidIndexRoute
   MainProductsCreateIndexRoute: typeof MainProductsCreateIndexRoute
 }
 
@@ -288,6 +308,7 @@ const MainRouteRouteChildren: MainRouteRouteChildren = {
   MainCategoriesCreateIndexRoute: MainCategoriesCreateIndexRoute,
   MainPeopleCustomersIndexRoute: MainPeopleCustomersIndexRoute,
   MainPeopleStaffIndexRoute: MainPeopleStaffIndexRoute,
+  MainProductsPidIndexRoute: MainProductsPidIndexRoute,
   MainProductsCreateIndexRoute: MainProductsCreateIndexRoute,
 }
 

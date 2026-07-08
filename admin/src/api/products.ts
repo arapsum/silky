@@ -26,6 +26,65 @@ export type ProductVariantSummary = {
   stockQuantity: number;
 };
 
+export type ProductPicture = {
+  id: number;
+  pid: string;
+  imageLink: string;
+  displayOrder: number | null;
+  createdAt: string;
+  updatedAt: string;
+};
+
+export type ProductOption = {
+  id: number;
+  pid: string;
+  attributeId: number;
+  attributePid: string;
+  attributeName: string;
+  displayOrder: number | null;
+  createdAt: string;
+};
+
+export type ProductVariantOption = {
+  id: number;
+  pid: string;
+  attributeId: number;
+  attributePid: string;
+  attributeName: string;
+  attributeValueId: number;
+  attributeValuePid: string;
+  value: string;
+  createdAt: string;
+};
+
+export type ProductVariantDetail = {
+  id: number;
+  pid: string;
+  sku: string;
+  price: string;
+  stockQuantity: number;
+  isDefault: boolean;
+  options: ProductVariantOption[];
+  pictures: ProductPicture[];
+  createdAt: string;
+  updatedAt: string;
+  deletedAt: string | null;
+};
+
+export type ProductDetail = {
+  id: number;
+  pid: string;
+  name: string;
+  description: string | null;
+  category: ProductCategorySummary;
+  pictures: ProductPicture[];
+  options: ProductOption[];
+  variants: ProductVariantDetail[];
+  createdAt: string;
+  updatedAt: string;
+  deletedAt: string | null;
+};
+
 export type ProductListItem = {
   pid: string;
   name: string;
@@ -126,6 +185,12 @@ function productSearchParams(params: ProductListParams) {
 export function listProducts(params: ProductListParams = {}) {
   return apiRequest<PaginatedProducts>(`/products${productSearchParams(params)}`, {
     fallback: "Unable to load products",
+  });
+}
+
+export function getProduct(pid: string) {
+  return apiRequest<ProductDetail>(`/products/${pid}`, {
+    fallback: "Unable to load product",
   });
 }
 

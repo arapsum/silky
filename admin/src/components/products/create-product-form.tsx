@@ -1,17 +1,10 @@
 "use client";
 
 import { zodResolver } from "@hookform/resolvers/zod";
-import {
-  ImageSquareIcon,
-  PackageIcon,
-  PlusIcon,
-  TrashIcon,
-  UploadSimpleIcon,
-  XIcon,
-} from "@phosphor-icons/react";
+import { PackageIcon, PlusIcon, TrashIcon } from "@phosphor-icons/react";
 import { useMutation, useQuery } from "@tanstack/react-query";
 import { useNavigate } from "@tanstack/react-router";
-import { useEffect, useMemo, useRef, useState, type ChangeEvent, type DragEvent } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import { useForm } from "react-hook-form";
 import { toast } from "sonner";
 import { z } from "zod";
@@ -27,6 +20,19 @@ import {
   type ProductVariantInput,
 } from "#/api/products.ts";
 import { uploadProductImage } from "#/api/uploads.ts";
+import {
+  CatalogueFormActions,
+  CatalogueFormHeader,
+  CatalogueFormSection,
+} from "#/components/catalogue/form-layout";
+import {
+  createImageDraft,
+  ImageDropzone,
+  ImageGrid,
+  ImagePreviewSlot,
+  type ImageDraft,
+} from "#/components/catalogue/image-upload";
+import { titleCase } from "#/components/catalogue/string-utils";
 import { EmptyState } from "#/components/empty-state";
 import { ErrorState } from "#/components/error-state";
 import FormField from "#/components/form-field";
@@ -35,9 +41,6 @@ import { Input } from "#/components/ui/input";
 import { Label } from "#/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger } from "#/components/ui/select";
 import { cn } from "#/lib/utils";
-
-const IMAGE_MAX_BYTES = 1024 * 1024 * 5;
-const IMAGE_TYPES = new Set(["image/jpeg", "image/png", "image/webp"]);
 
 const productSchema = z.object({
   name: z
@@ -57,12 +60,6 @@ const productSchema = z.object({
 
 type ProductFormValues = z.infer<typeof productSchema>;
 
-type ImageDraft = {
-  id: string;
-  file: File;
-  preview: string;
-};
-
 type DefaultOptionDraft = {
   id: string;
   attributeId: string;
@@ -80,43 +77,6 @@ type VariantDraft = {
 
 function draftId() {
   return crypto.randomUUID();
-}
-
-function validateImageFile(file: File) {
-  if (!IMAGE_TYPES.has(file.type)) {
-    return "Upload a PNG, JPG or WebP image";
-  }
-
-  if (file.size > IMAGE_MAX_BYTES) {
-    return "Image must be 5MB or smaller";
-  }
-
-  return null;
-}
-
-function titleCase(value: string) {
-  return value
-    .split(/[-_\s]+/)
-    .filter(Boolean)
-    .map((part) => part.charAt(0).toUpperCase() + part.slice(1))
-    .join(" ");
-}
-
-function createImageDraft(file: File): ImageDraft {
-  return {
-    id: draftId(),
-    file,
-    preview: URL.createObjectURL(file),
-  };
-}
-
-function SectionHeader({ title, description }: { title: string; description: string }) {
-  return (
-    <div className="lg:col-span-1">
-      <h2 className="text-base font-semibold">{title}</h2>
-      <p className="mt-1 max-w-xs text-sm text-muted-foreground">{description}</p>
-    </div>
-  );
 }
 
 function attributeValues(attributes: ProductAttributeWithValues[], attributeId: string) {
@@ -162,10 +122,8 @@ async function uploadPictures(images: ImageDraft[]): Promise<ProductPictureInput
 
 export default function CreateProductForm() {
   const navigate = useNavigate();
-  const productImageInputRef = useRef<HTMLInputElement>(null);
   const previewUrlsRef = useRef<string[]>([]);
   const [productImages, setProductImages] = useState<ImageDraft[]>([]);
-  const [isDraggingProductImage, setIsDraggingProductImage] = useState(false);
   const [defaultOptions, setDefaultOptions] = useState<DefaultOptionDraft[]>([]);
   const [variants, setVariants] = useState<VariantDraft[]>([]);
 
@@ -209,13 +167,6 @@ export default function CreateProductForm() {
   const attributes = attributesQuery.data ?? [];
 
   function addPreview(file: File) {
-    const error = validateImageFile(file);
-
-    if (error) {
-      toast.error(error);
-      return;
-    }
-
     const draft = createImageDraft(file);
     previewUrlsRef.current.push(draft.preview);
     setProductImages((current) => [...current, draft]);
@@ -225,17 +176,6 @@ export default function CreateProductForm() {
     URL.revokeObjectURL(image.preview);
     previewUrlsRef.current = previewUrlsRef.current.filter((url) => url !== image.preview);
     setProductImages((current) => current.filter((entry) => entry.id !== image.id));
-  }
-
-  function onProductImageChange(event: ChangeEvent<HTMLInputElement>) {
-    Array.from(event.target.files ?? []).forEach(addPreview);
-    event.target.value = "";
-  }
-
-  function onProductImageDrop(event: DragEvent<HTMLButtonElement>) {
-    event.preventDefault();
-    setIsDraggingProductImage(false);
-    Array.from(event.dataTransfer.files ?? []).forEach(addPreview);
   }
 
   function addDefaultOption() {
@@ -290,13 +230,6 @@ export default function CreateProductForm() {
   }
 
   function setVariantImage(variant: VariantDraft, file: File) {
-    const error = validateImageFile(file);
-
-    if (error) {
-      toast.error(error);
-      return;
-    }
-
     if (variant.image) {
       URL.revokeObjectURL(variant.image.preview);
       previewUrlsRef.current = previewUrlsRef.current.filter(
@@ -436,292 +369,229 @@ export default function CreateProductForm() {
       className="flex min-h-[calc(100dvh-8rem)] flex-col"
       onSubmit={form.handleSubmit((values) => createMutation.mutate(values))}
     >
-      <div className="mb-8 flex flex-col gap-4 md:flex-row md:items-start md:justify-between">
-        <div>
-          <h1 className="text-2xl font-bold tracking-tight">Create A Product</h1>
-          <p className="mt-1 text-sm text-muted-foreground">
-            Add catalogue details, default pricing, stock, and variant options.
-          </p>
+      <CatalogueFormHeader
+        title="Create A Product"
+        description="Add catalogue details, default pricing, stock, and variant options."
+      />
+
+      <CatalogueFormSection
+        title="Product details"
+        description="Set the product identity and the category shoppers will find it under."
+        contentClassName="grid gap-5 lg:grid-cols-2"
+        paddedTop={false}
+      >
+        <FormField
+          control={form.control}
+          name="name"
+          label="Product Name"
+          placeholder="Product name"
+          required
+        />
+        <FormField
+          control={form.control}
+          name="categoryId"
+          type="select"
+          label="Category"
+          placeholder={categoriesQuery.isLoading ? "Loading..." : "Select category"}
+          options={categoryOptions}
+          disabled={categoriesQuery.isLoading}
+          required
+        />
+        <div className="lg:col-span-2">
+          <FormField
+            control={form.control}
+            name="description"
+            type="textarea"
+            label="Description"
+            placeholder="Describe this product for catalogue teams and shoppers."
+            className="min-h-36 resize-y"
+          />
         </div>
+      </CatalogueFormSection>
 
-        <Button type="button" variant="outline" onClick={() => window.history.back()}>
-          Cancel
-        </Button>
-      </div>
-
-      <div className="grid gap-8 border-b pb-10 lg:grid-cols-[minmax(14rem,0.45fr)_minmax(0,1fr)]">
-        <SectionHeader
-          title="Product details"
-          description="Set the product identity and the category shoppers will find it under."
+      <CatalogueFormSection
+        title="Default variant"
+        description="Use the base SKU, price, stock, and options that other variants inherit from."
+        contentClassName="grid gap-5 lg:grid-cols-3"
+      >
+        <FormField
+          control={form.control}
+          name="defaultSku"
+          label="SKU"
+          placeholder="SKU-001"
+          required
+        />
+        <FormField
+          control={form.control}
+          name="defaultPrice"
+          type="text"
+          inputMode="decimal"
+          label="Price"
+          placeholder="59.99"
+          required
+        />
+        <FormField
+          control={form.control}
+          name="defaultStockQuantity"
+          type="number"
+          min={0}
+          label="Stock"
+          placeholder="0"
+          required
         />
 
-        <div className="grid gap-5 lg:grid-cols-2">
-          <FormField
-            control={form.control}
-            name="name"
-            label="Product Name"
-            placeholder="Product name"
-            required
-          />
-          <FormField
-            control={form.control}
-            name="categoryId"
-            type="select"
-            label="Category"
-            placeholder={categoriesQuery.isLoading ? "Loading..." : "Select category"}
-            options={categoryOptions}
-            disabled={categoriesQuery.isLoading}
-            required
-          />
-          <div className="lg:col-span-2">
-            <FormField
-              control={form.control}
-              name="description"
-              type="textarea"
-              label="Description"
-              placeholder="Describe this product for catalogue teams and shoppers."
-              className="min-h-36 resize-y"
-            />
-          </div>
-        </div>
-      </div>
-
-      <div className="grid gap-8 border-b py-10 lg:grid-cols-[minmax(14rem,0.45fr)_minmax(0,1fr)]">
-        <SectionHeader
-          title="Default variant"
-          description="Use the base SKU, price, stock, and options that other variants inherit from."
-        />
-
-        <div className="grid gap-5 lg:grid-cols-3">
-          <FormField
-            control={form.control}
-            name="defaultSku"
-            label="SKU"
-            placeholder="SKU-001"
-            required
-          />
-          <FormField
-            control={form.control}
-            name="defaultPrice"
-            type="text"
-            inputMode="decimal"
-            label="Price"
-            placeholder="59.99"
-            required
-          />
-          <FormField
-            control={form.control}
-            name="defaultStockQuantity"
-            type="number"
-            min={0}
-            label="Stock"
-            placeholder="0"
-            required
-          />
-
-          <div className="space-y-4 lg:col-span-3">
-            <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
-              <div>
-                <Label className="text-sm font-medium">Options</Label>
-                <p className="mt-1 text-sm text-muted-foreground">
-                  Order controls how options are displayed to shoppers.
-                </p>
-              </div>
-              <Button
-                type="button"
-                variant="outline"
-                size="sm"
-                onClick={addDefaultOption}
-                disabled={attributesQuery.isLoading || attributes.length === 0}
-              >
-                <PlusIcon className="size-4" />
-                Add Option
-              </Button>
+        <div className="space-y-4 lg:col-span-3">
+          <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+            <div>
+              <Label className="text-sm font-medium">Options</Label>
+              <p className="mt-1 text-sm text-muted-foreground">
+                Order controls how options are displayed to shoppers.
+              </p>
             </div>
+            <Button
+              type="button"
+              variant="outline"
+              size="sm"
+              onClick={addDefaultOption}
+              disabled={attributesQuery.isLoading || attributes.length === 0}
+            >
+              <PlusIcon className="size-4" />
+              Add Option
+            </Button>
+          </div>
 
-            {defaultOptions.length === 0 ? (
-              <div className="flex min-h-28 items-center justify-center border bg-muted/20 px-6 text-center text-sm text-muted-foreground">
-                No default options selected.
-              </div>
-            ) : (
-              <div className="space-y-3">
-                {defaultOptions.map((option, index) => {
-                  const selectedAttributeIds = new Set(
-                    defaultOptions
-                      .filter((entry) => entry.id !== option.id)
-                      .map((entry) => entry.attributeId)
-                      .filter(Boolean),
-                  );
-                  const values = attributeValues(attributes, option.attributeId);
+          {defaultOptions.length === 0 ? (
+            <div className="flex min-h-28 items-center justify-center border bg-muted/20 px-6 text-center text-sm text-muted-foreground">
+              No default options selected.
+            </div>
+          ) : (
+            <div className="space-y-3">
+              {defaultOptions.map((option, index) => {
+                const selectedAttributeIds = new Set(
+                  defaultOptions
+                    .filter((entry) => entry.id !== option.id)
+                    .map((entry) => entry.attributeId)
+                    .filter(Boolean),
+                );
+                const values = attributeValues(attributes, option.attributeId);
 
-                  return (
-                    <div
-                      key={option.id}
-                      className="grid gap-3 border bg-background p-3 md:grid-cols-[5rem_minmax(0,1fr)_minmax(0,1fr)_2.5rem]"
-                    >
-                      <div className="space-y-2">
-                        <Label>Order</Label>
-                        <div className="flex h-9 items-center rounded-3xl bg-input/50 px-3 text-sm">
-                          {index + 1}
-                        </div>
-                      </div>
-
-                      <div className="space-y-2">
-                        <Label>Attribute</Label>
-                        <Select
-                          value={option.attributeId}
-                          onValueChange={(attributeId) =>
-                            updateDefaultOption(option.id, {
-                              attributeId: attributeId ?? "",
-                              attributeValueId: "",
-                            })
-                          }
-                        >
-                          <SelectTrigger className="w-full">
-                            {selectLabel(
-                              option.attributeId ? optionLabel(attributes, option.attributeId) : "",
-                              "Select attribute",
-                            )}
-                          </SelectTrigger>
-                          <SelectContent>
-                            {attributes.map((entry) => (
-                              <SelectItem
-                                key={entry.attribute.id}
-                                value={String(entry.attribute.id)}
-                                disabled={selectedAttributeIds.has(String(entry.attribute.id))}
-                              >
-                                {titleCase(entry.attribute.name)}
-                              </SelectItem>
-                            ))}
-                          </SelectContent>
-                        </Select>
-                      </div>
-
-                      <div className="space-y-2">
-                        <Label>Default Value</Label>
-                        <Select
-                          value={option.attributeValueId}
-                          onValueChange={(attributeValueId) =>
-                            updateDefaultOption(option.id, {
-                              attributeValueId: attributeValueId ?? "",
-                            })
-                          }
-                          disabled={!option.attributeId}
-                        >
-                          <SelectTrigger className="w-full">
-                            {selectLabel(
-                              option.attributeValueId
-                                ? selectedValueLabel(
-                                    attributes,
-                                    option.attributeId,
-                                    option.attributeValueId,
-                                  )
-                                : "",
-                              "Select value",
-                            )}
-                          </SelectTrigger>
-                          <SelectContent>
-                            {values.map((value) => (
-                              <SelectItem key={value.id} value={String(value.id)}>
-                                {value.value}
-                              </SelectItem>
-                            ))}
-                          </SelectContent>
-                        </Select>
-                      </div>
-
-                      <div className="space-y-2">
-                        <Label className="invisible" aria-hidden="true">
-                          Remove
-                        </Label>
-                        <Button
-                          type="button"
-                          variant="outline"
-                          size="icon"
-                          aria-label="Remove option"
-                          onClick={() => removeDefaultOption(option.id)}
-                        >
-                          <TrashIcon className="size-4" />
-                        </Button>
+                return (
+                  <div
+                    key={option.id}
+                    className="grid gap-3 border bg-background p-3 md:grid-cols-[5rem_minmax(0,1fr)_minmax(0,1fr)_2.5rem]"
+                  >
+                    <div className="space-y-2">
+                      <Label>Order</Label>
+                      <div className="flex h-9 items-center rounded-3xl bg-input/50 px-3 text-sm">
+                        {index + 1}
                       </div>
                     </div>
-                  );
-                })}
-              </div>
-            )}
-          </div>
-        </div>
-      </div>
 
-      <div className="grid gap-8 border-b py-10 lg:grid-cols-[minmax(14rem,0.45fr)_minmax(0,1fr)]">
-        <SectionHeader
-          title="Product media"
-          description="Upload product-level images. Variant-specific images can be added on variant rows."
-        />
+                    <div className="space-y-2">
+                      <Label>Attribute</Label>
+                      <Select
+                        value={option.attributeId}
+                        onValueChange={(attributeId) =>
+                          updateDefaultOption(option.id, {
+                            attributeId: attributeId ?? "",
+                            attributeValueId: "",
+                          })
+                        }
+                      >
+                        <SelectTrigger className="w-full">
+                          {selectLabel(
+                            option.attributeId ? optionLabel(attributes, option.attributeId) : "",
+                            "Select attribute",
+                          )}
+                        </SelectTrigger>
+                        <SelectContent>
+                          {attributes.map((entry) => (
+                            <SelectItem
+                              key={entry.attribute.id}
+                              value={String(entry.attribute.id)}
+                              disabled={selectedAttributeIds.has(String(entry.attribute.id))}
+                            >
+                              {titleCase(entry.attribute.name)}
+                            </SelectItem>
+                          ))}
+                        </SelectContent>
+                      </Select>
+                    </div>
 
-        <div className="space-y-4">
-          <input
-            ref={productImageInputRef}
-            type="file"
-            accept="image/png,image/jpeg,image/webp"
-            multiple
-            className="sr-only"
-            onChange={onProductImageChange}
-          />
-          <button
-            type="button"
-            onClick={() => productImageInputRef.current?.click()}
-            onDragOver={(event) => {
-              event.preventDefault();
-              setIsDraggingProductImage(true);
-            }}
-            onDragLeave={() => setIsDraggingProductImage(false)}
-            onDrop={onProductImageDrop}
-            className={cn(
-              "flex min-h-28 w-full items-center justify-center gap-3 rounded-xl border border-dashed bg-background px-4 text-sm font-medium outline-none transition-colors hover:bg-muted focus-visible:ring-3 focus-visible:ring-ring/30",
-              isDraggingProductImage && "border-primary bg-primary/5",
-            )}
-          >
-            <span className="flex size-10 items-center justify-center rounded-full bg-muted">
-              <UploadSimpleIcon className="size-5 text-muted-foreground" aria-hidden />
-            </span>
-            <span>Drop or select product images</span>
-          </button>
+                    <div className="space-y-2">
+                      <Label>Default Value</Label>
+                      <Select
+                        value={option.attributeValueId}
+                        onValueChange={(attributeValueId) =>
+                          updateDefaultOption(option.id, {
+                            attributeValueId: attributeValueId ?? "",
+                          })
+                        }
+                        disabled={!option.attributeId}
+                      >
+                        <SelectTrigger className="w-full">
+                          {selectLabel(
+                            option.attributeValueId
+                              ? selectedValueLabel(
+                                  attributes,
+                                  option.attributeId,
+                                  option.attributeValueId,
+                                )
+                              : "",
+                            "Select value",
+                          )}
+                        </SelectTrigger>
+                        <SelectContent>
+                          {values.map((value) => (
+                            <SelectItem key={value.id} value={String(value.id)}>
+                              {value.value}
+                            </SelectItem>
+                          ))}
+                        </SelectContent>
+                      </Select>
+                    </div>
 
-          {productImages.length > 0 && (
-            <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
-              {productImages.map((image) => (
-                <div key={image.id} className="overflow-hidden border bg-background">
-                  <div className="aspect-square bg-muted">
-                    <img src={image.preview} alt="" className="h-full w-full object-cover" />
+                    <div className="space-y-2">
+                      <Label className="invisible" aria-hidden="true">
+                        Remove
+                      </Label>
+                      <Button
+                        type="button"
+                        variant="outline"
+                        size="icon"
+                        aria-label="Remove option"
+                        onClick={() => removeDefaultOption(option.id)}
+                      >
+                        <TrashIcon className="size-4" />
+                      </Button>
+                    </div>
                   </div>
-                  <div className="flex items-center justify-between gap-2 p-2">
-                    <span className="truncate text-xs text-muted-foreground">
-                      {image.file.name}
-                    </span>
-                    <Button
-                      type="button"
-                      variant="ghost"
-                      size="icon-sm"
-                      aria-label="Remove image"
-                      onClick={() => removeProductImage(image)}
-                    >
-                      <XIcon className="size-4" />
-                    </Button>
-                  </div>
-                </div>
-              ))}
+                );
+              })}
             </div>
           )}
         </div>
-      </div>
+      </CatalogueFormSection>
 
-      <div className="grid gap-8 border-b py-10 lg:grid-cols-[minmax(14rem,0.45fr)_minmax(0,1fr)]">
-        <SectionHeader
-          title="Additional variants"
-          description="Add SKUs that differ from the default variant by price, stock, option values, or image."
-        />
+      <CatalogueFormSection
+        title="Product media"
+        description="Upload product-level images. Variant-specific images can be added on variant rows."
+      >
+        <div className="space-y-4">
+          <ImageDropzone
+            label="Drop or select product images"
+            multiple
+            className="w-full"
+            onFiles={(files) => files.forEach(addPreview)}
+          />
+          <ImageGrid images={productImages} onRemove={removeProductImage} />
+        </div>
+      </CatalogueFormSection>
 
+      <CatalogueFormSection
+        title="Additional variants"
+        description="Add SKUs that differ from the default variant by price, stock, option values, or image."
+      >
         <div className="space-y-4">
           <div className="flex justify-end">
             <Button type="button" variant="outline" size="sm" onClick={addVariant}>
@@ -847,55 +717,29 @@ export default function CreateProductForm() {
                   )}
 
                   <div className="grid gap-4 md:grid-cols-[minmax(0,1fr)_8rem] md:items-stretch">
-                    <input
-                      id={`variant-${variant.id}-image`}
-                      type="file"
-                      accept="image/png,image/jpeg,image/webp"
-                      className="sr-only"
-                      onChange={(event) => {
-                        const file = event.target.files?.[0];
+                    <ImageDropzone
+                      label={variant.image?.file.name ?? "Variant image"}
+                      className="min-h-24"
+                      onFiles={(files) => {
+                        const file = files[0];
                         if (file) setVariantImage(variant, file);
-                        event.target.value = "";
                       }}
                     />
-                    <label
-                      htmlFor={`variant-${variant.id}-image`}
-                      className="flex min-h-24 cursor-pointer items-center justify-center gap-3 rounded-xl border border-dashed bg-background px-4 text-sm font-medium outline-none transition-colors hover:bg-muted"
-                    >
-                      <UploadSimpleIcon className="size-5 text-muted-foreground" aria-hidden />
-                      Variant image
-                    </label>
-                    <div className="flex min-h-24 items-center justify-center overflow-hidden rounded-xl border bg-muted/40">
-                      {variant.image ? (
-                        <img
-                          src={variant.image.preview}
-                          alt=""
-                          className="h-full w-full object-cover"
-                        />
-                      ) : (
-                        <ImageSquareIcon className="size-8 text-muted-foreground" aria-hidden />
-                      )}
-                    </div>
+                    <ImagePreviewSlot preview={variant.image?.preview} className="min-h-24" />
                   </div>
                 </div>
               ))}
             </div>
           )}
         </div>
-      </div>
+      </CatalogueFormSection>
 
-      <div className="mt-auto flex flex-col-reverse gap-3 pt-8 sm:flex-row sm:justify-end">
-        <Button type="button" variant="outline" onClick={form.handleSubmit(saveDraft)}>
-          Save as Draft
-        </Button>
-        <Button
-          type="submit"
-          className="bg-blue-600 hover:bg-blue-700"
-          disabled={createMutation.isPending}
-        >
-          {createMutation.isPending ? "Creating..." : "Create Product"}
-        </Button>
-      </div>
+      <CatalogueFormActions
+        submitLabel="Create Product"
+        pendingSubmitLabel="Creating..."
+        isPending={createMutation.isPending}
+        onDraft={form.handleSubmit(saveDraft)}
+      />
     </form>
   );
 }

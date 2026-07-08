@@ -46,17 +46,10 @@ import {
   SelectTrigger,
   SelectValue,
 } from "#/components/ui/select";
+import { titleCase } from "#/components/catalogue/string-utils";
 import { cn } from "#/lib/utils";
 
 const rowOptions = [10, 20, 40] as const;
-
-function titleCase(value: string) {
-  return value
-    .split(/[-_\s]+/)
-    .filter(Boolean)
-    .map((part) => part.charAt(0).toUpperCase() + part.slice(1))
-    .join(" ");
-}
 
 function productLabel(category: Category) {
   if (category.productCount === undefined) return "N/A";

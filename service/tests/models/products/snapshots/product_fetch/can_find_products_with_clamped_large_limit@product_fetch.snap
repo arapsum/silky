@@ -1,0 +1,108 @@
+---
+source: tests/models/products/product_fetch.rs
+expression: result
+---
+Ok(
+    PaginatedModel {
+        data: [
+            ProductListItem {
+                pid: PID,
+                name: "Court Leather Sneakers",
+                description: Some(
+                    "Low-profile leather sneakers with cushioned insoles.",
+                ),
+                category: ProductCategorySummary {
+                    id: ID,
+                    pid: PID,
+                    name: "shoes",
+                    slug: "shoes",
+                },
+                primary_image: Some(
+                    "https://cdn.example.com/products/court-leather-sneakers-white.png",
+                ),
+                default_variant: Some(
+                    ProductVariantSummary {
+                        pid: PID,
+                        sku: "SNEAKER-WHT-42",
+                        price: 89.99,
+                        stock_quantity: 9,
+                    },
+                ),
+                variant_count: 2,
+                option_count: 2,
+                total_stock: 16,
+                created_at: DATE,
+                updated_at: DATE,
+                deleted_at: None,
+            },
+            ProductListItem {
+                pid: PID,
+                name: "Tailored Chino Trousers",
+                description: Some(
+                    "Mid-weight chinos with a tapered leg and stretch waistband.",
+                ),
+                category: ProductCategorySummary {
+                    id: ID,
+                    pid: PID,
+                    name: "trousers",
+                    slug: "trousers",
+                },
+                primary_image: Some(
+                    "https://cdn.example.com/products/tailored-chino-trousers-black.png",
+                ),
+                default_variant: Some(
+                    ProductVariantSummary {
+                        pid: PID,
+                        sku: "CHINO-BLK-M",
+                        price: 54.99,
+                        stock_quantity: 21,
+                    },
+                ),
+                variant_count: 2,
+                option_count: 2,
+                total_stock: 33,
+                created_at: DATE,
+                updated_at: DATE,
+                deleted_at: None,
+            },
+            ProductListItem {
+                pid: PID,
+                name: "Classic Cotton T-shirt",
+                description: Some(
+                    "Soft everyday cotton t-shirt with a relaxed fit.",
+                ),
+                category: ProductCategorySummary {
+                    id: ID,
+                    pid: PID,
+                    name: "t-shirts",
+                    slug: "t-shirts",
+                },
+                primary_image: Some(
+                    "https://cdn.example.com/products/classic-cotton-tshirt-black.png",
+                ),
+                default_variant: Some(
+                    ProductVariantSummary {
+                        pid: PID,
+                        sku: "TSHIRT-BLK-M",
+                        price: 24.99,
+                        stock_quantity: 32,
+                    },
+                ),
+                variant_count: 2,
+                option_count: 2,
+                total_stock: 50,
+                created_at: DATE,
+                updated_at: DATE,
+                deleted_at: None,
+            },
+        ],
+        pagination: Pagination {
+            page: 1,
+            limit: 40,
+            total_items: 3,
+            total_pages: 1,
+            has_next: false,
+            has_prev: false,
+        },
+    },
+)

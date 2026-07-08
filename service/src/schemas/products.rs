@@ -4,6 +4,101 @@ use rust_decimal::Decimal;
 use serde::{Deserialize, Serialize};
 use validator::{Validate, ValidationError};
 
+#[derive(Debug, Deserialize, Serialize, Clone, Copy, PartialEq, Eq)]
+#[serde(rename_all = "camelCase")]
+pub enum StockStatus {
+    InStock,
+    OutOfStock,
+}
+
+impl StockStatus {
+    #[must_use]
+    pub const fn as_str(self) -> &'static str {
+        match self {
+            Self::InStock => "inStock",
+            Self::OutOfStock => "outOfStock",
+        }
+    }
+}
+
+#[derive(Debug, Deserialize, Serialize, Clone, Validate)]
+#[serde(rename_all = "camelCase")]
+pub struct ProductListQuery {
+    #[validate(range(min = 1, message = "Limit must be a positive integer"))]
+    limit: Option<i64>,
+    #[validate(range(min = 1, message = "Page must be a positive integer"))]
+    page: Option<i64>,
+    search: Option<String>,
+    name: Option<String>,
+    #[validate(range(min = 1, message = "Category ID must be a positive integer"))]
+    category_id: Option<i32>,
+    category_slug: Option<String>,
+    sku: Option<String>,
+    #[validate(custom(function = "validate_optional_price"))]
+    min_price: Option<Decimal>,
+    #[validate(custom(function = "validate_optional_price"))]
+    max_price: Option<Decimal>,
+    stock_status: Option<StockStatus>,
+    include_deleted: Option<bool>,
+}
+
+impl ProductListQuery {
+    #[must_use]
+    pub const fn limit(&self) -> Option<i64> {
+        self.limit
+    }
+
+    #[must_use]
+    pub const fn page(&self) -> Option<i64> {
+        self.page
+    }
+
+    #[must_use]
+    pub fn search(&self) -> Option<&str> {
+        normalized_optional_str(self.search.as_deref())
+    }
+
+    #[must_use]
+    pub fn name(&self) -> Option<&str> {
+        normalized_optional_str(self.name.as_deref())
+    }
+
+    #[must_use]
+    pub const fn category_id(&self) -> Option<i32> {
+        self.category_id
+    }
+
+    #[must_use]
+    pub fn category_slug(&self) -> Option<&str> {
+        normalized_optional_str(self.category_slug.as_deref())
+    }
+
+    #[must_use]
+    pub fn sku(&self) -> Option<&str> {
+        normalized_optional_str(self.sku.as_deref())
+    }
+
+    #[must_use]
+    pub const fn min_price(&self) -> Option<Decimal> {
+        self.min_price
+    }
+
+    #[must_use]
+    pub const fn max_price(&self) -> Option<Decimal> {
+        self.max_price
+    }
+
+    #[must_use]
+    pub const fn stock_status(&self) -> Option<StockStatus> {
+        self.stock_status
+    }
+
+    #[must_use]
+    pub const fn include_deleted(&self) -> bool {
+        matches!(self.include_deleted, Some(true))
+    }
+}
+
 #[derive(Debug, Deserialize, Serialize, Clone, Validate)]
 #[serde(rename_all = "camelCase")]
 pub struct CreateProduct<'a> {
@@ -248,4 +343,17 @@ fn validate_price(price: &Decimal) -> Result<(), ValidationError> {
     } else {
         Ok(())
     }
+}
+
+fn validate_optional_price(price: &Decimal) -> Result<(), ValidationError> {
+    if price.is_sign_negative() {
+        Err(ValidationError::new("negative_price")
+            .with_message(Cow::Borrowed("Price must be greater than or equal to zero")))
+    } else {
+        Ok(())
+    }
+}
+
+fn normalized_optional_str(value: Option<&str>) -> Option<&str> {
+    value.map(str::trim).filter(|value| !value.is_empty())
 }

@@ -201,6 +201,216 @@ async fn cannot_create_product_without_credentials() {
 
 #[tokio::test]
 #[serial]
+async fn can_list_products() {
+    crate::request(|server, ctx| async move {
+        configure_insta!();
+
+        crate::seed_data(ctx.db())
+            .await
+            .expect("Failed to seed data");
+        allow_product_reads(ctx.db()).await;
+
+        let token = access_token(&server).await;
+        let (auth_header, auth_value) = utils::auth_header(token);
+
+        let response = server
+            .get("/products?search=leather&categorySlug=shoes&limit=10&page=1")
+            .add_header(auth_header, auth_value)
+            .await;
+
+        with_settings!({
+            filters => response_filters()
+        }, {
+            assert_debug_snapshot!("can_list_products", (response.status_code(), response.text()))
+        })
+    })
+    .await;
+}
+
+#[tokio::test]
+#[serial]
+async fn cannot_list_products_without_credentials() {
+    crate::request(|server, ctx| async move {
+        configure_insta!();
+
+        crate::seed_data(ctx.db())
+            .await
+            .expect("Failed to seed data");
+
+        let response = server.get("/products").await;
+
+        with_settings!({
+            filters => response_filters()
+        }, {
+            assert_debug_snapshot!("cannot_list_products_without_credentials", (response.status_code(), response.text()))
+        })
+    })
+    .await;
+}
+
+#[tokio::test]
+#[serial]
+async fn cannot_list_products_without_permission() {
+    crate::request(|server, ctx| async move {
+        configure_insta!();
+
+        crate::seed_data(ctx.db())
+            .await
+            .expect("Failed to seed data");
+
+        let token = access_token_for(&server, "jane.smith@globex.com").await;
+        let (auth_header, auth_value) = utils::auth_header(token);
+
+        let response = server
+            .get("/products")
+            .add_header(auth_header, auth_value)
+            .await;
+
+        with_settings!({
+            filters => response_filters()
+        }, {
+            assert_debug_snapshot!("cannot_list_products_without_permission", (response.status_code(), response.text()))
+        })
+    })
+    .await;
+}
+
+#[tokio::test]
+#[serial]
+async fn cannot_list_products_with_invalid_query() {
+    crate::request(|server, ctx| async move {
+        configure_insta!();
+
+        crate::seed_data(ctx.db())
+            .await
+            .expect("Failed to seed data");
+        allow_product_reads(ctx.db()).await;
+
+        let token = access_token(&server).await;
+        let (auth_header, auth_value) = utils::auth_header(token);
+
+        let response = server
+            .get("/products?limit=0")
+            .add_header(auth_header, auth_value)
+            .await;
+
+        with_settings!({
+            filters => response_filters()
+        }, {
+            assert_debug_snapshot!("cannot_list_products_with_invalid_query", (response.status_code(), response.text()))
+        })
+    })
+    .await;
+}
+
+#[tokio::test]
+#[serial]
+async fn can_get_product_detail() {
+    crate::request(|server, ctx| async move {
+        configure_insta!();
+
+        crate::seed_data(ctx.db())
+            .await
+            .expect("Failed to seed data");
+        allow_product_reads(ctx.db()).await;
+
+        let token = access_token(&server).await;
+        let (auth_header, auth_value) = utils::auth_header(token);
+
+        let response = server
+            .get("/products/6d7b16c3-efbf-4e7e-9b70-4f43e1cc3001")
+            .add_header(auth_header, auth_value)
+            .await;
+
+        with_settings!({
+            filters => response_filters()
+        }, {
+            assert_debug_snapshot!("can_get_product_detail", (response.status_code(), response.text()))
+        })
+    })
+    .await;
+}
+
+#[tokio::test]
+#[serial]
+async fn cannot_get_product_detail_without_credentials() {
+    crate::request(|server, ctx| async move {
+        configure_insta!();
+
+        crate::seed_data(ctx.db())
+            .await
+            .expect("Failed to seed data");
+
+        let response = server
+            .get("/products/6d7b16c3-efbf-4e7e-9b70-4f43e1cc3001")
+            .await;
+
+        with_settings!({
+            filters => response_filters()
+        }, {
+            assert_debug_snapshot!("cannot_get_product_detail_without_credentials", (response.status_code(), response.text()))
+        })
+    })
+    .await;
+}
+
+#[tokio::test]
+#[serial]
+async fn cannot_get_product_detail_without_permission() {
+    crate::request(|server, ctx| async move {
+        configure_insta!();
+
+        crate::seed_data(ctx.db())
+            .await
+            .expect("Failed to seed data");
+
+        let token = access_token_for(&server, "jane.smith@globex.com").await;
+        let (auth_header, auth_value) = utils::auth_header(token);
+
+        let response = server
+            .get("/products/6d7b16c3-efbf-4e7e-9b70-4f43e1cc3001")
+            .add_header(auth_header, auth_value)
+            .await;
+
+        with_settings!({
+            filters => response_filters()
+        }, {
+            assert_debug_snapshot!("cannot_get_product_detail_without_permission", (response.status_code(), response.text()))
+        })
+    })
+    .await;
+}
+
+#[tokio::test]
+#[serial]
+async fn cannot_get_product_detail_when_pid_does_not_exist() {
+    crate::request(|server, ctx| async move {
+        configure_insta!();
+
+        crate::seed_data(ctx.db())
+            .await
+            .expect("Failed to seed data");
+        allow_product_reads(ctx.db()).await;
+
+        let token = access_token(&server).await;
+        let (auth_header, auth_value) = utils::auth_header(token);
+
+        let response = server
+            .get("/products/11111111-1111-4111-8111-111111111111")
+            .add_header(auth_header, auth_value)
+            .await;
+
+        with_settings!({
+            filters => response_filters()
+        }, {
+            assert_debug_snapshot!("cannot_get_product_detail_when_pid_does_not_exist", (response.status_code(), response.text()))
+        })
+    })
+    .await;
+}
+
+#[tokio::test]
+#[serial]
 async fn cannot_create_product_without_permission() {
     crate::request(|server, ctx| async move {
         configure_insta!();

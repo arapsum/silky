@@ -1,12 +1,20 @@
+use std::collections::HashMap;
+
 use chrono::{DateTime, FixedOffset};
+use rust_decimal::Decimal;
 use serde::{Deserialize, Serialize};
-use sqlx::{Encode, PgPool, prelude::FromRow};
+use sqlx::{Encode, Executor, PgPool, Postgres, prelude::FromRow};
 use uuid::Uuid;
 
 use crate::{
-    models::{ModelError, ModelResult, Seedable},
+    models::{ModelError, ModelResult, PaginatedModel, Pagination, Seedable},
     schemas::CreateProduct,
-    views::ProductCreateResponse,
+    schemas::ProductListQuery,
+    views::{
+        ProductCategorySummary, ProductCreateResponse, ProductDetailResponse, ProductListItem,
+        ProductOptionResponse, ProductPictureResponse, ProductVariantDetail, ProductVariantSummary,
+        ProductVariantValueResponse,
+    },
 };
 
 mod attribute_values;
@@ -36,6 +44,171 @@ pub struct Product {
     created_at: DateTime<FixedOffset>,
     updated_at: DateTime<FixedOffset>,
     deleted_at: Option<DateTime<FixedOffset>>,
+}
+
+#[derive(Debug, FromRow)]
+struct ProductListRow {
+    pid: Uuid,
+    name: String,
+    description: Option<String>,
+    category_id: i32,
+    category_pid: Uuid,
+    category_name: String,
+    category_slug: String,
+    primary_image: Option<String>,
+    default_variant_pid: Option<Uuid>,
+    default_variant_sku: Option<String>,
+    default_variant_price: Option<Decimal>,
+    default_variant_stock_quantity: Option<i32>,
+    variant_count: i32,
+    option_count: i32,
+    total_stock: i32,
+    created_at: DateTime<FixedOffset>,
+    updated_at: DateTime<FixedOffset>,
+    deleted_at: Option<DateTime<FixedOffset>>,
+}
+
+impl ProductListRow {
+    fn into_response(self) -> ProductListItem {
+        ProductListItem {
+            pid: self.pid,
+            name: self.name,
+            description: self.description,
+            category: ProductCategorySummary {
+                id: self.category_id,
+                pid: self.category_pid,
+                name: self.category_name,
+                slug: self.category_slug,
+            },
+            primary_image: self.primary_image,
+            default_variant: self
+                .default_variant_pid
+                .zip(self.default_variant_sku)
+                .zip(self.default_variant_price)
+                .zip(self.default_variant_stock_quantity)
+                .map(
+                    |(((pid, sku), price), stock_quantity)| ProductVariantSummary {
+                        pid,
+                        sku,
+                        price,
+                        stock_quantity,
+                    },
+                ),
+            variant_count: self.variant_count,
+            option_count: self.option_count,
+            total_stock: self.total_stock,
+            created_at: self.created_at,
+            updated_at: self.updated_at,
+            deleted_at: self.deleted_at,
+        }
+    }
+}
+
+#[derive(Debug, FromRow)]
+struct ProductDetailHeader {
+    id: i32,
+    pid: Uuid,
+    name: String,
+    description: Option<String>,
+    category_id: i32,
+    category_pid: Uuid,
+    category_name: String,
+    category_slug: String,
+    created_at: DateTime<FixedOffset>,
+    updated_at: DateTime<FixedOffset>,
+    deleted_at: Option<DateTime<FixedOffset>>,
+}
+
+#[derive(Debug, FromRow)]
+struct ProductPictureRow {
+    id: i32,
+    pid: Uuid,
+    variant_id: Option<i32>,
+    image_link: String,
+    display_order: Option<i32>,
+    created_at: DateTime<FixedOffset>,
+    updated_at: DateTime<FixedOffset>,
+}
+
+impl ProductPictureRow {
+    fn into_response(self) -> ProductPictureResponse {
+        ProductPictureResponse {
+            id: self.id,
+            pid: self.pid,
+            image_link: self.image_link,
+            display_order: self.display_order,
+            created_at: self.created_at,
+            updated_at: self.updated_at,
+        }
+    }
+}
+
+#[derive(Debug, FromRow)]
+struct ProductOptionRow {
+    id: i32,
+    pid: Uuid,
+    attribute_id: i32,
+    attribute_pid: Uuid,
+    attribute_name: String,
+    display_order: Option<i32>,
+    created_at: DateTime<FixedOffset>,
+}
+
+impl ProductOptionRow {
+    fn into_response(self) -> ProductOptionResponse {
+        ProductOptionResponse {
+            id: self.id,
+            pid: self.pid,
+            attribute_id: self.attribute_id,
+            attribute_pid: self.attribute_pid,
+            attribute_name: self.attribute_name,
+            display_order: self.display_order,
+            created_at: self.created_at,
+        }
+    }
+}
+
+#[derive(Debug, FromRow)]
+struct ProductVariantRow {
+    id: i32,
+    pid: Uuid,
+    sku: String,
+    price: Decimal,
+    stock_quantity: i32,
+    is_default: bool,
+    created_at: DateTime<FixedOffset>,
+    updated_at: DateTime<FixedOffset>,
+    deleted_at: Option<DateTime<FixedOffset>>,
+}
+
+#[derive(Debug, FromRow)]
+struct ProductVariantValueRow {
+    id: i32,
+    pid: Uuid,
+    variant_id: i32,
+    attribute_id: i32,
+    attribute_pid: Uuid,
+    attribute_name: String,
+    attribute_value_id: i32,
+    attribute_value_pid: Uuid,
+    value: String,
+    created_at: DateTime<FixedOffset>,
+}
+
+impl ProductVariantValueRow {
+    fn into_response(self) -> ProductVariantValueResponse {
+        ProductVariantValueResponse {
+            id: self.id,
+            pid: self.pid,
+            attribute_id: self.attribute_id,
+            attribute_pid: self.attribute_pid,
+            attribute_name: self.attribute_name,
+            attribute_value_id: self.attribute_value_id,
+            attribute_value_pid: self.attribute_value_pid,
+            value: self.value,
+            created_at: self.created_at,
+        }
+    }
 }
 
 impl Product {
@@ -169,6 +342,446 @@ impl Product {
             variants,
             variant_attribute_values,
         ))
+    }
+
+    /// Lists products with catalogue summary data and pagination metadata.
+    ///
+    /// Defaults to page `1` and limit `20` when query values are missing. The
+    /// limit is clamped to the range `1..=40`, and the page is clamped to a
+    /// minimum of `1`.
+    ///
+    /// # Parameters
+    ///
+    /// - `db`: Database pool used to count and fetch products.
+    /// - `query`: Validated product list filters and pagination settings.
+    ///
+    /// # Errors
+    ///
+    /// Returns a database error if counting or fetching products fails, or if
+    /// committing the transaction fails.
+    #[expect(
+        clippy::too_many_lines,
+        reason = "SQL-heavy catalogue projection is kept together for filter parity"
+    )]
+    pub async fn find_list(
+        db: &PgPool,
+        query: &ProductListQuery,
+    ) -> ModelResult<PaginatedModel<ProductListItem>> {
+        let limit = query.limit().unwrap_or(20).clamp(1, 40);
+        let page = query.page().unwrap_or(1).max(1);
+        let offset = (page - 1) * limit;
+        let stock_status = query
+            .stock_status()
+            .map(crate::schemas::StockStatus::as_str);
+
+        let mut txn = db.begin().await?;
+
+        let total_items = sqlx::query_scalar::<_, i64>(
+            r"
+            SELECT COUNT(*)
+            FROM products p
+            INNER JOIN categories c ON c.id = p.category_id
+            LEFT JOIN LATERAL (
+                SELECT COALESCE(SUM(v.stock_quantity), 0)::int4 AS total_stock
+                FROM product_variants v
+                WHERE v.product_id = p.id
+                    AND ($9::BOOL = TRUE OR v.deleted_at IS NULL)
+            ) variant_stock ON TRUE
+            WHERE
+                ($9::BOOL = TRUE OR p.deleted_at IS NULL)
+                AND (
+                    $1::TEXT IS NULL
+                    OR p.name ILIKE '%' || $1 || '%'
+                    OR COALESCE(p.description, '') ILIKE '%' || $1 || '%'
+                    OR c.name ILIKE '%' || $1 || '%'
+                    OR c.slug ILIKE '%' || $1 || '%'
+                    OR EXISTS (
+                        SELECT 1
+                        FROM product_variants sv
+                        WHERE sv.product_id = p.id
+                            AND sv.sku ILIKE '%' || $1 || '%'
+                            AND ($9::BOOL = TRUE OR sv.deleted_at IS NULL)
+                    )
+                )
+                AND ($2::TEXT IS NULL OR p.name = TRIM($2))
+                AND ($3::INT4 IS NULL OR p.category_id = $3)
+                AND ($4::TEXT IS NULL OR c.slug = LOWER(TRIM($4)))
+                AND (
+                    $5::TEXT IS NULL
+                    OR EXISTS (
+                        SELECT 1
+                        FROM product_variants sku_filter
+                        WHERE sku_filter.product_id = p.id
+                            AND LOWER(sku_filter.sku) = LOWER(TRIM($5))
+                            AND ($9::BOOL = TRUE OR sku_filter.deleted_at IS NULL)
+                    )
+                )
+                AND (
+                    ($6::NUMERIC IS NULL AND $7::NUMERIC IS NULL)
+                    OR EXISTS (
+                        SELECT 1
+                        FROM product_variants price_filter
+                        WHERE price_filter.product_id = p.id
+                            AND ($6::NUMERIC IS NULL OR price_filter.price >= $6)
+                            AND ($7::NUMERIC IS NULL OR price_filter.price <= $7)
+                            AND ($9::BOOL = TRUE OR price_filter.deleted_at IS NULL)
+                    )
+                )
+                AND (
+                    $8::TEXT IS NULL
+                    OR ($8 = 'inStock' AND COALESCE(variant_stock.total_stock, 0) > 0)
+                    OR ($8 = 'outOfStock' AND COALESCE(variant_stock.total_stock, 0) = 0)
+                )
+        ",
+        )
+        .bind(query.search())
+        .bind(query.name())
+        .bind(query.category_id())
+        .bind(query.category_slug())
+        .bind(query.sku())
+        .bind(query.min_price())
+        .bind(query.max_price())
+        .bind(stock_status)
+        .bind(query.include_deleted())
+        .fetch_one(&mut *txn)
+        .await?;
+
+        let products = sqlx::query_as::<_, ProductListRow>(
+            r"
+            SELECT
+                p.pid,
+                p.name,
+                p.description,
+                c.id AS category_id,
+                c.pid AS category_pid,
+                c.name AS category_name,
+                c.slug AS category_slug,
+                primary_picture.image_link AS primary_image,
+                default_variant.pid AS default_variant_pid,
+                default_variant.sku AS default_variant_sku,
+                default_variant.price AS default_variant_price,
+                default_variant.stock_quantity AS default_variant_stock_quantity,
+                COALESCE(variant_stats.variant_count, 0)::int4 AS variant_count,
+                COALESCE(option_stats.option_count, 0)::int4 AS option_count,
+                COALESCE(variant_stats.total_stock, 0)::int4 AS total_stock,
+                p.created_at,
+                p.updated_at,
+                p.deleted_at
+            FROM products p
+            INNER JOIN categories c ON c.id = p.category_id
+            LEFT JOIN LATERAL (
+                SELECT
+                    COUNT(*)::int4 AS variant_count,
+                    COALESCE(SUM(v.stock_quantity), 0)::int4 AS total_stock
+                FROM product_variants v
+                WHERE v.product_id = p.id
+                    AND ($11::BOOL = TRUE OR v.deleted_at IS NULL)
+            ) variant_stats ON TRUE
+            LEFT JOIN LATERAL (
+                SELECT COUNT(*)::int4 AS option_count
+                FROM product_options po
+                WHERE po.product_id = p.id
+            ) option_stats ON TRUE
+            LEFT JOIN LATERAL (
+                SELECT pic.image_link
+                FROM pictures pic
+                WHERE pic.product_id = p.id
+                ORDER BY (pic.variant_id IS NOT NULL), pic.display_order NULLS LAST, pic.id
+                LIMIT 1
+            ) primary_picture ON TRUE
+            LEFT JOIN LATERAL (
+                SELECT dv.pid, dv.sku, dv.price, dv.stock_quantity
+                FROM product_variants dv
+                WHERE dv.product_id = p.id
+                    AND dv.is_default = TRUE
+                    AND ($11::BOOL = TRUE OR dv.deleted_at IS NULL)
+                ORDER BY dv.id
+                LIMIT 1
+            ) default_variant ON TRUE
+            WHERE
+                ($11::BOOL = TRUE OR p.deleted_at IS NULL)
+                AND (
+                    $3::TEXT IS NULL
+                    OR p.name ILIKE '%' || $3 || '%'
+                    OR COALESCE(p.description, '') ILIKE '%' || $3 || '%'
+                    OR c.name ILIKE '%' || $3 || '%'
+                    OR c.slug ILIKE '%' || $3 || '%'
+                    OR EXISTS (
+                        SELECT 1
+                        FROM product_variants sv
+                        WHERE sv.product_id = p.id
+                            AND sv.sku ILIKE '%' || $3 || '%'
+                            AND ($11::BOOL = TRUE OR sv.deleted_at IS NULL)
+                    )
+                )
+                AND ($4::TEXT IS NULL OR p.name = TRIM($4))
+                AND ($5::INT4 IS NULL OR p.category_id = $5)
+                AND ($6::TEXT IS NULL OR c.slug = LOWER(TRIM($6)))
+                AND (
+                    $7::TEXT IS NULL
+                    OR EXISTS (
+                        SELECT 1
+                        FROM product_variants sku_filter
+                        WHERE sku_filter.product_id = p.id
+                            AND LOWER(sku_filter.sku) = LOWER(TRIM($7))
+                            AND ($11::BOOL = TRUE OR sku_filter.deleted_at IS NULL)
+                    )
+                )
+                AND (
+                    ($8::NUMERIC IS NULL AND $9::NUMERIC IS NULL)
+                    OR EXISTS (
+                        SELECT 1
+                        FROM product_variants price_filter
+                        WHERE price_filter.product_id = p.id
+                            AND ($8::NUMERIC IS NULL OR price_filter.price >= $8)
+                            AND ($9::NUMERIC IS NULL OR price_filter.price <= $9)
+                            AND ($11::BOOL = TRUE OR price_filter.deleted_at IS NULL)
+                    )
+                )
+                AND (
+                    $10::TEXT IS NULL
+                    OR ($10 = 'inStock' AND COALESCE(variant_stats.total_stock, 0) > 0)
+                    OR ($10 = 'outOfStock' AND COALESCE(variant_stats.total_stock, 0) = 0)
+                )
+            ORDER BY p.created_at DESC, p.id DESC
+            LIMIT $1 OFFSET $2
+        ",
+        )
+        .bind(limit)
+        .bind(offset)
+        .bind(query.search())
+        .bind(query.name())
+        .bind(query.category_id())
+        .bind(query.category_slug())
+        .bind(query.sku())
+        .bind(query.min_price())
+        .bind(query.max_price())
+        .bind(stock_status)
+        .bind(query.include_deleted())
+        .fetch_all(&mut *txn)
+        .await?;
+
+        txn.commit().await?;
+
+        Ok(PaginatedModel::new(
+            products
+                .into_iter()
+                .map(ProductListRow::into_response)
+                .collect(),
+            Pagination::new(page, limit, total_items),
+        ))
+    }
+
+    /// Finds a product by public ID and returns its catalogue aggregate.
+    ///
+    /// The returned aggregate includes product pictures, ordered product
+    /// options, variants, variant pictures, and selected attribute values.
+    ///
+    /// # Parameters
+    ///
+    /// - `db`: Database pool used for the aggregate queries.
+    /// - `pid`: Public product ID to fetch.
+    ///
+    /// # Errors
+    ///
+    /// Returns [`ModelError::EntityNotFound`] when no non-deleted product
+    /// exists for `pid`. Returns a database error if any aggregate query fails
+    /// or if committing the transaction fails.
+    #[expect(
+        clippy::too_many_lines,
+        reason = "Aggregate fetch keeps the related read-model queries in one transaction"
+    )]
+    pub async fn find_detail_by_pid(db: &PgPool, pid: Uuid) -> ModelResult<ProductDetailResponse> {
+        let mut txn = db.begin().await?;
+
+        let product = sqlx::query_as::<_, ProductDetailHeader>(
+            r"
+            SELECT
+                p.id,
+                p.pid,
+                p.name,
+                p.description,
+                c.id AS category_id,
+                c.pid AS category_pid,
+                c.name AS category_name,
+                c.slug AS category_slug,
+                p.created_at,
+                p.updated_at,
+                p.deleted_at
+            FROM products p
+            INNER JOIN categories c ON c.id = p.category_id
+            WHERE p.pid = $1
+                AND p.deleted_at IS NULL
+        ",
+        )
+        .bind(pid)
+        .fetch_optional(&mut *txn)
+        .await?
+        .ok_or_else(|| ModelError::EntityNotFound)?;
+
+        let product_pictures = sqlx::query_as::<_, ProductPictureRow>(
+            r"
+            SELECT id, pid, variant_id, image_link, display_order, created_at, updated_at
+            FROM pictures
+            WHERE product_id = $1
+                AND variant_id IS NULL
+            ORDER BY display_order NULLS LAST, id
+        ",
+        )
+        .bind(product.id)
+        .fetch_all(&mut *txn)
+        .await?
+        .into_iter()
+        .map(ProductPictureRow::into_response)
+        .collect();
+
+        let options = sqlx::query_as::<_, ProductOptionRow>(
+            r"
+            SELECT
+                po.id,
+                po.pid,
+                po.attribute_id,
+                a.pid AS attribute_pid,
+                a.name AS attribute_name,
+                po.display_order,
+                po.created_at
+            FROM product_options po
+            INNER JOIN attributes a ON a.id = po.attribute_id
+            WHERE po.product_id = $1
+            ORDER BY po.display_order NULLS LAST, po.id
+        ",
+        )
+        .bind(product.id)
+        .fetch_all(&mut *txn)
+        .await?
+        .into_iter()
+        .map(ProductOptionRow::into_response)
+        .collect();
+
+        let variant_rows = sqlx::query_as::<_, ProductVariantRow>(
+            r"
+            SELECT id, pid, sku, price, stock_quantity, is_default, created_at, updated_at, deleted_at
+            FROM product_variants
+            WHERE product_id = $1
+                AND deleted_at IS NULL
+            ORDER BY is_default DESC, id
+        ",
+        )
+        .bind(product.id)
+        .fetch_all(&mut *txn)
+        .await?;
+
+        let variant_pictures = sqlx::query_as::<_, ProductPictureRow>(
+            r"
+            SELECT id, pid, variant_id, image_link, display_order, created_at, updated_at
+            FROM pictures
+            WHERE product_id = $1
+                AND variant_id IS NOT NULL
+            ORDER BY variant_id, display_order NULLS LAST, id
+        ",
+        )
+        .bind(product.id)
+        .fetch_all(&mut *txn)
+        .await?;
+
+        let variant_values = sqlx::query_as::<_, ProductVariantValueRow>(
+            r"
+            SELECT
+                vav.id,
+                vav.pid,
+                vav.variant_id,
+                vav.attribute_id,
+                a.pid AS attribute_pid,
+                a.name AS attribute_name,
+                vav.attribute_value_id,
+                av.pid AS attribute_value_pid,
+                av.value,
+                vav.created_at
+            FROM variant_attribute_values vav
+            INNER JOIN attributes a ON a.id = vav.attribute_id
+            INNER JOIN attribute_values av ON av.id = vav.attribute_value_id
+            INNER JOIN product_variants pv ON pv.id = vav.variant_id
+            WHERE pv.product_id = $1
+                AND pv.deleted_at IS NULL
+            ORDER BY vav.variant_id, a.name, av.value, vav.id
+        ",
+        )
+        .bind(product.id)
+        .fetch_all(&mut *txn)
+        .await?;
+
+        txn.commit().await?;
+
+        let mut pictures_by_variant = HashMap::<i32, Vec<ProductPictureResponse>>::new();
+        for picture in variant_pictures {
+            if let Some(variant_id) = picture.variant_id {
+                pictures_by_variant
+                    .entry(variant_id)
+                    .or_default()
+                    .push(picture.into_response());
+            }
+        }
+
+        let mut values_by_variant = HashMap::<i32, Vec<ProductVariantValueResponse>>::new();
+        for value in variant_values {
+            values_by_variant
+                .entry(value.variant_id)
+                .or_default()
+                .push(value.into_response());
+        }
+
+        let variants = variant_rows
+            .into_iter()
+            .map(|variant| ProductVariantDetail {
+                id: variant.id,
+                pid: variant.pid,
+                sku: variant.sku,
+                price: variant.price,
+                stock_quantity: variant.stock_quantity,
+                is_default: variant.is_default,
+                values: values_by_variant.remove(&variant.id).unwrap_or_default(),
+                pictures: pictures_by_variant.remove(&variant.id).unwrap_or_default(),
+                created_at: variant.created_at,
+                updated_at: variant.updated_at,
+                deleted_at: variant.deleted_at,
+            })
+            .collect();
+
+        Ok(ProductDetailResponse {
+            id: product.id,
+            pid: product.pid,
+            name: product.name,
+            description: product.description,
+            category: ProductCategorySummary {
+                id: product.category_id,
+                pid: product.category_pid,
+                name: product.category_name,
+                slug: product.category_slug,
+            },
+            pictures: product_pictures,
+            options,
+            variants,
+            created_at: product.created_at,
+            updated_at: product.updated_at,
+            deleted_at: product.deleted_at,
+        })
+    }
+
+    /// Finds a product by public ID.
+    ///
+    /// # Errors
+    ///
+    /// Returns [`ModelError::EntityNotFound`] when no product exists for
+    /// `pid`. Returns a database error if the lookup fails.
+    pub async fn find_by_pid<'e, E>(db: E, pid: Uuid) -> ModelResult<Self>
+    where
+        E: Executor<'e, Database = Postgres>,
+    {
+        sqlx::query_as::<_, Self>("SELECT * FROM products WHERE pid = $1")
+            .bind(pid)
+            .fetch_optional(db)
+            .await?
+            .ok_or_else(|| ModelError::EntityNotFound)
     }
 
     /// Loads products from a JSON file in `src/data` and seeds them.

@@ -1,0 +1,48 @@
+---
+source: tests/models/products/product_fetch.rs
+expression: result
+---
+Ok(
+    PaginatedModel {
+        data: [
+            ProductListItem {
+                pid: PID,
+                name: "Classic Cotton T-shirt",
+                description: Some(
+                    "Soft everyday cotton t-shirt with a relaxed fit.",
+                ),
+                category: ProductCategorySummary {
+                    id: ID,
+                    pid: PID,
+                    name: "t-shirts",
+                    slug: "t-shirts",
+                },
+                primary_image: Some(
+                    "https://cdn.example.com/products/classic-cotton-tshirt-black.png",
+                ),
+                default_variant: Some(
+                    ProductVariantSummary {
+                        pid: PID,
+                        sku: "TSHIRT-BLK-M",
+                        price: 24.99,
+                        stock_quantity: 32,
+                    },
+                ),
+                variant_count: 2,
+                option_count: 2,
+                total_stock: 50,
+                created_at: DATE,
+                updated_at: DATE,
+                deleted_at: None,
+            },
+        ],
+        pagination: Pagination {
+            page: 2,
+            limit: 2,
+            total_items: 3,
+            total_pages: 2,
+            has_next: false,
+            has_prev: true,
+        },
+    },
+)

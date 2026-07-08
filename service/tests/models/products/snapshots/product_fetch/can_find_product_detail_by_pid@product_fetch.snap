@@ -1,0 +1,144 @@
+---
+source: tests/models/products/product_fetch.rs
+expression: result
+---
+Ok(
+    ProductDetailResponse {
+        id: ID,
+        pid: PID,
+        name: "Classic Cotton T-shirt",
+        description: Some(
+            "Soft everyday cotton t-shirt with a relaxed fit.",
+        ),
+        category: ProductCategorySummary {
+            id: ID,
+            pid: PID,
+            name: "t-shirts",
+            slug: "t-shirts",
+        },
+        pictures: [],
+        options: [
+            ProductOptionResponse {
+                id: ID,
+                pid: PID,
+                attribute_id: ID,
+                attribute_pid: PID,
+                attribute_name: "colour",
+                display_order: Some(
+                    1,
+                ),
+                created_at: DATE,
+            },
+            ProductOptionResponse {
+                id: ID,
+                pid: PID,
+                attribute_id: ID,
+                attribute_pid: PID,
+                attribute_name: "size",
+                display_order: Some(
+                    2,
+                ),
+                created_at: DATE,
+            },
+        ],
+        variants: [
+            ProductVariantDetail {
+                id: ID,
+                pid: PID,
+                sku: "TSHIRT-BLK-M",
+                price: 24.99,
+                stock_quantity: 32,
+                is_default: true,
+                values: [
+                    ProductVariantValueResponse {
+                        id: ID,
+                        pid: PID,
+                        attribute_id: ID,
+                        attribute_pid: PID,
+                        attribute_name: "colour",
+                        attribute_value_id: ID,
+                        attribute_value_pid: PID,
+                        value: "Black",
+                        created_at: DATE,
+                    },
+                    ProductVariantValueResponse {
+                        id: ID,
+                        pid: PID,
+                        attribute_id: ID,
+                        attribute_pid: PID,
+                        attribute_name: "size",
+                        attribute_value_id: ID,
+                        attribute_value_pid: PID,
+                        value: "M",
+                        created_at: DATE,
+                    },
+                ],
+                pictures: [
+                    ProductPictureResponse {
+                        id: ID,
+                        pid: PID,
+                        image_link: "https://cdn.example.com/products/classic-cotton-tshirt-black.png",
+                        display_order: Some(
+                            1,
+                        ),
+                        created_at: DATE,
+                        updated_at: DATE,
+                    },
+                ],
+                created_at: DATE,
+                updated_at: DATE,
+                deleted_at: None,
+            },
+            ProductVariantDetail {
+                id: ID,
+                pid: PID,
+                sku: "TSHIRT-BLU-L",
+                price: 24.99,
+                stock_quantity: 18,
+                is_default: false,
+                values: [
+                    ProductVariantValueResponse {
+                        id: ID,
+                        pid: PID,
+                        attribute_id: ID,
+                        attribute_pid: PID,
+                        attribute_name: "colour",
+                        attribute_value_id: ID,
+                        attribute_value_pid: PID,
+                        value: "Marine Blue",
+                        created_at: DATE,
+                    },
+                    ProductVariantValueResponse {
+                        id: ID,
+                        pid: PID,
+                        attribute_id: ID,
+                        attribute_pid: PID,
+                        attribute_name: "size",
+                        attribute_value_id: ID,
+                        attribute_value_pid: PID,
+                        value: "L",
+                        created_at: DATE,
+                    },
+                ],
+                pictures: [
+                    ProductPictureResponse {
+                        id: ID,
+                        pid: PID,
+                        image_link: "https://cdn.example.com/products/classic-cotton-tshirt-blue.png",
+                        display_order: Some(
+                            2,
+                        ),
+                        created_at: DATE,
+                        updated_at: DATE,
+                    },
+                ],
+                created_at: DATE,
+                updated_at: DATE,
+                deleted_at: None,
+            },
+        ],
+        created_at: DATE,
+        updated_at: DATE,
+        deleted_at: None,
+    },
+)

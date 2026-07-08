@@ -1,0 +1,48 @@
+---
+source: tests/models/products/product_fetch.rs
+expression: result
+---
+Ok(
+    PaginatedModel {
+        data: [
+            ProductListItem {
+                pid: PID,
+                name: "Court Leather Sneakers",
+                description: Some(
+                    "Low-profile leather sneakers with cushioned insoles.",
+                ),
+                category: ProductCategorySummary {
+                    id: ID,
+                    pid: PID,
+                    name: "shoes",
+                    slug: "shoes",
+                },
+                primary_image: Some(
+                    "https://cdn.example.com/products/court-leather-sneakers-white.png",
+                ),
+                default_variant: Some(
+                    ProductVariantSummary {
+                        pid: PID,
+                        sku: "SNEAKER-WHT-42",
+                        price: 89.99,
+                        stock_quantity: 9,
+                    },
+                ),
+                variant_count: 2,
+                option_count: 2,
+                total_stock: 16,
+                created_at: DATE,
+                updated_at: DATE,
+                deleted_at: None,
+            },
+        ],
+        pagination: Pagination {
+            page: 1,
+            limit: 20,
+            total_items: 1,
+            total_pages: 1,
+            has_next: false,
+            has_prev: false,
+        },
+    },
+)

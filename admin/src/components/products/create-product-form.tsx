@@ -4,7 +4,7 @@ import { zodResolver } from "@hookform/resolvers/zod";
 import { PackageIcon, PlusIcon, TrashIcon } from "@phosphor-icons/react";
 import { useMutation, useQuery } from "@tanstack/react-query";
 import { useNavigate } from "@tanstack/react-router";
-import { useEffect, useMemo, useRef, useState } from "react";
+import { useEffect, useMemo, useRef, useState, type ComponentProps } from "react";
 import { useForm } from "react-hook-form";
 import { toast } from "sonner";
 import { z } from "zod";
@@ -75,6 +75,13 @@ type VariantDraft = {
   image?: ImageDraft;
 };
 
+type VariantInputFieldProps = Omit<ComponentProps<typeof Input>, "id" | "onChange" | "value"> & {
+  id: string;
+  label: string;
+  value: string;
+  onValueChange: (value: string) => void;
+};
+
 function draftId() {
   return crypto.randomUUID();
 }
@@ -108,6 +115,20 @@ function selectLabel(value: string, fallback: string) {
     <span className={cn("flex flex-1 text-left", !value && "text-muted-foreground")}>
       {value || fallback}
     </span>
+  );
+}
+
+function VariantInputField({ id, label, value, onValueChange, ...props }: VariantInputFieldProps) {
+  return (
+    <div className="space-y-2">
+      <Label htmlFor={id}>{label}</Label>
+      <Input
+        id={id}
+        value={value}
+        onChange={(event) => onValueChange(event.target.value)}
+        {...props}
+      />
+    </div>
   );
 }
 
@@ -630,40 +651,34 @@ export default function CreateProductForm() {
                   </div>
 
                   <div className="grid gap-4 lg:grid-cols-3">
-                    <div className="space-y-2">
-                      <Label htmlFor={`variant-${variant.id}-sku`}>SKU</Label>
-                      <Input
-                        id={`variant-${variant.id}-sku`}
-                        value={variant.sku}
-                        placeholder="SKU-002"
-                        onChange={(event) => updateVariant(variant.id, { sku: event.target.value })}
-                      />
-                    </div>
-                    <div className="space-y-2">
-                      <Label htmlFor={`variant-${variant.id}-price`}>Price Override</Label>
-                      <Input
-                        id={`variant-${variant.id}-price`}
-                        value={variant.priceOverride}
-                        inputMode="decimal"
-                        placeholder={form.watch("defaultPrice") || "Inherited"}
-                        onChange={(event) =>
-                          updateVariant(variant.id, { priceOverride: event.target.value })
-                        }
-                      />
-                    </div>
-                    <div className="space-y-2">
-                      <Label htmlFor={`variant-${variant.id}-stock`}>Stock Override</Label>
-                      <Input
-                        id={`variant-${variant.id}-stock`}
-                        type="number"
-                        min={0}
-                        value={variant.stockOverride}
-                        placeholder={form.watch("defaultStockQuantity") || "Inherited"}
-                        onChange={(event) =>
-                          updateVariant(variant.id, { stockOverride: event.target.value })
-                        }
-                      />
-                    </div>
+                    <VariantInputField
+                      id={`variant-${variant.id}-sku`}
+                      label="SKU"
+                      value={variant.sku}
+                      placeholder="SKU-002"
+                      onValueChange={(sku) => updateVariant(variant.id, { sku })}
+                    />
+                    <VariantInputField
+                      id={`variant-${variant.id}-price`}
+                      label="Price Override"
+                      value={variant.priceOverride}
+                      inputMode="decimal"
+                      placeholder={form.watch("defaultPrice") || "Inherited"}
+                      onValueChange={(priceOverride) =>
+                        updateVariant(variant.id, { priceOverride })
+                      }
+                    />
+                    <VariantInputField
+                      id={`variant-${variant.id}-stock`}
+                      label="Stock Override"
+                      type="number"
+                      min={0}
+                      value={variant.stockOverride}
+                      placeholder={form.watch("defaultStockQuantity") || "Inherited"}
+                      onValueChange={(stockOverride) =>
+                        updateVariant(variant.id, { stockOverride })
+                      }
+                    />
                   </div>
 
                   {defaultOptions.length > 0 && (

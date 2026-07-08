@@ -33,13 +33,7 @@ import FormField from "#/components/form-field";
 import { Button } from "#/components/ui/button";
 import { Input } from "#/components/ui/input";
 import { Label } from "#/components/ui/label";
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from "#/components/ui/select";
+import { Select, SelectContent, SelectItem, SelectTrigger } from "#/components/ui/select";
 import { cn } from "#/lib/utils";
 
 const IMAGE_MAX_BYTES = 1024 * 1024 * 5;
@@ -147,6 +141,14 @@ function selectedValueLabel(
   );
 
   return value?.value ?? "Inherited";
+}
+
+function selectLabel(value: string, fallback: string) {
+  return (
+    <span className={cn("flex flex-1 text-left", !value && "text-muted-foreground")}>
+      {value || fallback}
+    </span>
+  );
 }
 
 async function uploadPictures(images: ImageDraft[]): Promise<ProductPictureInput[]> {
@@ -555,11 +557,11 @@ export default function CreateProductForm() {
                   return (
                     <div
                       key={option.id}
-                      className="grid gap-3 border bg-background p-3 md:grid-cols-[5rem_minmax(0,1fr)_minmax(0,1fr)_2.5rem] md:items-end"
+                      className="grid gap-3 border bg-background p-3 md:grid-cols-[5rem_minmax(0,1fr)_minmax(0,1fr)_2.5rem]"
                     >
-                      <div>
-                        <Label className="text-xs text-muted-foreground">Order</Label>
-                        <div className="mt-2 flex h-9 items-center rounded-3xl bg-input/50 px-3 text-sm">
+                      <div className="space-y-2">
+                        <Label>Order</Label>
+                        <div className="flex h-9 items-center rounded-3xl bg-input/50 px-3 text-sm">
                           {index + 1}
                         </div>
                       </div>
@@ -576,7 +578,10 @@ export default function CreateProductForm() {
                           }
                         >
                           <SelectTrigger className="w-full">
-                            <SelectValue placeholder="Select attribute" />
+                            {selectLabel(
+                              option.attributeId ? optionLabel(attributes, option.attributeId) : "",
+                              "Select attribute",
+                            )}
                           </SelectTrigger>
                           <SelectContent>
                             {attributes.map((entry) => (
@@ -604,7 +609,16 @@ export default function CreateProductForm() {
                           disabled={!option.attributeId}
                         >
                           <SelectTrigger className="w-full">
-                            <SelectValue placeholder="Select value" />
+                            {selectLabel(
+                              option.attributeValueId
+                                ? selectedValueLabel(
+                                    attributes,
+                                    option.attributeId,
+                                    option.attributeValueId,
+                                  )
+                                : "",
+                              "Select value",
+                            )}
                           </SelectTrigger>
                           <SelectContent>
                             {values.map((value) => (
@@ -616,15 +630,20 @@ export default function CreateProductForm() {
                         </Select>
                       </div>
 
-                      <Button
-                        type="button"
-                        variant="outline"
-                        size="icon"
-                        aria-label="Remove option"
-                        onClick={() => removeDefaultOption(option.id)}
-                      >
-                        <TrashIcon className="size-4" />
-                      </Button>
+                      <div className="space-y-2">
+                        <Label className="invisible" aria-hidden="true">
+                          Remove
+                        </Label>
+                        <Button
+                          type="button"
+                          variant="outline"
+                          size="icon"
+                          aria-label="Remove option"
+                          onClick={() => removeDefaultOption(option.id)}
+                        >
+                          <TrashIcon className="size-4" />
+                        </Button>
+                      </div>
                     </div>
                   );
                 })}
@@ -799,13 +818,19 @@ export default function CreateProductForm() {
                                 }
                               >
                                 <SelectTrigger className="w-full">
-                                  <SelectValue
-                                    placeholder={selectedValueLabel(
+                                  {selectLabel(
+                                    selectedValueLabel(
+                                      attributes,
+                                      option.attributeId,
+                                      variant.optionOverrides[option.attributeId] ??
+                                        option.attributeValueId,
+                                    ),
+                                    selectedValueLabel(
                                       attributes,
                                       option.attributeId,
                                       option.attributeValueId,
-                                    )}
-                                  />
+                                    ),
+                                  )}
                                 </SelectTrigger>
                                 <SelectContent>
                                   {values.map((value) => (

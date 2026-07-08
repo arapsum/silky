@@ -49,8 +49,8 @@ Ok(
                 price: 24.99,
                 stock_quantity: 32,
                 is_default: true,
-                values: [
-                    ProductVariantValueResponse {
+                options: [
+                    ProductVariantOptionResponse {
                         id: ID,
                         pid: PID,
                         attribute_id: ID,
@@ -61,7 +61,7 @@ Ok(
                         value: "Black",
                         created_at: DATE,
                     },
-                    ProductVariantValueResponse {
+                    ProductVariantOptionResponse {
                         id: ID,
                         pid: PID,
                         attribute_id: ID,
@@ -96,8 +96,8 @@ Ok(
                 price: 24.99,
                 stock_quantity: 18,
                 is_default: false,
-                values: [
-                    ProductVariantValueResponse {
+                options: [
+                    ProductVariantOptionResponse {
                         id: ID,
                         pid: PID,
                         attribute_id: ID,
@@ -108,7 +108,7 @@ Ok(
                         value: "Marine Blue",
                         created_at: DATE,
                     },
-                    ProductVariantValueResponse {
+                    ProductVariantOptionResponse {
                         id: ID,
                         pid: PID,
                         attribute_id: ID,

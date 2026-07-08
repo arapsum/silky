@@ -12,8 +12,8 @@ use crate::{
     schemas::ProductListQuery,
     views::{
         ProductCategorySummary, ProductCreateResponse, ProductDetailResponse, ProductListItem,
-        ProductOptionResponse, ProductPictureResponse, ProductVariantDetail, ProductVariantSummary,
-        ProductVariantValueResponse,
+        ProductOptionResponse, ProductPictureResponse, ProductVariantDetail,
+        ProductVariantOptionResponse, ProductVariantSummary,
     },
 };
 
@@ -182,7 +182,7 @@ struct ProductVariantRow {
 }
 
 #[derive(Debug, FromRow)]
-struct ProductVariantValueRow {
+struct ProductVariantOptionRow {
     id: i32,
     pid: Uuid,
     variant_id: i32,
@@ -195,9 +195,9 @@ struct ProductVariantValueRow {
     created_at: DateTime<FixedOffset>,
 }
 
-impl ProductVariantValueRow {
-    fn into_response(self) -> ProductVariantValueResponse {
-        ProductVariantValueResponse {
+impl ProductVariantOptionRow {
+    fn into_response(self) -> ProductVariantOptionResponse {
+        ProductVariantOptionResponse {
             id: self.id,
             pid: self.pid,
             attribute_id: self.attribute_id,
@@ -684,7 +684,7 @@ impl Product {
         .fetch_all(&mut *txn)
         .await?;
 
-        let variant_values = sqlx::query_as::<_, ProductVariantValueRow>(
+        let variant_options = sqlx::query_as::<_, ProductVariantOptionRow>(
             r"
             SELECT
                 vav.id,
@@ -722,12 +722,12 @@ impl Product {
             }
         }
 
-        let mut values_by_variant = HashMap::<i32, Vec<ProductVariantValueResponse>>::new();
-        for value in variant_values {
-            values_by_variant
-                .entry(value.variant_id)
+        let mut options_by_variant = HashMap::<i32, Vec<ProductVariantOptionResponse>>::new();
+        for option in variant_options {
+            options_by_variant
+                .entry(option.variant_id)
                 .or_default()
-                .push(value.into_response());
+                .push(option.into_response());
         }
 
         let variants = variant_rows
@@ -739,7 +739,7 @@ impl Product {
                 price: variant.price,
                 stock_quantity: variant.stock_quantity,
                 is_default: variant.is_default,
-                values: values_by_variant.remove(&variant.id).unwrap_or_default(),
+                options: options_by_variant.remove(&variant.id).unwrap_or_default(),
                 pictures: pictures_by_variant.remove(&variant.id).unwrap_or_default(),
                 created_at: variant.created_at,
                 updated_at: variant.updated_at,

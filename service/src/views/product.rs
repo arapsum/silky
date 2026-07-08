@@ -94,7 +94,7 @@ pub struct ProductOptionResponse {
 
 #[derive(Debug, Deserialize, Serialize, Clone)]
 #[serde(rename_all = "camelCase")]
-pub struct ProductVariantValueResponse {
+pub struct ProductVariantOptionResponse {
     pub id: i32,
     pub pid: Uuid,
     pub attribute_id: i32,
@@ -115,7 +115,7 @@ pub struct ProductVariantDetail {
     pub price: Decimal,
     pub stock_quantity: i32,
     pub is_default: bool,
-    pub values: Vec<ProductVariantValueResponse>,
+    pub options: Vec<ProductVariantOptionResponse>,
     pub pictures: Vec<ProductPictureResponse>,
     pub created_at: DateTime<FixedOffset>,
     pub updated_at: DateTime<FixedOffset>,

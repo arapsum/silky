@@ -490,6 +490,7 @@ export default function AccountSettingsPage() {
   const currentUserQuery = useQuery({
     queryKey: currentUserQueryKey,
     queryFn: getCurrentUser,
+    retry: false,
   });
 
   useEffect(() => {

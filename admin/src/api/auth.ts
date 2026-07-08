@@ -40,5 +40,6 @@ export function logout() {
   return apiRequest<MessageResponse>("/auth/logout", {
     method: "POST",
     fallback: "Unable to sign out",
+    skipAuthRefresh: true,
   });
 }

@@ -347,6 +347,7 @@ function UserAccountMenu({ isCollapsed }: { isCollapsed: boolean }) {
   const currentUserQuery = useQuery({
     queryKey: currentUserQueryKey,
     queryFn: getCurrentUser,
+    retry: false,
   });
 
   const currentUser = currentUserQuery.data;

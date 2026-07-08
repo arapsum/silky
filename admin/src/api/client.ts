@@ -6,6 +6,24 @@ export type ErrorResponse = {
 };
 
 export const API_BASE_URL = env.VITE_SERVER_URL ?? "http://127.0.0.1:7150/api";
+const EXPIRED_SESSION_MESSAGE = "Expired session";
+const MISSING_CREDENTIALS_MESSAGE = "Missing credentials";
+const REFRESH_SESSION_PATH = "/auth/refresh";
+
+type SessionExpiredHandler = () => void | Promise<void>;
+
+let refreshSessionPromise: Promise<void> | undefined;
+let sessionExpiredHandler: SessionExpiredHandler | undefined;
+
+export function setSessionExpiredHandler(handler: SessionExpiredHandler | undefined) {
+  sessionExpiredHandler = handler;
+
+  return () => {
+    if (sessionExpiredHandler === handler) {
+      sessionExpiredHandler = undefined;
+    }
+  };
+}
 
 export async function getErrorResponse(response: Response, fallback = "Request failed") {
   try {
@@ -18,11 +36,27 @@ export async function getErrorResponse(response: Response, fallback = "Request f
 
 type ApiRequestOptions = RequestInit & {
   fallback?: string;
+  skipAuthRefresh?: boolean;
 };
 
-export async function apiRequest<T>(
+type InternalApiRequestOptions = ApiRequestOptions & {
+  hasRetriedAfterRefresh?: boolean;
+};
+
+export async function apiRequest<T>(path: string, options: ApiRequestOptions = {}): Promise<T> {
+  return apiRequestInternal(path, options);
+}
+
+async function apiRequestInternal<T>(
   path: string,
-  { fallback = "Request failed", headers, body, ...init }: ApiRequestOptions = {},
+  {
+    fallback = "Request failed",
+    headers,
+    body,
+    skipAuthRefresh = false,
+    hasRetriedAfterRefresh = false,
+    ...init
+  }: InternalApiRequestOptions = {},
 ): Promise<T> {
   const requestHeaders = new Headers(headers);
   requestHeaders.set("Accept", "application/json");
@@ -39,7 +73,37 @@ export async function apiRequest<T>(
   });
 
   if (!response.ok) {
-    throw new Error(await getErrorResponse(response, fallback));
+    const errorMessage = await getErrorResponse(response, fallback);
+
+    if (
+      shouldRefreshSession(path, response, errorMessage, skipAuthRefresh, hasRetriedAfterRefresh)
+    ) {
+      try {
+        await getRefreshSessionPromise();
+      } catch (error) {
+        await handleRefreshFailure();
+        throw error;
+      }
+
+      try {
+        return await apiRequestInternal<T>(path, {
+          fallback,
+          headers,
+          body,
+          skipAuthRefresh,
+          hasRetriedAfterRefresh: true,
+          ...init,
+        });
+      } catch (error) {
+        if (error instanceof Error && isRefreshableAuthError(error.message)) {
+          await handleRefreshFailure();
+        }
+
+        throw error;
+      }
+    }
+
+    throw new Error(errorMessage);
   }
 
   if (response.status === 204) {
@@ -47,4 +111,57 @@ export async function apiRequest<T>(
   }
 
   return (await response.json()) as T;
+}
+
+function shouldRefreshSession(
+  path: string,
+  response: Response,
+  errorMessage: string,
+  skipAuthRefresh: boolean,
+  hasRetriedAfterRefresh: boolean,
+) {
+  return (
+    response.status === 401 &&
+    isRefreshableAuthError(errorMessage) &&
+    !skipAuthRefresh &&
+    !hasRetriedAfterRefresh &&
+    path !== REFRESH_SESSION_PATH
+  );
+}
+
+function isRefreshableAuthError(errorMessage: string) {
+  return errorMessage === EXPIRED_SESSION_MESSAGE || errorMessage === MISSING_CREDENTIALS_MESSAGE;
+}
+
+function getRefreshSessionPromise() {
+  refreshSessionPromise ??= refreshSession().finally(() => {
+    refreshSessionPromise = undefined;
+  });
+
+  return refreshSessionPromise;
+}
+
+async function refreshSession() {
+  const response = await fetch(`${API_BASE_URL}${REFRESH_SESSION_PATH}`, {
+    method: "POST",
+    headers: {
+      Accept: "application/json",
+    },
+    credentials: "include",
+  });
+
+  if (!response.ok) {
+    throw new Error(await getErrorResponse(response, "Session expired"));
+  }
+}
+
+async function handleRefreshFailure() {
+  if (sessionExpiredHandler) {
+    await sessionExpiredHandler();
+    return;
+  }
+
+  if (typeof window !== "undefined") {
+    window.location.assign("/sign-in");
+  }
 }

@@ -73,6 +73,11 @@ async fn allow_product_writes(db: &sqlx::PgPool) {
     grant_permission(db, "administrator", permissions::products::CREATE.as_str()).await;
 }
 
+async fn allow_product_reads(db: &sqlx::PgPool) {
+    assign_role(db, "john.doe@acme.com", "administrator").await;
+    grant_permission(db, "administrator", permissions::products::READ.as_str()).await;
+}
+
 fn response_filters() -> Vec<(&'static str, &'static str)> {
     let mut filters = utils::cleanup_date().to_vec();
     filters.extend(utils::cleanup_uuid().to_vec());
@@ -217,6 +222,82 @@ async fn cannot_create_product_without_permission() {
             filters => response_filters()
         }, {
             assert_debug_snapshot!("cannot_create_product_without_permission", (response.status_code(), response.text()))
+        })
+    })
+    .await;
+}
+
+#[tokio::test]
+#[serial]
+async fn can_list_product_attributes_with_values() {
+    crate::request(|server, ctx| async move {
+        configure_insta!();
+
+        crate::seed_data(ctx.db())
+            .await
+            .expect("Failed to seed data");
+        allow_product_reads(ctx.db()).await;
+
+        let token = access_token(&server).await;
+        let (auth_header, auth_value) = utils::auth_header(token);
+
+        let response = server
+            .get("/products/attributes")
+            .add_header(auth_header, auth_value)
+            .await;
+
+        with_settings!({
+            filters => response_filters()
+        }, {
+            assert_debug_snapshot!("can_list_product_attributes_with_values", (response.status_code(), response.text()))
+        })
+    })
+    .await;
+}
+
+#[tokio::test]
+#[serial]
+async fn cannot_list_product_attributes_without_credentials() {
+    crate::request(|server, ctx| async move {
+        configure_insta!();
+
+        crate::seed_data(ctx.db())
+            .await
+            .expect("Failed to seed data");
+
+        let response = server.get("/products/attributes").await;
+
+        with_settings!({
+            filters => response_filters()
+        }, {
+            assert_debug_snapshot!("cannot_list_product_attributes_without_credentials", (response.status_code(), response.text()))
+        })
+    })
+    .await;
+}
+
+#[tokio::test]
+#[serial]
+async fn cannot_list_product_attributes_without_permission() {
+    crate::request(|server, ctx| async move {
+        configure_insta!();
+
+        crate::seed_data(ctx.db())
+            .await
+            .expect("Failed to seed data");
+
+        let token = access_token_for(&server, "jane.smith@globex.com").await;
+        let (auth_header, auth_value) = utils::auth_header(token);
+
+        let response = server
+            .get("/products/attributes")
+            .add_header(auth_header, auth_value)
+            .await;
+
+        with_settings!({
+            filters => response_filters()
+        }, {
+            assert_debug_snapshot!("cannot_list_product_attributes_without_permission", (response.status_code(), response.text()))
         })
     })
     .await;

@@ -127,3 +127,49 @@ async fn can_find_attribute_by_name(#[case] test_name: &str, #[case] name: &str)
 
     assert_debug_snapshot!(test_name, result);
 }
+
+#[tokio::test]
+#[serial]
+async fn can_find_all_attributes() {
+    configure_insta!();
+
+    let ctx = boot_test().await.expect("Failed to boot test!");
+
+    seed_data(ctx.db()).await.expect("Failed to seed data");
+
+    let result = Attribute::find_all(ctx.db()).await;
+
+    with_settings!({
+        filters => {
+            let mut filters = cleanup_uuid().to_vec();
+            filters.extend(cleanup_date().to_vec());
+            filters.extend(cleanup_id().to_vec());
+            filters
+        }
+    }, {
+            assert_debug_snapshot!("can_find_all_attributes", result)
+    });
+}
+
+#[tokio::test]
+#[serial]
+async fn can_find_all_attributes_with_values() {
+    configure_insta!();
+
+    let ctx = boot_test().await.expect("Failed to boot test!");
+
+    seed_data(ctx.db()).await.expect("Failed to seed data");
+
+    let result = Attribute::find_all_with_values(ctx.db()).await;
+
+    with_settings!({
+        filters => {
+            let mut filters = cleanup_uuid().to_vec();
+            filters.extend(cleanup_date().to_vec());
+            filters.extend(cleanup_id().to_vec());
+            filters
+        }
+    }, {
+            assert_debug_snapshot!("can_find_all_attributes_with_values", result)
+    });
+}

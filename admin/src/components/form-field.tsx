@@ -2,13 +2,7 @@ import { Field, FieldDescription, FieldError, FieldLabel } from "@/components/ui
 import { Input } from "@/components/ui/input";
 import { Checkbox } from "@/components/ui/checkbox";
 import { Textarea } from "@/components/ui/textarea";
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from "@/components/ui/select";
+import { Select, SelectContent, SelectItem, SelectTrigger } from "@/components/ui/select";
 import { cn } from "@/lib/utils";
 import type React from "react";
 import { useState } from "react";
@@ -205,6 +199,8 @@ function RenderInput<TField extends FieldValues>({
       const { placeholder, options, className, disabled, required } = input as BaseInputProps & {
         options?: SelectOption[];
       };
+      const selectedOption = options?.find((option) => option.value === field.value);
+      const displayValue = selectedOption?.label ?? "";
 
       if (process.env.NODE_ENV !== "production" && !options?.length) {
         console.warn(`FormField: "options" is required for select field "${field.name}"`);
@@ -226,7 +222,9 @@ function RenderInput<TField extends FieldValues>({
             aria-invalid={fieldState.invalid}
             className={cn("w-full", className)}
           >
-            <SelectValue placeholder={placeholder} />
+            <span className={cn("flex flex-1 text-left", !displayValue && "text-muted-foreground")}>
+              {displayValue || placeholder}
+            </span>
           </SelectTrigger>
           <SelectContent>
             {options?.map((option) => (

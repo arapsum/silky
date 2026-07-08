@@ -44,3 +44,7 @@ export function uploadAvatarImage(file: File) {
 export function uploadCategoryImage(file: File) {
   return uploadImage(file, "silk/categories", "Category image");
 }
+
+export function uploadProductImage(file: File) {
+  return uploadImage(file, "silk/products", "Product image");
+}

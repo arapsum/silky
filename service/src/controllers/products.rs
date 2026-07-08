@@ -3,14 +3,14 @@ use axum::{
     extract::State,
     http::StatusCode,
     response::{IntoResponse, Response},
-    routing::post,
+    routing::{get, post},
 };
 
 use crate::{
     AppState, Result,
     access_control::permissions,
     middlewares::{AuthLayer, RbacLayer},
-    models::Product,
+    models::{Attribute, Product},
     schemas::{CreateProduct, Validator},
     utils::AppJson,
 };
@@ -29,8 +29,20 @@ async fn create(
     Ok((StatusCode::CREATED, Json(product)).into_response())
 }
 
+#[tracing::instrument(skip(ctx))]
+#[debug_handler]
+async fn attributes(State(ctx): State<AppState>) -> Result<Response> {
+    let attributes = Attribute::find_all_with_values(ctx.db()).await?;
+
+    Ok((StatusCode::OK, Json(attributes)).into_response())
+}
+
 pub fn router(ctx: &AppState) -> Router {
     Router::new()
+        .route(
+            "/attributes",
+            get(attributes).layer(RbacLayer::new(ctx.clone(), permissions::products::READ)),
+        )
         .route(
             "/",
             post(create).layer(RbacLayer::new(ctx.clone(), permissions::products::CREATE)),

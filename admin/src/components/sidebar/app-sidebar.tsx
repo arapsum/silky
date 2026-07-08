@@ -71,7 +71,7 @@ const dashboardRoutes: Route[] = [
     subs: [
       {
         title: "Products",
-        link: "#",
+        link: "/products/create",
         icon: <PackageIcon className="size-4" />,
       },
       {

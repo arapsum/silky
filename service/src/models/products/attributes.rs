@@ -3,7 +3,7 @@ use serde::{Deserialize, Serialize};
 use sqlx::{Encode, Executor, PgPool, Postgres, prelude::FromRow};
 use uuid::Uuid;
 
-use crate::models::{ModelError, ModelResult, Seedable};
+use crate::models::{AttributeValue, ModelError, ModelResult, Seedable};
 
 #[derive(Debug, Deserialize, Serialize, Clone, FromRow, Encode)]
 #[serde(rename_all = "camelCase")]
@@ -13,6 +13,13 @@ pub struct Attribute {
     name: String,
     created_at: DateTime<FixedOffset>,
     updated_at: DateTime<FixedOffset>,
+}
+
+#[derive(Debug, Deserialize, Serialize, Clone)]
+#[serde(rename_all = "camelCase")]
+pub struct AttributeWithValues {
+    attribute: Attribute,
+    values: Vec<AttributeValue>,
 }
 
 impl Attribute {
@@ -139,6 +146,52 @@ impl Attribute {
         attribute.ok_or_else(|| ModelError::EntityNotFound)
     }
 
+    /// Lists all attributes with their values.
+    ///
+    /// Attributes are ordered by name, and values are ordered by their
+    /// attribute and display value.
+    ///
+    /// # Parameters
+    ///
+    /// - `db`: Database pool used for the lookup.
+    ///
+    /// # Errors
+    ///
+    /// Returns a database error if either lookup fails.
+    pub async fn find_all_with_values(db: &PgPool) -> ModelResult<Vec<AttributeWithValues>> {
+        let attributes = sqlx::query_as::<_, Self>(
+            r"
+                SELECT * FROM attributes ORDER BY name
+            ",
+        )
+        .fetch_all(db)
+        .await?;
+
+        let values = sqlx::query_as::<_, AttributeValue>(
+            r"
+                SELECT * FROM attribute_values ORDER BY attribute_id, value
+            ",
+        )
+        .fetch_all(db)
+        .await?;
+
+        let attributes = attributes
+            .into_iter()
+            .map(|attribute| {
+                let attribute_id = attribute.id();
+                let values = values
+                    .iter()
+                    .filter(|value| value.attribute_id() == attribute_id)
+                    .cloned()
+                    .collect();
+
+                AttributeWithValues { attribute, values }
+            })
+            .collect();
+
+        Ok(attributes)
+    }
+
     /// Loads attributes from a JSON file in `src/data` and seeds them.
     ///
     /// # Parameters
@@ -184,6 +237,20 @@ impl Attribute {
     #[must_use]
     pub const fn updated_at(&self) -> DateTime<FixedOffset> {
         self.updated_at
+    }
+}
+
+impl AttributeWithValues {
+    /// Returns the attribute record.
+    #[must_use]
+    pub const fn attribute(&self) -> &Attribute {
+        &self.attribute
+    }
+
+    /// Returns the values that belong to the attribute.
+    #[must_use]
+    pub fn values(&self) -> &[AttributeValue] {
+        &self.values
     }
 }
 

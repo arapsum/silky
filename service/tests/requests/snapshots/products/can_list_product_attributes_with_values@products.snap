@@ -1,0 +1,8 @@
+---
+source: tests/requests/products.rs
+expression: "(response.status_code(), response.text())"
+---
+(
+    200,
+    "[{\"attribute\":{\"id\":201,\"pid\":\"PID\",\"name\":\"colour\",\"createdAt\":\"DATE\",\"updatedAt\":\"DATE\"},\"values\":[{\"id\":201,\"pid\":\"PID\",\"attributeId\":201,\"value\":\"Black\",\"createdAt\":\"DATE\",\"updatedAt\":\"DATE\"},{\"id\":202,\"pid\":\"PID\",\"attributeId\":201,\"value\":\"Marine Blue\",\"createdAt\":\"DATE\",\"updatedAt\":\"DATE\"},{\"id\":203,\"pid\":\"PID\",\"attributeId\":201,\"value\":\"White\",\"createdAt\":\"DATE\",\"updatedAt\":\"DATE\"}]},{\"attribute\":{\"id\":203,\"pid\":\"PID\",\"name\":\"material\",\"createdAt\":\"DATE\",\"updatedAt\":\"DATE\"},\"values\":[{\"id\":209,\"pid\":\"PID\",\"attributeId\":203,\"value\":\"100% Cotton\",\"createdAt\":\"DATE\",\"updatedAt\":\"DATE\"},{\"id\":210,\"pid\":\"PID\",\"attributeId\":203,\"value\":\"Leather\",\"createdAt\":\"DATE\",\"updatedAt\":\"DATE\"}]},{\"attribute\":{\"id\":202,\"pid\":\"PID\",\"name\":\"size\",\"createdAt\":\"DATE\",\"updatedAt\":\"DATE\"},\"values\":[{\"id\":207,\"pid\":\"PID\",\"attributeId\":202,\"value\":\"42\",\"createdAt\":\"DATE\",\"updatedAt\":\"DATE\"},{\"id\":208,\"pid\":\"PID\",\"attributeId\":202,\"value\":\"43\",\"createdAt\":\"DATE\",\"updatedAt\":\"DATE\"},{\"id\":206,\"pid\":\"PID\",\"attributeId\":202,\"value\":\"L\",\"createdAt\":\"DATE\",\"updatedAt\":\"DATE\"},{\"id\":205,\"pid\":\"PID\",\"attributeId\":202,\"value\":\"M\",\"createdAt\":\"DATE\",\"updatedAt\":\"DATE\"},{\"id\":204,\"pid\":\"PID\",\"attributeId\":202,\"value\":\"S\",\"createdAt\":\"DATE\",\"updatedAt\":\"DATE\"}]}]",
+)

@@ -60,24 +60,26 @@ async fn attributes(State(ctx): State<AppState>) -> Result<Response> {
     Ok((StatusCode::OK, Json(attributes)).into_response())
 }
 
-pub fn router(ctx: &AppState) -> Router {
+fn protected(ctx: &AppState) -> Router {
     Router::new()
         .route(
             "/attributes",
             get(attributes).layer(RbacLayer::new(ctx.clone(), permissions::products::READ)),
         )
         .route(
-            "/{pid}",
-            get(one).layer(RbacLayer::new(ctx.clone(), permissions::products::READ)),
-        )
-        .route(
-            "/",
-            get(list).layer(RbacLayer::new(ctx.clone(), permissions::products::READ)),
-        )
-        .route(
             "/",
             post(create).layer(RbacLayer::new(ctx.clone(), permissions::products::CREATE)),
         )
         .with_state(ctx.clone())
-        .layer(AuthLayer::new(ctx.clone()))
+}
+
+fn general(ctx: &AppState) -> Router {
+    Router::new()
+        .route("/", get(list))
+        .route("/{pid}", get(one))
+        .with_state(ctx.clone())
+}
+
+pub fn router(ctx: &AppState) -> Router {
+    general(ctx).merge(protected(ctx).layer(AuthLayer::new(ctx.clone())))
 }

@@ -208,14 +208,9 @@ async fn can_list_products() {
         crate::seed_data(ctx.db())
             .await
             .expect("Failed to seed data");
-        allow_product_reads(ctx.db()).await;
-
-        let token = access_token(&server).await;
-        let (auth_header, auth_value) = utils::auth_header(token);
 
         let response = server
             .get("/products?search=leather&categorySlug=shoes&limit=10&page=1")
-            .add_header(auth_header, auth_value)
             .await;
 
         with_settings!({
@@ -229,7 +224,7 @@ async fn can_list_products() {
 
 #[tokio::test]
 #[serial]
-async fn cannot_list_products_without_credentials() {
+async fn can_list_products_without_credentials() {
     crate::request(|server, ctx| async move {
         configure_insta!();
 
@@ -242,7 +237,7 @@ async fn cannot_list_products_without_credentials() {
         with_settings!({
             filters => response_filters()
         }, {
-            assert_debug_snapshot!("cannot_list_products_without_credentials", (response.status_code(), response.text()))
+            assert_debug_snapshot!("can_list_products_without_credentials", (response.status_code(), response.text()))
         })
     })
     .await;
@@ -250,7 +245,7 @@ async fn cannot_list_products_without_credentials() {
 
 #[tokio::test]
 #[serial]
-async fn cannot_list_products_without_permission() {
+async fn can_list_products_without_permission() {
     crate::request(|server, ctx| async move {
         configure_insta!();
 
@@ -269,7 +264,7 @@ async fn cannot_list_products_without_permission() {
         with_settings!({
             filters => response_filters()
         }, {
-            assert_debug_snapshot!("cannot_list_products_without_permission", (response.status_code(), response.text()))
+            assert_debug_snapshot!("can_list_products_without_permission", (response.status_code(), response.text()))
         })
     })
     .await;
@@ -284,15 +279,8 @@ async fn cannot_list_products_with_invalid_query() {
         crate::seed_data(ctx.db())
             .await
             .expect("Failed to seed data");
-        allow_product_reads(ctx.db()).await;
 
-        let token = access_token(&server).await;
-        let (auth_header, auth_value) = utils::auth_header(token);
-
-        let response = server
-            .get("/products?limit=0")
-            .add_header(auth_header, auth_value)
-            .await;
+        let response = server.get("/products?limit=0").await;
 
         with_settings!({
             filters => response_filters()
@@ -312,14 +300,9 @@ async fn can_get_product_detail() {
         crate::seed_data(ctx.db())
             .await
             .expect("Failed to seed data");
-        allow_product_reads(ctx.db()).await;
-
-        let token = access_token(&server).await;
-        let (auth_header, auth_value) = utils::auth_header(token);
 
         let response = server
             .get("/products/6d7b16c3-efbf-4e7e-9b70-4f43e1cc3001")
-            .add_header(auth_header, auth_value)
             .await;
 
         with_settings!({
@@ -333,7 +316,7 @@ async fn can_get_product_detail() {
 
 #[tokio::test]
 #[serial]
-async fn cannot_get_product_detail_without_credentials() {
+async fn can_get_product_detail_without_credentials() {
     crate::request(|server, ctx| async move {
         configure_insta!();
 
@@ -348,7 +331,7 @@ async fn cannot_get_product_detail_without_credentials() {
         with_settings!({
             filters => response_filters()
         }, {
-            assert_debug_snapshot!("cannot_get_product_detail_without_credentials", (response.status_code(), response.text()))
+            assert_debug_snapshot!("can_get_product_detail_without_credentials", (response.status_code(), response.text()))
         })
     })
     .await;
@@ -356,7 +339,7 @@ async fn cannot_get_product_detail_without_credentials() {
 
 #[tokio::test]
 #[serial]
-async fn cannot_get_product_detail_without_permission() {
+async fn can_get_product_detail_without_permission() {
     crate::request(|server, ctx| async move {
         configure_insta!();
 
@@ -375,7 +358,7 @@ async fn cannot_get_product_detail_without_permission() {
         with_settings!({
             filters => response_filters()
         }, {
-            assert_debug_snapshot!("cannot_get_product_detail_without_permission", (response.status_code(), response.text()))
+            assert_debug_snapshot!("can_get_product_detail_without_permission", (response.status_code(), response.text()))
         })
     })
     .await;

@@ -1,8 +1,0 @@
----
-source: tests/requests/products.rs
-expression: "(response.status_code(), response.text())"
----
-(
-    403,
-    "{\"error\":\"Forbidden\"}",
-)

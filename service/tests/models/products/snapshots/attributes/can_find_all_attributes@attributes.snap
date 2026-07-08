@@ -1,0 +1,29 @@
+---
+source: tests/models/products/attributes.rs
+expression: result
+---
+Ok(
+    [
+        Attribute {
+            id: ID,
+            pid: PID,
+            name: "colour",
+            created_at: DATE,
+            updated_at: DATE,
+        },
+        Attribute {
+            id: ID,
+            pid: PID,
+            name: "material",
+            created_at: DATE,
+            updated_at: DATE,
+        },
+        Attribute {
+            id: ID,
+            pid: PID,
+            name: "size",
+            created_at: DATE,
+            updated_at: DATE,
+        },
+    ],
+)

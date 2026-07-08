@@ -2,6 +2,7 @@ use insta::{Settings, assert_debug_snapshot, with_settings};
 use rstest::rstest;
 use serial_test::serial;
 use service::models::{NewProductOption, ProductOption};
+use uuid::Uuid;
 
 use crate::{
     boot_test, seed_data,
@@ -61,5 +62,88 @@ async fn can_create_product_option(
         }
     }, {
             assert_debug_snapshot!(test_name, result)
+    });
+}
+
+#[rstest]
+#[case(
+    "can_find_product_option_by_pid",
+    "a41e81af-0ec1-4194-b91a-1065da7d3301"
+)]
+#[case(
+    "cannot_find_product_option_when_pid_does_not_exist",
+    "00000000-0000-0000-0000-000000000000"
+)]
+#[tokio::test]
+#[serial]
+async fn can_find_product_option_by_pid(#[case] test_name: &str, #[case] pid: &str) {
+    configure_insta!();
+
+    let ctx = boot_test().await.expect("Failed to boot test!");
+
+    seed_data(ctx.db()).await.expect("Failed to seed data");
+
+    let pid = Uuid::parse_str(pid).expect("Failed to parse str to UUID");
+
+    let result = ProductOption::find_by_pid(ctx.db(), pid).await;
+
+    with_settings!({
+        filters => {
+            let mut filters = cleanup_uuid().to_vec();
+            filters.extend(cleanup_date().to_vec());
+            filters.extend(cleanup_id().to_vec());
+            filters
+        }
+    }, {
+            assert_debug_snapshot!(test_name, result)
+    });
+}
+
+#[rstest]
+#[case("can_find_product_options_by_product", 201)]
+#[case("can_find_empty_product_options_by_product", 999)]
+#[tokio::test]
+#[serial]
+async fn can_find_product_options_by_product(#[case] test_name: &str, #[case] product_id: i32) {
+    configure_insta!();
+
+    let ctx = boot_test().await.expect("Failed to boot test!");
+
+    seed_data(ctx.db()).await.expect("Failed to seed data");
+
+    let result = ProductOption::find_by_product(ctx.db(), product_id).await;
+
+    with_settings!({
+        filters => {
+            let mut filters = cleanup_uuid().to_vec();
+            filters.extend(cleanup_date().to_vec());
+            filters.extend(cleanup_id().to_vec());
+            filters
+        }
+    }, {
+            assert_debug_snapshot!(test_name, result)
+    });
+}
+
+#[tokio::test]
+#[serial]
+async fn can_find_all_product_options() {
+    configure_insta!();
+
+    let ctx = boot_test().await.expect("Failed to boot test!");
+
+    seed_data(ctx.db()).await.expect("Failed to seed data");
+
+    let result = ProductOption::find_all(ctx.db()).await;
+
+    with_settings!({
+        filters => {
+            let mut filters = cleanup_uuid().to_vec();
+            filters.extend(cleanup_date().to_vec());
+            filters.extend(cleanup_id().to_vec());
+            filters
+        }
+    }, {
+            assert_debug_snapshot!("can_find_all_product_options", result)
     });
 }

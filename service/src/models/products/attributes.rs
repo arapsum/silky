@@ -146,6 +146,29 @@ impl Attribute {
         attribute.ok_or_else(|| ModelError::EntityNotFound)
     }
 
+    /// Lists all attributes.
+    ///
+    /// Attributes are ordered by name.
+    ///
+    /// # Parameters
+    ///
+    /// - `db`: Database pool used for the lookup.
+    ///
+    /// # Errors
+    ///
+    /// Returns a database error if the lookup fails.
+    pub async fn find_all(db: &PgPool) -> ModelResult<Vec<Self>> {
+        let attributes = sqlx::query_as::<_, Self>(
+            r"
+                SELECT * FROM attributes ORDER BY name
+            ",
+        )
+        .fetch_all(db)
+        .await?;
+
+        Ok(attributes)
+    }
+
     /// Lists all attributes with their values.
     ///
     /// Attributes are ordered by name, and values are ordered by their

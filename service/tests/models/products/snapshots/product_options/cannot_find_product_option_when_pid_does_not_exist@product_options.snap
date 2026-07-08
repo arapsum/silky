@@ -1,0 +1,7 @@
+---
+source: tests/models/products/product_options.rs
+expression: result
+---
+Err(
+    EntityNotFound,
+)

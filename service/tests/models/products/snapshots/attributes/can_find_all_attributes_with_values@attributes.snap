@@ -1,0 +1,121 @@
+---
+source: tests/models/products/attributes.rs
+expression: result
+---
+Ok(
+    [
+        AttributeWithValues {
+            attribute: Attribute {
+                id: ID,
+                pid: PID,
+                name: "colour",
+                created_at: DATE,
+                updated_at: DATE,
+            },
+            values: [
+                AttributeValue {
+                    id: ID,
+                    pid: PID,
+                    attribute_id: ID,
+                    value: "Black",
+                    created_at: DATE,
+                    updated_at: DATE,
+                },
+                AttributeValue {
+                    id: ID,
+                    pid: PID,
+                    attribute_id: ID,
+                    value: "Marine Blue",
+                    created_at: DATE,
+                    updated_at: DATE,
+                },
+                AttributeValue {
+                    id: ID,
+                    pid: PID,
+                    attribute_id: ID,
+                    value: "White",
+                    created_at: DATE,
+                    updated_at: DATE,
+                },
+            ],
+        },
+        AttributeWithValues {
+            attribute: Attribute {
+                id: ID,
+                pid: PID,
+                name: "material",
+                created_at: DATE,
+                updated_at: DATE,
+            },
+            values: [
+                AttributeValue {
+                    id: ID,
+                    pid: PID,
+                    attribute_id: ID,
+                    value: "100% Cotton",
+                    created_at: DATE,
+                    updated_at: DATE,
+                },
+                AttributeValue {
+                    id: ID,
+                    pid: PID,
+                    attribute_id: ID,
+                    value: "Leather",
+                    created_at: DATE,
+                    updated_at: DATE,
+                },
+            ],
+        },
+        AttributeWithValues {
+            attribute: Attribute {
+                id: ID,
+                pid: PID,
+                name: "size",
+                created_at: DATE,
+                updated_at: DATE,
+            },
+            values: [
+                AttributeValue {
+                    id: ID,
+                    pid: PID,
+                    attribute_id: ID,
+                    value: "42",
+                    created_at: DATE,
+                    updated_at: DATE,
+                },
+                AttributeValue {
+                    id: ID,
+                    pid: PID,
+                    attribute_id: ID,
+                    value: "43",
+                    created_at: DATE,
+                    updated_at: DATE,
+                },
+                AttributeValue {
+                    id: ID,
+                    pid: PID,
+                    attribute_id: ID,
+                    value: "L",
+                    created_at: DATE,
+                    updated_at: DATE,
+                },
+                AttributeValue {
+                    id: ID,
+                    pid: PID,
+                    attribute_id: ID,
+                    value: "M",
+                    created_at: DATE,
+                    updated_at: DATE,
+                },
+                AttributeValue {
+                    id: ID,
+                    pid: PID,
+                    attribute_id: ID,
+                    value: "S",
+                    created_at: DATE,
+                    updated_at: DATE,
+                },
+            ],
+        },
+    ],
+)

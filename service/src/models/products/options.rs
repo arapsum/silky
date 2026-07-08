@@ -3,7 +3,7 @@ use serde::{Deserialize, Serialize};
 use sqlx::{Encode, Executor, PgPool, Postgres, prelude::FromRow};
 use uuid::Uuid;
 
-use crate::models::{ModelResult, Seedable};
+use crate::models::{ModelError, ModelResult, Seedable};
 
 #[derive(Debug, Deserialize, Serialize, Clone)]
 #[serde(rename_all = "camelCase")]
@@ -102,6 +102,92 @@ impl ProductOption {
         .await?;
 
         Ok(option)
+    }
+
+    /// Finds a product option by public ID.
+    ///
+    /// # Parameters
+    ///
+    /// - `db`: Database executor used for the lookup.
+    /// - `pid`: Public ID of the product option to find.
+    ///
+    /// # Errors
+    ///
+    /// Returns [`crate::models::ModelError::EntityNotFound`] when no product
+    /// option has the given public ID. Returns a database error if the lookup
+    /// fails.
+    pub async fn find_by_pid<'e, E>(db: E, pid: Uuid) -> ModelResult<Self>
+    where
+        E: Executor<'e, Database = Postgres>,
+    {
+        let option = sqlx::query_as::<_, Self>(
+            r"
+                SELECT * FROM product_options WHERE pid = $1
+            ",
+        )
+        .bind(pid)
+        .fetch_optional(db)
+        .await?;
+
+        option.ok_or_else(|| ModelError::EntityNotFound)
+    }
+
+    /// Lists all options for a product.
+    ///
+    /// Options are ordered by display order and then ID.
+    ///
+    /// # Parameters
+    ///
+    /// - `db`: Database executor used for the lookup.
+    /// - `product_id`: Internal product row ID whose options should be
+    ///   returned.
+    ///
+    /// # Errors
+    ///
+    /// Returns a database error if the lookup fails.
+    pub async fn find_by_product<'e, E>(db: E, product_id: i32) -> ModelResult<Vec<Self>>
+    where
+        E: Executor<'e, Database = Postgres>,
+    {
+        let options = sqlx::query_as::<_, Self>(
+            r"
+                SELECT * FROM product_options
+                WHERE product_id = $1
+                ORDER BY display_order NULLS LAST, id
+            ",
+        )
+        .bind(product_id)
+        .fetch_all(db)
+        .await?;
+
+        Ok(options)
+    }
+
+    /// Lists all product options.
+    ///
+    /// Options are ordered by product, display order, and ID.
+    ///
+    /// # Parameters
+    ///
+    /// - `db`: Database executor used for the lookup.
+    ///
+    /// # Errors
+    ///
+    /// Returns a database error if the lookup fails.
+    pub async fn find_all<'e, E>(db: E) -> ModelResult<Vec<Self>>
+    where
+        E: Executor<'e, Database = Postgres>,
+    {
+        let options = sqlx::query_as::<_, Self>(
+            r"
+                SELECT * FROM product_options
+                ORDER BY product_id, display_order NULLS LAST, id
+            ",
+        )
+        .fetch_all(db)
+        .await?;
+
+        Ok(options)
     }
 
     /// Loads product options from a JSON file in `src/data` and seeds them.

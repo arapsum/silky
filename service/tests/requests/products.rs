@@ -87,10 +87,6 @@ fn aggregate_body() -> serde_json::Value {
         "categoryId": 103,
         "name": "API Aggregate Product",
         "description": "Created from the aggregate API",
-        "options": [
-            { "attributeId": 201, "displayOrder": 1 },
-            { "attributeId": 202, "displayOrder": 2 }
-        ],
         "pictures": [
             {
                 "imageLink": "https://cdn.example.com/products/api-aggregate-main.png",
@@ -103,9 +99,9 @@ fn aggregate_body() -> serde_json::Value {
                 "price": "59.99",
                 "stockQuantity": 12,
                 "isDefault": true,
-                "attributeValues": [
-                    { "attributeId": 201, "attributeValueId": 203 },
-                    { "attributeId": 202, "attributeValueId": 205 }
+                "options": [
+                    { "attributeId": 201, "attributeValueId": 203, "displayOrder": 1 },
+                    { "attributeId": 202, "attributeValueId": 205, "displayOrder": 2 }
                 ],
                 "pictures": [
                     {

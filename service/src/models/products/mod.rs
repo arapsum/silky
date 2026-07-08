@@ -4,7 +4,7 @@ use sqlx::{Encode, PgPool, prelude::FromRow};
 use uuid::Uuid;
 
 use crate::{
-    models::{ModelResult, Seedable},
+    models::{ModelError, ModelResult, Seedable},
     schemas::CreateProduct,
     views::ProductCreateResponse,
 };
@@ -41,8 +41,8 @@ pub struct Product {
 impl Product {
     /// Creates a product and its optional setup records.
     ///
-    /// The base product, options, pictures, variants, and variant attribute
-    /// value links are inserted in a single transaction. If any nested insert
+    /// The base product, variant options, pictures, variants, and variant
+    /// attribute value links are inserted in a single transaction. If any nested insert
     /// fails, the whole transaction is rolled back.
     ///
     /// # Parameters
@@ -83,22 +83,16 @@ impl Product {
         .fetch_one(&mut *txn)
         .await?;
 
-        let mut options = Vec::with_capacity(params.options().len());
+        let mut options = Vec::new();
         let mut pictures = Vec::with_capacity(params.pictures().len());
         let mut variants = Vec::with_capacity(params.variants().len());
         let variant_attribute_capacity = params
             .variants()
             .iter()
-            .map(|variant| variant.attribute_values().len())
+            .map(|variant| variant.options().len())
             .sum();
         let mut variant_attribute_values = Vec::with_capacity(variant_attribute_capacity);
-
-        for option in params.options() {
-            let params =
-                NewProductOption::new(product.id(), option.attribute_id(), option.display_order());
-            let option = ProductOption::create(&mut *txn, &params).await?;
-            options.push(option);
-        }
+        let mut option_orders = Vec::<(i32, Option<i32>)>::new();
 
         for picture in params.pictures() {
             let params = NewPicture::new(
@@ -121,11 +115,32 @@ impl Product {
             );
             let created_variant = ProductVariant::create(&mut *txn, &params).await?;
 
-            for value in variant.attribute_values() {
+            for option in variant.options() {
+                if let Some((_, display_order)) = option_orders
+                    .iter()
+                    .find(|(attribute_id, _)| *attribute_id == option.attribute_id())
+                {
+                    if *display_order != option.display_order() {
+                        return Err(ModelError::InvalidInput(
+                            "Product option display order must be consistent for each attribute."
+                                .to_string(),
+                        ));
+                    }
+                } else {
+                    let params = NewProductOption::new(
+                        product.id(),
+                        option.attribute_id(),
+                        option.display_order(),
+                    );
+                    let product_option = ProductOption::create(&mut *txn, &params).await?;
+                    options.push(product_option);
+                    option_orders.push((option.attribute_id(), option.display_order()));
+                }
+
                 let params = NewVariantAttributeValue::new(
                     created_variant.id(),
-                    value.attribute_id(),
-                    value.attribute_value_id(),
+                    option.attribute_id(),
+                    option.attribute_value_id(),
                 );
                 let value = VariantAttributeValue::create(&mut *txn, &params).await?;
                 variant_attribute_values.push(value);

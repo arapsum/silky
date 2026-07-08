@@ -8,10 +8,7 @@ pub mod validator;
 pub use self::{
     auth::{ChangePassword, ForgotPassword, LoginUser, RegisterUser, ResetPassword, UpdateProfile},
     categories::{NewCategory, UpdateCategory},
-    products::{
-        CreateProduct, CreateProductOption, CreateProductPicture, CreateProductVariant,
-        CreateVariantAttributeValue,
-    },
+    products::{CreateProduct, CreateProductPicture, CreateProductVariant, CreateVariantOption},
     request::{
         CategoryListQuery, PaginationQuery, PermissionListQuery, PermissionRoleQuery, UserListQuery,
     },

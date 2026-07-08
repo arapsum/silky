@@ -6,10 +6,7 @@ use rust_decimal::Decimal;
 use serial_test::serial;
 use service::{
     models::Product,
-    schemas::{
-        CreateProduct, CreateProductOption, CreateProductPicture, CreateProductVariant,
-        CreateVariantAttributeValue,
-    },
+    schemas::{CreateProduct, CreateProductPicture, CreateProductVariant, CreateVariantOption},
 };
 
 use crate::{
@@ -56,7 +53,6 @@ fn base_product() -> ProductCreateScenario {
             Some(Cow::Borrowed("A product without setup records")),
             None,
             None,
-            None,
         ),
         "Minimal Product",
         None,
@@ -69,10 +65,6 @@ fn aggregate_product() -> ProductCreateScenario {
             103,
             Cow::Borrowed("Aggregate Product"),
             Some(Cow::Borrowed("A product with complete setup records")),
-            Some(vec![
-                CreateProductOption::new(201, Some(1)),
-                CreateProductOption::new(202, Some(2)),
-            ]),
             Some(vec![CreateProductPicture::new(
                 Cow::Borrowed("https://cdn.example.com/products/aggregate-main.png"),
                 Some(1),
@@ -83,8 +75,8 @@ fn aggregate_product() -> ProductCreateScenario {
                 12,
                 true,
                 Some(vec![
-                    CreateVariantAttributeValue::new(201, 203),
-                    CreateVariantAttributeValue::new(202, 205),
+                    CreateVariantOption::new(201, 203, Some(1)),
+                    CreateVariantOption::new(202, 205, Some(2)),
                 ]),
                 Some(vec![CreateProductPicture::new(
                     Cow::Borrowed("https://cdn.example.com/products/aggregate-black.png"),
@@ -105,7 +97,6 @@ fn duplicate_product_name() -> ProductCreateScenario {
             None,
             None,
             None,
-            None,
         ),
         "Classic Cotton T-shirt",
         None,
@@ -117,7 +108,6 @@ fn missing_category() -> ProductCreateScenario {
         CreateProduct::new(
             999,
             Cow::Borrowed("Missing Category Product"),
-            None,
             None,
             None,
             None,
@@ -134,13 +124,12 @@ fn missing_attribute_value() -> ProductCreateScenario {
             Cow::Borrowed("Rollback Attribute Product"),
             None,
             None,
-            None,
             Some(vec![CreateProductVariant::new(
                 Cow::Borrowed("ROLLBACK-ATTRIBUTE"),
                 Decimal::new(1999, 2),
                 4,
                 true,
-                Some(vec![CreateVariantAttributeValue::new(201, 999)]),
+                Some(vec![CreateVariantOption::new(201, 999, Some(1))]),
                 None,
             )]),
         ),

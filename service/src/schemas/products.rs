@@ -14,8 +14,6 @@ pub struct CreateProduct<'a> {
     #[validate(length(max = 2000, message = "Description must be under 2000 characters"))]
     description: Option<Cow<'a, str>>,
     #[validate(nested)]
-    options: Option<Vec<CreateProductOption>>,
-    #[validate(nested)]
     pictures: Option<Vec<CreateProductPicture<'a>>>,
     #[validate(nested)]
     variants: Option<Vec<CreateProductVariant<'a>>>,
@@ -27,7 +25,6 @@ impl<'a> CreateProduct<'a> {
         category_id: i32,
         name: Cow<'a, str>,
         description: Option<Cow<'a, str>>,
-        options: Option<Vec<CreateProductOption>>,
         pictures: Option<Vec<CreateProductPicture<'a>>>,
         variants: Option<Vec<CreateProductVariant<'a>>>,
     ) -> Self {
@@ -35,7 +32,6 @@ impl<'a> CreateProduct<'a> {
             category_id,
             name,
             description,
-            options,
             pictures,
             variants,
         }
@@ -57,11 +53,6 @@ impl<'a> CreateProduct<'a> {
     }
 
     #[must_use]
-    pub fn options(&self) -> &[CreateProductOption] {
-        self.options.as_deref().unwrap_or_default()
-    }
-
-    #[must_use]
     pub fn pictures(&self) -> &[CreateProductPicture<'a>] {
         self.pictures.as_deref().unwrap_or_default()
     }
@@ -69,34 +60,6 @@ impl<'a> CreateProduct<'a> {
     #[must_use]
     pub fn variants(&self) -> &[CreateProductVariant<'a>] {
         self.variants.as_deref().unwrap_or_default()
-    }
-}
-
-#[derive(Debug, Deserialize, Serialize, Clone, Validate)]
-#[serde(rename_all = "camelCase")]
-pub struct CreateProductOption {
-    #[validate(range(min = 1, message = "Attribute ID must be a positive integer"))]
-    attribute_id: i32,
-    display_order: Option<i32>,
-}
-
-impl CreateProductOption {
-    #[must_use]
-    pub const fn new(attribute_id: i32, display_order: Option<i32>) -> Self {
-        Self {
-            attribute_id,
-            display_order,
-        }
-    }
-
-    #[must_use]
-    pub const fn attribute_id(&self) -> i32 {
-        self.attribute_id
-    }
-
-    #[must_use]
-    pub const fn display_order(&self) -> Option<i32> {
-        self.display_order
     }
 }
 
@@ -139,7 +102,7 @@ pub struct CreateProductVariant<'a> {
     stock_quantity: i32,
     is_default: bool,
     #[validate(nested)]
-    attribute_values: Option<Vec<CreateVariantAttributeValue>>,
+    options: Option<Vec<CreateVariantOption>>,
     #[validate(nested)]
     pictures: Option<Vec<CreateProductPicture<'a>>>,
 }
@@ -151,7 +114,7 @@ impl<'a> CreateProductVariant<'a> {
         price: Decimal,
         stock_quantity: i32,
         is_default: bool,
-        attribute_values: Option<Vec<CreateVariantAttributeValue>>,
+        options: Option<Vec<CreateVariantOption>>,
         pictures: Option<Vec<CreateProductPicture<'a>>>,
     ) -> Self {
         Self {
@@ -159,7 +122,7 @@ impl<'a> CreateProductVariant<'a> {
             price,
             stock_quantity,
             is_default,
-            attribute_values,
+            options,
             pictures,
         }
     }
@@ -185,8 +148,8 @@ impl<'a> CreateProductVariant<'a> {
     }
 
     #[must_use]
-    pub fn attribute_values(&self) -> &[CreateVariantAttributeValue] {
-        self.attribute_values.as_deref().unwrap_or_default()
+    pub fn options(&self) -> &[CreateVariantOption] {
+        self.options.as_deref().unwrap_or_default()
     }
 
     #[must_use]
@@ -197,19 +160,25 @@ impl<'a> CreateProductVariant<'a> {
 
 #[derive(Debug, Deserialize, Serialize, Clone, Validate)]
 #[serde(rename_all = "camelCase")]
-pub struct CreateVariantAttributeValue {
+pub struct CreateVariantOption {
     #[validate(range(min = 1, message = "Attribute ID must be a positive integer"))]
     attribute_id: i32,
     #[validate(range(min = 1, message = "Attribute value ID must be a positive integer"))]
     attribute_value_id: i32,
+    display_order: Option<i32>,
 }
 
-impl CreateVariantAttributeValue {
+impl CreateVariantOption {
     #[must_use]
-    pub const fn new(attribute_id: i32, attribute_value_id: i32) -> Self {
+    pub const fn new(
+        attribute_id: i32,
+        attribute_value_id: i32,
+        display_order: Option<i32>,
+    ) -> Self {
         Self {
             attribute_id,
             attribute_value_id,
+            display_order,
         }
     }
 
@@ -221,6 +190,11 @@ impl CreateVariantAttributeValue {
     #[must_use]
     pub const fn attribute_value_id(&self) -> i32 {
         self.attribute_value_id
+    }
+
+    #[must_use]
+    pub const fn display_order(&self) -> Option<i32> {
+        self.display_order
     }
 }
 

@@ -593,7 +593,6 @@ impl Product {
     )]
     pub async fn find_detail_by_pid(db: &PgPool, pid: Uuid) -> ModelResult<ProductDetailResponse> {
         let mut txn = db.begin().await?;
-
         let product = sqlx::query_as::<_, ProductDetailHeader>(
             r"
             SELECT

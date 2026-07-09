@@ -28,9 +28,20 @@ type MessageResponse = {
   message: string;
 };
 
+type CurrentUserOptions = {
+  sessionExpiredMode?: "handle" | "throw";
+};
+
 export function getCurrentUser() {
   return apiRequest<CurrentUser>("/auth/me", {
     fallback: "Unable to load account details",
+  });
+}
+
+export function getCurrentUserForAuthGuard(options: CurrentUserOptions = {}) {
+  return apiRequest<CurrentUser>("/auth/me", {
+    fallback: "Unable to load account details",
+    sessionExpiredMode: options.sessionExpiredMode,
   });
 }
 

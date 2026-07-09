@@ -24,7 +24,11 @@ const loginSchema = z.object({
 
 type LoginValues = z.infer<typeof loginSchema>;
 
-export function LoginForm({ className, ...props }: React.ComponentProps<"form">) {
+type LoginFormProps = React.ComponentProps<"form"> & {
+  redirectTo?: string;
+};
+
+export function LoginForm({ className, redirectTo = "/", ...props }: LoginFormProps) {
   const navigate = useNavigate();
   const form = useForm<LoginValues>({
     resolver: zodResolver(loginSchema),
@@ -40,7 +44,7 @@ export function LoginForm({ className, ...props }: React.ComponentProps<"form">)
       toast.success(`Signed in successfully. Welcome back ${data.name}`, {
         id: "sign-in-success",
       });
-      await navigate({ to: "/" });
+      await navigate({ to: redirectTo });
     },
     onError: (error) => {
       toast.error(error.message, {

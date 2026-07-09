@@ -113,6 +113,20 @@ describe("apiRequest", () => {
     expect(sessionExpiredHandler).toHaveBeenCalledTimes(1);
   });
 
+  it("lets callers handle session expiry without notifying the app", async () => {
+    const sessionExpiredHandler = vi.fn();
+    setSessionExpiredHandler(sessionExpiredHandler);
+
+    fetchMock
+      .mockResolvedValueOnce(expiredSessionResponse())
+      .mockResolvedValueOnce(jsonResponse(401, { error: "Invalid token" }));
+
+    await expect(apiRequest("/users", { sessionExpiredMode: "throw" })).rejects.toThrow(
+      "Invalid token",
+    );
+    expect(sessionExpiredHandler).not.toHaveBeenCalled();
+  });
+
   it("does not notify the app when a retried request fails for another reason", async () => {
     const sessionExpiredHandler = vi.fn();
     setSessionExpiredHandler(sessionExpiredHandler);

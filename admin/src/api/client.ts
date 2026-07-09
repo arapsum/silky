@@ -36,6 +36,7 @@ export async function getErrorResponse(response: Response, fallback = "Request f
 
 type ApiRequestOptions = RequestInit & {
   fallback?: string;
+  sessionExpiredMode?: "handle" | "throw";
   skipAuthRefresh?: boolean;
 };
 
@@ -53,6 +54,7 @@ async function apiRequestInternal<T>(
     fallback = "Request failed",
     headers,
     body,
+    sessionExpiredMode = "handle",
     skipAuthRefresh = false,
     hasRetriedAfterRefresh = false,
     ...init
@@ -81,7 +83,9 @@ async function apiRequestInternal<T>(
       try {
         await getRefreshSessionPromise();
       } catch (error) {
-        await handleRefreshFailure();
+        if (sessionExpiredMode === "handle") {
+          await handleRefreshFailure();
+        }
         throw error;
       }
 
@@ -90,13 +94,16 @@ async function apiRequestInternal<T>(
           fallback,
           headers,
           body,
+          sessionExpiredMode,
           skipAuthRefresh,
           hasRetriedAfterRefresh: true,
           ...init,
         });
       } catch (error) {
         if (error instanceof Error && isRefreshableAuthError(error.message)) {
-          await handleRefreshFailure();
+          if (sessionExpiredMode === "handle") {
+            await handleRefreshFailure();
+          }
         }
 
         throw error;

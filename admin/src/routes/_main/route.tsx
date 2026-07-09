@@ -1,14 +1,29 @@
 import { useEffect } from "react";
 import { useQueryClient } from "@tanstack/react-query";
-import { createFileRoute, Outlet } from "@tanstack/react-router";
+import { createFileRoute, Outlet, redirect } from "@tanstack/react-router";
 import { toast } from "sonner";
 import { setSessionExpiredHandler } from "#/api/client.ts";
-import { currentUserQueryKey } from "#/api/account.ts";
+import { currentUserQueryKey, getCurrentUserForAuthGuard } from "#/api/account.ts";
 import { Navbar } from "#/components/navbar";
 import { AppSidebar } from "#/components/sidebar/app-sidebar";
 import { SidebarInset, SidebarProvider } from "#/components/ui/sidebar";
 
 export const Route = createFileRoute("/_main")({
+  beforeLoad: async ({ context, location }) => {
+    try {
+      await context.queryClient.ensureQueryData({
+        queryKey: currentUserQueryKey,
+        queryFn: () => getCurrentUserForAuthGuard({ sessionExpiredMode: "throw" }),
+      });
+    } catch {
+      throw redirect({
+        to: "/sign-in",
+        search: {
+          redirect: location.href,
+        },
+      });
+    }
+  },
   component: MainLayout,
 });
 

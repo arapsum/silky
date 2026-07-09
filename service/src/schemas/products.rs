@@ -1,7 +1,7 @@
 use std::borrow::Cow;
 
 use rust_decimal::Decimal;
-use serde::{Deserialize, Serialize};
+use serde::{Deserialize, Deserializer, Serialize};
 use validator::{Validate, ValidationError};
 
 #[derive(Debug, Deserialize, Serialize, Clone, Copy, PartialEq, Eq)]
@@ -114,6 +114,38 @@ pub struct CreateProduct<'a> {
     variants: Option<Vec<CreateProductVariant<'a>>>,
 }
 
+#[derive(Debug, Deserialize, Serialize, Clone, Validate)]
+#[serde(rename_all = "camelCase")]
+pub struct UpdateProduct {
+    #[validate(range(min = 1, message = "Category ID must be a positive integer"))]
+    category_id: Option<i32>,
+    #[validate(custom(function = "validate_optional_product_name"))]
+    name: Option<String>,
+    #[expect(
+        clippy::option_option,
+        reason = "PATCH needs to distinguish omitted description from explicit null"
+    )]
+    #[serde(default, deserialize_with = "deserialize_nullable_description")]
+    description: Option<Option<String>>,
+}
+
+impl UpdateProduct {
+    #[must_use]
+    pub const fn category_id(&self) -> Option<i32> {
+        self.category_id
+    }
+
+    #[must_use]
+    pub fn name(&self) -> Option<&str> {
+        self.name.as_deref()
+    }
+
+    #[must_use]
+    pub const fn description(&self) -> Option<&Option<String>> {
+        self.description.as_ref()
+    }
+}
+
 impl<'a> CreateProduct<'a> {
     #[must_use]
     pub const fn new(
@@ -166,6 +198,19 @@ pub struct CreateProductPicture<'a> {
     display_order: Option<i32>,
 }
 
+#[derive(Debug, Deserialize, Serialize, Clone, Validate)]
+#[serde(rename_all = "camelCase")]
+pub struct UpdateProductPicture {
+    display_order: Option<i32>,
+}
+
+impl UpdateProductPicture {
+    #[must_use]
+    pub const fn display_order(&self) -> Option<i32> {
+        self.display_order
+    }
+}
+
 impl<'a> CreateProductPicture<'a> {
     #[must_use]
     pub const fn new(image_link: Cow<'a, str>, display_order: Option<i32>) -> Self {
@@ -200,6 +245,34 @@ pub struct CreateProductVariant<'a> {
     options: Option<Vec<CreateVariantOption>>,
     #[validate(nested)]
     pictures: Option<Vec<CreateProductPicture<'a>>>,
+}
+
+#[derive(Debug, Deserialize, Serialize, Clone, Validate)]
+#[serde(rename_all = "camelCase", deny_unknown_fields)]
+pub struct UpdateProductVariant {
+    #[validate(custom(function = "validate_optional_sku"))]
+    sku: Option<String>,
+    #[validate(custom(function = "validate_optional_price"))]
+    price: Option<Decimal>,
+    #[validate(range(min = 0, message = "Stock quantity cannot be negative"))]
+    stock_quantity: Option<i32>,
+}
+
+impl UpdateProductVariant {
+    #[must_use]
+    pub fn sku(&self) -> Option<&str> {
+        self.sku.as_deref()
+    }
+
+    #[must_use]
+    pub const fn price(&self) -> Option<Decimal> {
+        self.price
+    }
+
+    #[must_use]
+    pub const fn stock_quantity(&self) -> Option<i32> {
+        self.stock_quantity
+    }
 }
 
 impl<'a> CreateProductVariant<'a> {
@@ -319,6 +392,23 @@ fn validate_product_name(name: &str) -> Result<(), ValidationError> {
     Ok(())
 }
 
+fn validate_optional_product_name(name: &str) -> Result<(), ValidationError> {
+    validate_product_name(name)
+}
+
+#[expect(
+    clippy::option_option,
+    reason = "PATCH needs to distinguish omitted description from explicit null"
+)]
+fn deserialize_nullable_description<'de, D>(
+    deserializer: D,
+) -> Result<Option<Option<String>>, D::Error>
+where
+    D: Deserializer<'de>,
+{
+    Option::<String>::deserialize(deserializer).map(Some)
+}
+
 fn validate_sku(sku: &str) -> Result<(), ValidationError> {
     let sku = sku.trim();
 
@@ -334,6 +424,10 @@ fn validate_sku(sku: &str) -> Result<(), ValidationError> {
     }
 
     Ok(())
+}
+
+fn validate_optional_sku(sku: &str) -> Result<(), ValidationError> {
+    validate_sku(sku)
 }
 
 fn validate_price(price: &Decimal) -> Result<(), ValidationError> {

@@ -3,7 +3,10 @@ use serde::{Deserialize, Serialize};
 use sqlx::{Encode, Executor, PgPool, Postgres, prelude::FromRow};
 use uuid::Uuid;
 
-use crate::models::{ModelResult, Seedable};
+use crate::{
+    models::{ModelError, ModelResult, Seedable},
+    schemas::UpdateProductPicture,
+};
 
 #[derive(Debug, Deserialize, Serialize, Clone)]
 pub struct NewPicture {
@@ -113,6 +116,103 @@ impl Picture {
         .await?;
 
         Ok(picture)
+    }
+
+    /// Updates a product or variant picture display order.
+    ///
+    /// # Errors
+    ///
+    /// Returns [`ModelError::EntityNotFound`] when the picture does not belong
+    /// to the active product and optional active variant. Returns a database
+    /// error if the update fails.
+    pub async fn update_order(
+        db: &PgPool,
+        product_pid: Uuid,
+        variant_pid: Option<Uuid>,
+        picture_pid: Uuid,
+        params: &UpdateProductPicture,
+    ) -> ModelResult<Self> {
+        sqlx::query_as::<_, Self>(
+            r"
+            UPDATE pictures pic
+            SET display_order = $4
+            WHERE EXISTS (
+                    SELECT 1
+                    FROM products p
+                    WHERE p.id = pic.product_id
+                        AND p.pid = $1
+                        AND p.deleted_at IS NULL
+                )
+                AND pic.pid = $3
+                AND (
+                    ($2::UUID IS NULL AND pic.variant_id IS NULL)
+                    OR EXISTS (
+                        SELECT 1
+                        FROM product_variants pv
+                        WHERE pv.id = pic.variant_id
+                            AND $2::UUID IS NOT NULL
+                            AND pv.pid = $2
+                            AND pv.product_id = pic.product_id
+                            AND pv.deleted_at IS NULL
+                    )
+                )
+            RETURNING pic.*
+        ",
+        )
+        .bind(product_pid)
+        .bind(variant_pid)
+        .bind(picture_pid)
+        .bind(params.display_order())
+        .fetch_optional(db)
+        .await?
+        .ok_or_else(|| ModelError::EntityNotFound)
+    }
+
+    /// Deletes a product or variant picture.
+    ///
+    /// # Errors
+    ///
+    /// Returns [`ModelError::EntityNotFound`] when the picture does not belong
+    /// to the active product and optional active variant. Returns a database
+    /// error if the delete fails.
+    pub async fn delete(
+        db: &PgPool,
+        product_pid: Uuid,
+        variant_pid: Option<Uuid>,
+        picture_pid: Uuid,
+    ) -> ModelResult<Self> {
+        sqlx::query_as::<_, Self>(
+            r"
+            DELETE FROM pictures pic
+            WHERE EXISTS (
+                    SELECT 1
+                    FROM products p
+                    WHERE p.id = pic.product_id
+                        AND p.pid = $1
+                        AND p.deleted_at IS NULL
+                )
+                AND pic.pid = $3
+                AND (
+                    ($2::UUID IS NULL AND pic.variant_id IS NULL)
+                    OR EXISTS (
+                        SELECT 1
+                        FROM product_variants pv
+                        WHERE pv.id = pic.variant_id
+                            AND $2::UUID IS NOT NULL
+                            AND pv.pid = $2
+                            AND pv.product_id = pic.product_id
+                            AND pv.deleted_at IS NULL
+                    )
+                )
+            RETURNING pic.*
+        ",
+        )
+        .bind(product_pid)
+        .bind(variant_pid)
+        .bind(picture_pid)
+        .fetch_optional(db)
+        .await?
+        .ok_or_else(|| ModelError::EntityNotFound)
     }
 
     /// Loads product pictures from a JSON file in `src/data` and seeds them.

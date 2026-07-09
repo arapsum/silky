@@ -4,7 +4,10 @@ use serde::{Deserialize, Serialize};
 use sqlx::{Encode, Executor, PgPool, Postgres, prelude::FromRow};
 use uuid::Uuid;
 
-use crate::models::{ModelResult, Seedable};
+use crate::{
+    models::{ModelError, ModelResult, Seedable},
+    schemas::UpdateProductVariant,
+};
 
 #[derive(Debug, Deserialize, Serialize, Clone)]
 pub struct NewVariant {
@@ -133,6 +136,159 @@ impl ProductVariant {
         .bind(params.is_default())
         .fetch_one(db)
         .await?;
+
+        Ok(variant)
+    }
+
+    /// Updates mutable variant fields.
+    ///
+    /// Only SKU, price, and stock quantity are mutable. Variant option values
+    /// are intentionally not accepted here.
+    ///
+    /// # Errors
+    ///
+    /// Returns [`ModelError::EntityNotFound`] when no active variant exists for
+    /// the supplied product and variant public IDs. Returns user-facing model
+    /// errors for uniqueness and check constraint violations.
+    pub async fn update<'e, E>(
+        db: E,
+        product_pid: Uuid,
+        variant_pid: Uuid,
+        params: &UpdateProductVariant,
+    ) -> ModelResult<Self>
+    where
+        E: Executor<'e, Database = Postgres>,
+    {
+        sqlx::query_as::<_, Self>(
+            r"
+            UPDATE product_variants pv
+            SET
+                sku = COALESCE($3, pv.sku),
+                price = COALESCE($4, pv.price),
+                stock_quantity = COALESCE($5, pv.stock_quantity)
+            FROM products p
+            WHERE p.id = pv.product_id
+                AND p.pid = $1
+                AND p.deleted_at IS NULL
+                AND pv.pid = $2
+                AND pv.deleted_at IS NULL
+            RETURNING pv.*
+        ",
+        )
+        .bind(product_pid)
+        .bind(variant_pid)
+        .bind(params.sku().map(str::trim))
+        .bind(params.price())
+        .bind(params.stock_quantity())
+        .fetch_optional(db)
+        .await?
+        .ok_or_else(|| ModelError::EntityNotFound)
+    }
+
+    /// Soft-deletes a non-default product variant.
+    ///
+    /// # Errors
+    ///
+    /// Returns [`ModelError::InvalidInput`] when attempting to delete the
+    /// current default variant. Returns [`ModelError::EntityNotFound`] when no
+    /// active variant exists for the supplied IDs.
+    pub async fn delete(db: &PgPool, product_pid: Uuid, variant_pid: Uuid) -> ModelResult<Self> {
+        let mut txn = db.begin().await?;
+        let variant = sqlx::query_as::<_, Self>(
+            r"
+            SELECT pv.*
+            FROM product_variants pv
+            INNER JOIN products p ON p.id = pv.product_id
+            WHERE p.pid = $1
+                AND p.deleted_at IS NULL
+                AND pv.pid = $2
+                AND pv.deleted_at IS NULL
+        ",
+        )
+        .bind(product_pid)
+        .bind(variant_pid)
+        .fetch_optional(&mut *txn)
+        .await?
+        .ok_or_else(|| ModelError::EntityNotFound)?;
+
+        if variant.is_default() {
+            return Err(ModelError::InvalidInput(
+                "Default variant cannot be deleted. Set another default variant first.".to_string(),
+            ));
+        }
+
+        let variant = sqlx::query_as::<_, Self>(
+            r"
+            UPDATE product_variants
+            SET deleted_at = NOW()
+            WHERE id = $1
+            RETURNING *
+        ",
+        )
+        .bind(variant.id())
+        .fetch_one(&mut *txn)
+        .await?;
+
+        txn.commit().await?;
+
+        Ok(variant)
+    }
+
+    /// Marks an active product variant as the only default variant.
+    ///
+    /// # Errors
+    ///
+    /// Returns [`ModelError::EntityNotFound`] when the product or variant does
+    /// not exist, the product is deleted, the variant is deleted, or the
+    /// variant does not belong to the product.
+    pub async fn set_default(
+        db: &PgPool,
+        product_pid: Uuid,
+        variant_pid: Uuid,
+    ) -> ModelResult<Self> {
+        let mut txn = db.begin().await?;
+        let variant = sqlx::query_as::<_, Self>(
+            r"
+            SELECT pv.*
+            FROM product_variants pv
+            INNER JOIN products p ON p.id = pv.product_id
+            WHERE p.pid = $1
+                AND p.deleted_at IS NULL
+                AND pv.pid = $2
+                AND pv.deleted_at IS NULL
+        ",
+        )
+        .bind(product_pid)
+        .bind(variant_pid)
+        .fetch_optional(&mut *txn)
+        .await?
+        .ok_or_else(|| ModelError::EntityNotFound)?;
+
+        sqlx::query(
+            r"
+            UPDATE product_variants
+            SET is_default = FALSE
+            WHERE product_id = $1
+                AND deleted_at IS NULL
+        ",
+        )
+        .bind(variant.product_id())
+        .execute(&mut *txn)
+        .await?;
+
+        let variant = sqlx::query_as::<_, Self>(
+            r"
+            UPDATE product_variants
+            SET is_default = TRUE
+            WHERE id = $1
+            RETURNING *
+        ",
+        )
+        .bind(variant.id())
+        .fetch_one(&mut *txn)
+        .await?;
+
+        txn.commit().await?;
 
         Ok(variant)
     }

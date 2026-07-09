@@ -10,7 +10,7 @@ pub use self::{
     categories::{NewCategory, UpdateCategory},
     products::{
         CreateProduct, CreateProductPicture, CreateProductVariant, CreateVariantOption,
-        ProductListQuery, StockStatus,
+        ProductListQuery, StockStatus, UpdateProduct, UpdateProductPicture, UpdateProductVariant,
     },
     request::{
         CategoryListQuery, PaginationQuery, PermissionListQuery, PermissionRoleQuery, UserListQuery,

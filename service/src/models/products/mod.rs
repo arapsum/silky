@@ -1,4 +1,4 @@
-use std::collections::HashMap;
+use std::collections::{HashMap, HashSet};
 
 use chrono::{DateTime, FixedOffset};
 use rust_decimal::Decimal;
@@ -8,8 +8,10 @@ use uuid::Uuid;
 
 use crate::{
     models::{ModelError, ModelResult, PaginatedModel, Pagination, Seedable},
-    schemas::CreateProduct,
-    schemas::ProductListQuery,
+    schemas::{
+        CreateProduct, CreateProductPicture, CreateProductVariant, CreateVariantOption,
+        ProductListQuery, UpdateProduct, UpdateProductPicture, UpdateProductVariant,
+    },
     views::{
         ProductCategorySummary, ProductCreateResponse, ProductDetailResponse, ProductListItem,
         ProductOptionResponse, ProductPictureResponse, ProductVariantDetail,
@@ -342,6 +344,264 @@ impl Product {
             variants,
             variant_attribute_values,
         ))
+    }
+
+    /// Updates mutable base product fields and returns the refreshed aggregate.
+    ///
+    /// Product options and variants are intentionally not updated by this
+    /// method.
+    ///
+    /// # Errors
+    ///
+    /// Returns [`ModelError::EntityNotFound`] when no active product exists for
+    /// `pid`. Returns user-facing model errors for invalid references,
+    /// duplicate names, and other database constraint violations.
+    pub async fn update(
+        db: &PgPool,
+        pid: Uuid,
+        params: &UpdateProduct,
+    ) -> ModelResult<ProductDetailResponse> {
+        let description_was_provided = params.description().is_some();
+        let description = params
+            .description()
+            .and_then(|description| description.as_ref().map(|value| value.trim()));
+
+        if let Some(description) = description
+            && description.len() > 2000
+        {
+            return Err(ModelError::InvalidInput(
+                "Description must be under 2000 characters".to_string(),
+            ));
+        }
+
+        sqlx::query_as::<_, Self>(
+            r"
+            UPDATE products
+            SET
+                category_id = COALESCE($2, category_id),
+                name = COALESCE($3, name),
+                description = CASE WHEN $4 THEN $5 ELSE description END
+            WHERE pid = $1
+                AND deleted_at IS NULL
+            RETURNING *
+        ",
+        )
+        .bind(pid)
+        .bind(params.category_id())
+        .bind(params.name().map(str::trim))
+        .bind(description_was_provided)
+        .bind(description)
+        .fetch_optional(db)
+        .await?
+        .ok_or_else(|| ModelError::EntityNotFound)?;
+
+        Self::find_detail_by_pid(db, pid).await
+    }
+
+    /// Creates a non-default variant for an existing product.
+    ///
+    /// The supplied variant option values must match the product's existing
+    /// option attributes exactly. Variant option values are immutable after
+    /// creation.
+    ///
+    /// # Errors
+    ///
+    /// Returns [`ModelError::EntityNotFound`] when no active product exists for
+    /// `pid`. Returns [`ModelError::InvalidInput`] when variant options do not
+    /// match the product option dimensions.
+    pub async fn create_variant(
+        db: &PgPool,
+        pid: Uuid,
+        params: &CreateProductVariant<'_>,
+    ) -> ModelResult<ProductDetailResponse> {
+        let mut txn = db.begin().await?;
+        let product = Self::find_active_for_update(&mut *txn, pid).await?;
+        Self::validate_variant_options(&mut *txn, product.id(), params.options()).await?;
+
+        let variant_params = NewVariant::new(
+            product.id(),
+            params.sku().trim().to_string(),
+            params.price(),
+            params.stock_quantity(),
+            false,
+        );
+        let variant = ProductVariant::create(&mut *txn, &variant_params).await?;
+
+        for option in params.options() {
+            let value_params = NewVariantAttributeValue::new(
+                variant.id(),
+                option.attribute_id(),
+                option.attribute_value_id(),
+            );
+            VariantAttributeValue::create(&mut *txn, &value_params).await?;
+        }
+
+        for picture in params.pictures() {
+            let picture_params = NewPicture::new(
+                product.id(),
+                picture.image_link().trim().to_string(),
+                Some(variant.id()),
+                picture.display_order(),
+            );
+            Picture::create(&mut *txn, &picture_params).await?;
+        }
+
+        txn.commit().await?;
+
+        Self::find_detail_by_pid(db, pid).await
+    }
+
+    /// Updates mutable variant fields and returns the refreshed product.
+    ///
+    /// # Errors
+    ///
+    /// Returns [`ModelError::EntityNotFound`] when the product or variant does
+    /// not exist or is deleted. Returns user-facing constraint errors for
+    /// duplicate SKU or invalid values.
+    pub async fn update_variant(
+        db: &PgPool,
+        pid: Uuid,
+        variant_pid: Uuid,
+        params: &UpdateProductVariant,
+    ) -> ModelResult<ProductDetailResponse> {
+        ProductVariant::update(db, pid, variant_pid, params).await?;
+
+        Self::find_detail_by_pid(db, pid).await
+    }
+
+    /// Soft-deletes a non-default variant and returns the refreshed product.
+    ///
+    /// # Errors
+    ///
+    /// Returns [`ModelError::InvalidInput`] if the selected variant is the
+    /// current default variant.
+    pub async fn delete_variant(
+        db: &PgPool,
+        pid: Uuid,
+        variant_pid: Uuid,
+    ) -> ModelResult<ProductDetailResponse> {
+        ProductVariant::delete(db, pid, variant_pid).await?;
+
+        Self::find_detail_by_pid(db, pid).await
+    }
+
+    /// Sets an active variant as the product default and returns the refreshed
+    /// product.
+    ///
+    /// # Errors
+    ///
+    /// Returns [`ModelError::EntityNotFound`] when the product or variant does
+    /// not exist, is deleted, or the variant does not belong to the product.
+    pub async fn set_default_variant(
+        db: &PgPool,
+        pid: Uuid,
+        variant_pid: Uuid,
+    ) -> ModelResult<ProductDetailResponse> {
+        ProductVariant::set_default(db, pid, variant_pid).await?;
+
+        Self::find_detail_by_pid(db, pid).await
+    }
+
+    /// Adds a product-level picture.
+    ///
+    /// # Errors
+    ///
+    /// Returns [`ModelError::EntityNotFound`] when no active product exists for
+    /// `pid`. Returns a database error if inserting the picture fails.
+    pub async fn add_picture(
+        db: &PgPool,
+        pid: Uuid,
+        params: &CreateProductPicture<'_>,
+    ) -> ModelResult<Picture> {
+        let product = Self::find_active_by_pid(db, pid).await?;
+        let params = NewPicture::new(
+            product.id(),
+            params.image_link().trim().to_string(),
+            None,
+            params.display_order(),
+        );
+
+        Picture::create(db, &params).await
+    }
+
+    /// Adds a variant-level picture.
+    ///
+    /// # Errors
+    ///
+    /// Returns [`ModelError::EntityNotFound`] when the product or variant does
+    /// not exist, is deleted, or the variant does not belong to the product.
+    pub async fn add_variant_picture(
+        db: &PgPool,
+        pid: Uuid,
+        variant_pid: Uuid,
+        params: &CreateProductPicture<'_>,
+    ) -> ModelResult<Picture> {
+        let (product_id, variant_row_id) =
+            Self::find_active_product_and_variant(db, pid, variant_pid).await?;
+        let params = NewPicture::new(
+            product_id,
+            params.image_link().trim().to_string(),
+            Some(variant_row_id),
+            params.display_order(),
+        );
+
+        Picture::create(db, &params).await
+    }
+
+    /// Updates product picture display order.
+    ///
+    /// # Errors
+    ///
+    /// Returns [`ModelError::EntityNotFound`] when the picture is missing or
+    /// does not belong to the active product.
+    pub async fn update_picture_order(
+        db: &PgPool,
+        pid: Uuid,
+        picture_pid: Uuid,
+        params: &UpdateProductPicture,
+    ) -> ModelResult<Picture> {
+        Picture::update_order(db, pid, None, picture_pid, params).await
+    }
+
+    /// Updates variant picture display order.
+    ///
+    /// # Errors
+    ///
+    /// Returns [`ModelError::EntityNotFound`] when the picture is missing or
+    /// does not belong to the active product and variant.
+    pub async fn update_variant_picture_order(
+        db: &PgPool,
+        pid: Uuid,
+        variant_pid: Uuid,
+        picture_pid: Uuid,
+        params: &UpdateProductPicture,
+    ) -> ModelResult<Picture> {
+        Picture::update_order(db, pid, Some(variant_pid), picture_pid, params).await
+    }
+
+    /// Deletes a product-level picture.
+    ///
+    /// # Errors
+    ///
+    /// Returns [`ModelError::EntityNotFound`] when the picture is missing or
+    /// does not belong to the active product.
+    pub async fn delete_picture(db: &PgPool, pid: Uuid, picture_pid: Uuid) -> ModelResult<Picture> {
+        Picture::delete(db, pid, None, picture_pid).await
+    }
+
+    /// Deletes a variant-level picture.
+    ///
+    /// # Errors
+    ///
+    /// Returns [`ModelError::EntityNotFound`] when the picture is missing or
+    /// does not belong to the active product and variant.
+    pub async fn delete_variant_picture(
+        db: &PgPool,
+        pid: Uuid,
+        variant_pid: Uuid,
+        picture_pid: Uuid,
+    ) -> ModelResult<Picture> {
+        Picture::delete(db, pid, Some(variant_pid), picture_pid).await
     }
 
     /// Lists products with catalogue summary data and pagination metadata.
@@ -781,6 +1041,101 @@ impl Product {
             .fetch_optional(db)
             .await?
             .ok_or_else(|| ModelError::EntityNotFound)
+    }
+
+    async fn find_active_by_pid<'e, E>(db: E, pid: Uuid) -> ModelResult<Self>
+    where
+        E: Executor<'e, Database = Postgres>,
+    {
+        sqlx::query_as::<_, Self>(
+            r"
+            SELECT *
+            FROM products
+            WHERE pid = $1
+                AND deleted_at IS NULL
+        ",
+        )
+        .bind(pid)
+        .fetch_optional(db)
+        .await?
+        .ok_or_else(|| ModelError::EntityNotFound)
+    }
+
+    async fn find_active_for_update<'e, E>(db: E, pid: Uuid) -> ModelResult<Self>
+    where
+        E: Executor<'e, Database = Postgres>,
+    {
+        sqlx::query_as::<_, Self>(
+            r"
+            SELECT *
+            FROM products
+            WHERE pid = $1
+                AND deleted_at IS NULL
+            FOR UPDATE
+        ",
+        )
+        .bind(pid)
+        .fetch_optional(db)
+        .await?
+        .ok_or_else(|| ModelError::EntityNotFound)
+    }
+
+    async fn find_active_product_and_variant(
+        db: &PgPool,
+        pid: Uuid,
+        variant_pid: Uuid,
+    ) -> ModelResult<(i32, i32)> {
+        sqlx::query_as::<_, (i32, i32)>(
+            r"
+            SELECT p.id, pv.id
+            FROM products p
+            INNER JOIN product_variants pv ON pv.product_id = p.id
+            WHERE p.pid = $1
+                AND p.deleted_at IS NULL
+                AND pv.pid = $2
+                AND pv.deleted_at IS NULL
+        ",
+        )
+        .bind(pid)
+        .bind(variant_pid)
+        .fetch_optional(db)
+        .await?
+        .ok_or_else(|| ModelError::EntityNotFound)
+    }
+
+    async fn validate_variant_options<'e, E>(
+        db: E,
+        product_id: i32,
+        options: &[CreateVariantOption],
+    ) -> ModelResult<()>
+    where
+        E: Executor<'e, Database = Postgres>,
+    {
+        let product_attributes = sqlx::query_scalar::<_, i32>(
+            r"
+            SELECT attribute_id
+            FROM product_options
+            WHERE product_id = $1
+            ORDER BY attribute_id
+        ",
+        )
+        .bind(product_id)
+        .fetch_all(db)
+        .await?;
+
+        let expected = product_attributes.into_iter().collect::<HashSet<_>>();
+        let provided = options
+            .iter()
+            .map(CreateVariantOption::attribute_id)
+            .collect::<HashSet<_>>();
+
+        if expected.len() != options.len() || expected != provided {
+            return Err(ModelError::InvalidInput(
+                "Variant options must match the product option attributes exactly.".to_string(),
+            ));
+        }
+
+        Ok(())
     }
 
     /// Soft deletes a product by public ID.

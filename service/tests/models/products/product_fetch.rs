@@ -3,7 +3,7 @@ use rstest::rstest;
 use serde_json::{Value, json};
 use serial_test::serial;
 use service::{
-    models::Product,
+    models::{ModelError, Product},
     schemas::{ProductListQuery, StockStatus},
 };
 use uuid::Uuid;
@@ -177,4 +177,27 @@ async fn cannot_find_product_detail_when_pid_does_not_exist() {
         Product::find_detail_by_pid(ctx.db(), uuid("11111111-1111-4111-8111-111111111111")).await;
 
     assert_debug_snapshot!("cannot_find_product_detail_when_pid_does_not_exist", result);
+}
+
+#[rstest]
+#[case("4532debd-67fe-4070-b36c-d5b9392b3002", true)]
+#[case("11111111-1111-4111-8111-111111111111", false)]
+#[tokio::test]
+#[serial]
+async fn can_delete_product(#[case] pid: &str, #[case] should_exist: bool) {
+    let ctx = boot_test().await.expect("Failed to boot test!");
+    seed_data(ctx.db()).await.expect("Failed to seed data");
+
+    let pid = uuid(pid);
+    let result = Product::delete(ctx.db(), pid).await;
+
+    if should_exist {
+        let product = result.expect("Product should be soft-deleted");
+        assert!(product.deleted_at().is_some());
+
+        let detail = Product::find_detail_by_pid(ctx.db(), pid).await;
+        assert!(matches!(detail, Err(ModelError::EntityNotFound)));
+    } else {
+        assert!(matches!(result, Err(ModelError::EntityNotFound)));
+    }
 }

@@ -3,7 +3,7 @@ use axum::{
     extract::State,
     http::StatusCode,
     response::{IntoResponse, Response},
-    routing::{get, post},
+    routing::{delete, get, post},
 };
 use uuid::Uuid;
 
@@ -54,6 +54,14 @@ async fn one(State(ctx): State<AppState>, AppPath(pid): AppPath<Uuid>) -> Result
 
 #[tracing::instrument(skip(ctx))]
 #[debug_handler]
+async fn remove(State(ctx): State<AppState>, AppPath(pid): AppPath<Uuid>) -> Result<Response> {
+    let product = Product::delete(ctx.db(), pid).await?;
+
+    Ok((StatusCode::NO_CONTENT, Json(product)).into_response())
+}
+
+#[tracing::instrument(skip(ctx))]
+#[debug_handler]
 async fn attributes(State(ctx): State<AppState>) -> Result<Response> {
     let attributes = Attribute::find_all_with_values(ctx.db()).await?;
 
@@ -69,6 +77,10 @@ fn protected(ctx: &AppState) -> Router {
         .route(
             "/",
             post(create).layer(RbacLayer::new(ctx.clone(), permissions::products::CREATE)),
+        )
+        .route(
+            "/{pid}",
+            delete(remove).layer(RbacLayer::new(ctx.clone(), permissions::products::DELETE)),
         )
         .with_state(ctx.clone())
 }

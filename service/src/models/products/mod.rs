@@ -783,6 +783,36 @@ impl Product {
             .ok_or_else(|| ModelError::EntityNotFound)
     }
 
+    /// Soft deletes a product by public ID.
+    ///
+    /// The row is retained and `deleted_at` is set to the current database
+    /// timestamp. Existing read queries exclude soft-deleted products unless
+    /// they explicitly opt into deleted rows.
+    ///
+    /// # Parameters
+    ///
+    /// - `db`: Database pool used to update the product row.
+    /// - `pid`: Public product ID to soft delete.
+    ///
+    /// # Errors
+    ///
+    /// Returns [`ModelError::EntityNotFound`] when no product exists for
+    /// `pid`. Returns a database error if the update fails.
+    pub async fn delete(db: &PgPool, pid: Uuid) -> ModelResult<Self> {
+        sqlx::query_as::<_, Self>(
+            r"
+            UPDATE products
+            SET deleted_at = NOW()
+            WHERE pid = $1
+            RETURNING *
+        ",
+        )
+        .bind(pid)
+        .fetch_optional(db)
+        .await?
+        .ok_or_else(|| ModelError::EntityNotFound)
+    }
+
     /// Loads products from a JSON file in `src/data` and seeds them.
     ///
     /// # Parameters

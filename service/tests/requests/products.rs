@@ -1,4 +1,4 @@
-use axum::http::HeaderValue;
+use axum::http::{HeaderValue, StatusCode};
 use axum_test::TestServer;
 use insta::{Settings, assert_debug_snapshot, with_settings};
 use rstest::rstest;
@@ -71,6 +71,11 @@ async fn assign_role(db: &sqlx::PgPool, email: &str, role: &str) {
 async fn allow_product_writes(db: &sqlx::PgPool) {
     assign_role(db, "john.doe@acme.com", "administrator").await;
     grant_permission(db, "administrator", permissions::products::CREATE.as_str()).await;
+}
+
+async fn allow_product_deletes(db: &sqlx::PgPool) {
+    assign_role(db, "john.doe@acme.com", "administrator").await;
+    grant_permission(db, "administrator", permissions::products::DELETE.as_str()).await;
 }
 
 async fn allow_product_reads(db: &sqlx::PgPool) {
@@ -416,6 +421,83 @@ async fn cannot_create_product_without_permission() {
         }, {
             assert_debug_snapshot!("cannot_create_product_without_permission", (response.status_code(), response.text()))
         })
+    })
+    .await;
+}
+
+#[rstest]
+#[case("4532debd-67fe-4070-b36c-d5b9392b3002", StatusCode::NO_CONTENT)]
+#[case("11111111-1111-4111-8111-111111111111", StatusCode::NOT_FOUND)]
+#[case("not-a-uuid", StatusCode::BAD_REQUEST)]
+#[tokio::test]
+#[serial]
+async fn can_delete_product(#[case] pid: &str, #[case] expected_status: StatusCode) {
+    crate::request(|server, ctx| async move {
+        crate::seed_data(ctx.db())
+            .await
+            .expect("Failed to seed data");
+        allow_product_deletes(ctx.db()).await;
+
+        let token = access_token(&server).await;
+        let (auth_header, auth_value) = utils::auth_header(token);
+
+        let response = server
+            .delete(&format!("/products/{pid}"))
+            .add_header(auth_header, auth_value)
+            .await;
+
+        assert_eq!(response.status_code(), expected_status);
+
+        if expected_status == StatusCode::NO_CONTENT {
+            let deleted_at =
+                sqlx::query_scalar::<_, Option<chrono::DateTime<chrono::FixedOffset>>>(
+                    "SELECT deleted_at FROM products WHERE pid = $1",
+                )
+                .bind(uuid::Uuid::parse_str(pid).expect("valid product pid"))
+                .fetch_one(ctx.db())
+                .await
+                .expect("Failed to fetch deleted product");
+
+            assert!(deleted_at.is_some());
+        }
+    })
+    .await;
+}
+
+#[tokio::test]
+#[serial]
+async fn cannot_delete_product_without_credentials() {
+    crate::request(|server, ctx| async move {
+        crate::seed_data(ctx.db())
+            .await
+            .expect("Failed to seed data");
+
+        let response = server
+            .delete("/products/4532debd-67fe-4070-b36c-d5b9392b3002")
+            .await;
+
+        assert_eq!(response.status_code(), StatusCode::UNAUTHORIZED);
+    })
+    .await;
+}
+
+#[tokio::test]
+#[serial]
+async fn cannot_delete_product_without_permission() {
+    crate::request(|server, ctx| async move {
+        crate::seed_data(ctx.db())
+            .await
+            .expect("Failed to seed data");
+
+        let token = access_token_for(&server, "jane.smith@globex.com").await;
+        let (auth_header, auth_value) = utils::auth_header(token);
+
+        let response = server
+            .delete("/products/4532debd-67fe-4070-b36c-d5b9392b3002")
+            .add_header(auth_header, auth_value)
+            .await;
+
+        assert_eq!(response.status_code(), StatusCode::FORBIDDEN);
     })
     .await;
 }

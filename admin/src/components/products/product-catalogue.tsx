@@ -11,12 +11,15 @@ import {
   MagnifyingGlassIcon,
   PackageIcon,
   PlusIcon,
+  TrashIcon,
 } from "@phosphor-icons/react";
-import { useQuery } from "@tanstack/react-query";
+import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { Link } from "@tanstack/react-router";
 import { useMemo, useState } from "react";
+import { toast } from "sonner";
 
 import {
+  deleteProduct,
   listProducts,
   productsQueryKey,
   type Pagination,
@@ -25,6 +28,17 @@ import {
 } from "#/api/products.ts";
 import { titleCase } from "#/components/catalogue/string-utils";
 import { DataTable } from "#/components/data-table";
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+  AlertDialogTrigger,
+} from "#/components/ui/alert-dialog";
 import { Button } from "#/components/ui/button";
 import { Input } from "#/components/ui/input";
 import {
@@ -61,7 +75,13 @@ function rangeLabel(pagination?: Pagination) {
   return `${start}-${end} of ${pagination.totalItems} products`;
 }
 
-function productColumns(): ColumnDef<ProductListItem>[] {
+function productColumns({
+  onDelete,
+  isDeleting,
+}: {
+  onDelete: (product: ProductListItem) => void;
+  isDeleting: boolean;
+}): ColumnDef<ProductListItem>[] {
   return [
     {
       id: "image",
@@ -153,26 +173,63 @@ function productColumns(): ColumnDef<ProductListItem>[] {
     {
       id: "actions",
       header: "",
-      cell: ({ row }) => (
-        <div className="flex justify-end">
-          <Button
-            type="button"
-            variant="outline"
-            size="icon-sm"
-            aria-label={`View ${row.original.name}`}
-            render={<Link to="/products/$pid" params={{ pid: row.original.pid }} />}
-          >
-            <EyeIcon className="size-4" />
-          </Button>
-        </div>
-      ),
+      cell: ({ row }) => {
+        const product = row.original;
+
+        return (
+          <div className="flex justify-end gap-2">
+            <Button
+              type="button"
+              variant="outline"
+              size="icon-sm"
+              aria-label={`View ${product.name}`}
+              render={<Link to="/products/$pid" params={{ pid: product.pid }} />}
+            >
+              <EyeIcon className="size-4" />
+            </Button>
+            <AlertDialog>
+              <AlertDialogTrigger
+                render={
+                  <Button
+                    type="button"
+                    variant="outline"
+                    size="icon-sm"
+                    aria-label={`Delete ${product.name}`}
+                  />
+                }
+              >
+                <TrashIcon className="size-4" />
+              </AlertDialogTrigger>
+              <AlertDialogContent>
+                <AlertDialogHeader>
+                  <AlertDialogTitle>Delete product?</AlertDialogTitle>
+                  <AlertDialogDescription>
+                    {product.name} will be removed from the active catalogue.
+                  </AlertDialogDescription>
+                </AlertDialogHeader>
+                <AlertDialogFooter>
+                  <AlertDialogCancel disabled={isDeleting}>Cancel</AlertDialogCancel>
+                  <AlertDialogAction
+                    variant="destructive"
+                    disabled={isDeleting}
+                    onClick={() => onDelete(product)}
+                  >
+                    Delete
+                  </AlertDialogAction>
+                </AlertDialogFooter>
+              </AlertDialogContent>
+            </AlertDialog>
+          </div>
+        );
+      },
       enableSorting: false,
-      size: 88,
+      size: 112,
     },
   ];
 }
 
 export default function ProductCatalogue() {
+  const queryClient = useQueryClient();
   const [search, setSearch] = useState("");
   const [stockStatus, setStockStatus] = useState<(typeof stockOptions)[number]["value"]>("all");
   const [page, setPage] = useState(1);
@@ -190,9 +247,31 @@ export default function ProductCatalogue() {
     queryFn: () => listProducts(queryParams),
   });
 
+  const deleteMutation = useMutation({
+    mutationFn: deleteProduct,
+    onSuccess: async () => {
+      await queryClient.invalidateQueries({ queryKey: productsQueryKey });
+      toast.success("Product deleted", {
+        id: "delete-product-success",
+      });
+    },
+    onError: (error) => {
+      toast.error(error.message, {
+        id: "delete-product-error",
+      });
+    },
+  });
+
   const products = productsQuery.data?.data ?? [];
   const pagination = productsQuery.data?.pagination;
-  const columns = useMemo(() => productColumns(), []);
+  const columns = useMemo(
+    () =>
+      productColumns({
+        onDelete: (product) => deleteMutation.mutate(product.pid),
+        isDeleting: deleteMutation.isPending,
+      }),
+    [deleteMutation],
+  );
   const canGoPrevious = Boolean(pagination?.hasPrev);
   const canGoNext = Boolean(pagination?.hasNext);
 

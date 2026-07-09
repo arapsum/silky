@@ -194,6 +194,13 @@ export function getProduct(pid: string) {
   });
 }
 
+export function deleteProduct(pid: string) {
+  return apiRequest<void>(`/products/${pid}`, {
+    method: "DELETE",
+    fallback: "Unable to delete product",
+  });
+}
+
 export function createProduct(input: ProductInput) {
   return apiRequest<unknown>("/products", {
     method: "POST",

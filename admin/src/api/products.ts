@@ -147,6 +147,22 @@ export type ProductInput = {
   variants: ProductVariantInput[];
 };
 
+export type ProductUpdateInput = {
+  categoryId?: number;
+  name?: string;
+  description?: string | null;
+};
+
+export type ProductVariantUpdateInput = {
+  sku?: string;
+  price?: string;
+  stockQuantity?: number;
+};
+
+export type ProductPictureUpdateInput = {
+  displayOrder?: number | null;
+};
+
 export type ProductAttribute = {
   id: number;
   pid: string;
@@ -206,6 +222,106 @@ export function createProduct(input: ProductInput) {
     method: "POST",
     body: JSON.stringify(input),
     fallback: "Unable to create product",
+  });
+}
+
+export function updateProduct(pid: string, input: ProductUpdateInput) {
+  return apiRequest<ProductDetail>(`/products/${pid}`, {
+    method: "PATCH",
+    body: JSON.stringify(input),
+    fallback: "Unable to update product",
+  });
+}
+
+export function createProductVariant(pid: string, input: ProductVariantInput) {
+  return apiRequest<ProductDetail>(`/products/${pid}/variants`, {
+    method: "POST",
+    body: JSON.stringify(input),
+    fallback: "Unable to create variant",
+  });
+}
+
+export function updateProductVariant(
+  pid: string,
+  variantPid: string,
+  input: ProductVariantUpdateInput,
+) {
+  return apiRequest<ProductDetail>(`/products/${pid}/variants/${variantPid}`, {
+    method: "PATCH",
+    body: JSON.stringify(input),
+    fallback: "Unable to update variant",
+  });
+}
+
+export function deleteProductVariant(pid: string, variantPid: string) {
+  return apiRequest<ProductDetail>(`/products/${pid}/variants/${variantPid}`, {
+    method: "DELETE",
+    fallback: "Unable to delete variant",
+  });
+}
+
+export function setDefaultProductVariant(pid: string, variantPid: string) {
+  return apiRequest<ProductDetail>(`/products/${pid}/variants/${variantPid}/default`, {
+    method: "POST",
+    fallback: "Unable to set default variant",
+  });
+}
+
+export function addProductPicture(pid: string, input: ProductPictureInput) {
+  return apiRequest<ProductPicture>(`/products/${pid}/pictures`, {
+    method: "POST",
+    body: JSON.stringify(input),
+    fallback: "Unable to add product picture",
+  });
+}
+
+export function updateProductPicture(
+  pid: string,
+  picturePid: string,
+  input: ProductPictureUpdateInput,
+) {
+  return apiRequest<ProductPicture>(`/products/${pid}/pictures/${picturePid}`, {
+    method: "PATCH",
+    body: JSON.stringify(input),
+    fallback: "Unable to update product picture",
+  });
+}
+
+export function deleteProductPicture(pid: string, picturePid: string) {
+  return apiRequest<void>(`/products/${pid}/pictures/${picturePid}`, {
+    method: "DELETE",
+    fallback: "Unable to delete product picture",
+  });
+}
+
+export function addVariantPicture(pid: string, variantPid: string, input: ProductPictureInput) {
+  return apiRequest<ProductPicture>(`/products/${pid}/variants/${variantPid}/pictures`, {
+    method: "POST",
+    body: JSON.stringify(input),
+    fallback: "Unable to add variant picture",
+  });
+}
+
+export function updateVariantPicture(
+  pid: string,
+  variantPid: string,
+  picturePid: string,
+  input: ProductPictureUpdateInput,
+) {
+  return apiRequest<ProductPicture>(
+    `/products/${pid}/variants/${variantPid}/pictures/${picturePid}`,
+    {
+      method: "PATCH",
+      body: JSON.stringify(input),
+      fallback: "Unable to update variant picture",
+    },
+  );
+}
+
+export function deleteVariantPicture(pid: string, variantPid: string, picturePid: string) {
+  return apiRequest<void>(`/products/${pid}/variants/${variantPid}/pictures/${picturePid}`, {
+    method: "DELETE",
+    fallback: "Unable to delete variant picture",
   });
 }
 

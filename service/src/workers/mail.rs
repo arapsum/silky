@@ -1,14 +1,20 @@
 use std::sync::Arc;
 
-use apalis::prelude::{Data, Error, Monitor, Storage as _, WorkerBuilder, WorkerFactoryFn};
+use apalis::prelude::{Error, Storage as _};
 use apalis_redis::{Config, ConnectionManager, RedisStorage};
 use serde::{Deserialize, Serialize};
 use uuid::Uuid;
 
-use crate::{AppContext, config::RedisConfig, mailer::AuthMailer, models::User};
+use crate::{
+    AppContext,
+    config::RedisConfig,
+    mailer::AuthMailer,
+    models::User,
+    workers::{AppWorker, Result as WorkerResult, Worker},
+};
 
 #[derive(Debug, Serialize, Deserialize)]
-struct MailJob {
+pub struct MailJob {
     user_id: Uuid,
     token: String,
 }
@@ -73,70 +79,92 @@ impl MailQueue {
     fn storage(conn: ConnectionManager, namespace: &str) -> RedisStorage<MailJob> {
         RedisStorage::new_with_config(conn, Config::default().set_namespace(namespace))
     }
+
+    pub(super) fn welcome_storage(&self) -> RedisStorage<MailJob> {
+        self.welcome.clone()
+    }
+
+    pub(super) fn forgot_password_storage(&self) -> RedisStorage<MailJob> {
+        self.forgot.clone()
+    }
 }
 
-pub(super) fn register(monitor: Monitor, ctx: Arc<AppContext>, queue: &MailQueue) -> Monitor {
-    monitor
-        .register(
-            WorkerBuilder::new("mail-welcome")
-                .data(Arc::clone(&ctx))
-                .backend(queue.welcome.clone())
-                .build_fn(handle_welcome),
-        )
-        .register(
-            WorkerBuilder::new("mail-forgot")
-                .data(ctx)
-                .backend(queue.forgot.clone())
-                .build_fn(handle_forgot_password),
-        )
+/// Sends account verification emails after registration.
+#[derive(Clone)]
+pub struct WelcomeMailWorker {
+    pub ctx: AppContext,
 }
 
-/// Handles the welcome email job by sending a welcome email to the user.
-///
-/// # Returns
-///
-/// * `Ok(())` - The email was sent successfully.
-///
-/// # Errors
-///
-/// This function will return an error if:
-/// - The `MAILER_TEMPLATES` lazy lock fails to initialize.
-/// - The `HandlebarsTemplate` fails to clone.
-/// - The user's verification token hash is `None`.
-#[tracing::instrument(skip(ctx))]
-async fn handle_welcome(job: MailJob, ctx: Data<Arc<AppContext>>) -> Result<(), Error> {
-    let user = User::find_by_pid(ctx.db(), job.user_id)
-        .await
-        .map_err(|e| Error::Failed(Arc::new(e.into())))?;
+impl AppWorker<MailJob> for WelcomeMailWorker {
+    fn build(ctx: &AppContext) -> Self {
+        Self { ctx: ctx.clone() }
+    }
 
-    AuthMailer::send_welcome(&ctx, &user, &job.token)
-        .await
-        .map_err(|e| Error::Failed(Arc::new(e.into())))?;
+    fn name(&self) -> &'static str {
+        "mail-welcome"
+    }
 
-    Ok(())
+    fn backend(&self) -> RedisStorage<MailJob> {
+        self.ctx
+            .queue()
+            .get()
+            .expect("mail queue must be initialised before registering workers")
+            .welcome_storage()
+    }
 }
 
-/// Handles the forgot password email job by sending a forgot password email to the user.
-///
-/// # Returns
-///
-/// * `Ok(())` - The email was sent successfully.
-///
-/// # Errors
-///
-/// This function will return an error if:
-/// - The `MAILER_TEMPLATES` lazy lock fails to initialize.
-/// - The `HandlebarsTemplate` fails to clone.
-/// - The user's reset token hash is `None`.
-#[tracing::instrument(skip(ctx))]
-async fn handle_forgot_password(job: MailJob, ctx: Data<Arc<AppContext>>) -> Result<(), Error> {
-    let user = User::find_by_pid(ctx.db(), job.user_id)
-        .await
-        .map_err(|e| Error::Failed(Arc::new(e.into())))?;
+impl Worker<MailJob> for WelcomeMailWorker {
+    async fn perform(&self, job: MailJob) -> WorkerResult {
+        let user = User::find_by_pid(self.ctx.db(), job.user_id)
+            .await
+            .map_err(worker_error)?;
 
-    AuthMailer::forgot_password(&ctx, &user, &job.token)
-        .await
-        .map_err(|e| Error::Failed(Arc::new(e.into())))?;
+        AuthMailer::send_welcome(&self.ctx, &user, &job.token)
+            .await
+            .map_err(worker_error)?;
 
-    Ok(())
+        Ok(())
+    }
+}
+
+/// Sends forgot-password reset emails.
+#[derive(Clone)]
+pub struct ForgotPasswordMailWorker {
+    pub ctx: AppContext,
+}
+
+impl AppWorker<MailJob> for ForgotPasswordMailWorker {
+    fn build(ctx: &AppContext) -> Self {
+        Self { ctx: ctx.clone() }
+    }
+
+    fn name(&self) -> &'static str {
+        "mail-forgot"
+    }
+
+    fn backend(&self) -> RedisStorage<MailJob> {
+        self.ctx
+            .queue()
+            .get()
+            .expect("mail queue must be initialised before registering workers")
+            .forgot_password_storage()
+    }
+}
+
+impl Worker<MailJob> for ForgotPasswordMailWorker {
+    async fn perform(&self, job: MailJob) -> WorkerResult {
+        let user = User::find_by_pid(self.ctx.db(), job.user_id)
+            .await
+            .map_err(worker_error)?;
+
+        AuthMailer::forgot_password(&self.ctx, &user, &job.token)
+            .await
+            .map_err(worker_error)?;
+
+        Ok(())
+    }
+}
+
+fn worker_error(error: impl Into<apalis::prelude::BoxDynError>) -> Error {
+    Error::Failed(Arc::new(error.into()))
 }

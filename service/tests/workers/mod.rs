@@ -6,7 +6,9 @@ use serial_test::serial;
 use service::{
     AppContext, Config,
     config::Environment,
-    workers::{MailQueue, Workers},
+    workers::{
+        AppWorker, ForgotPasswordMailWorker, MailQueue, Processor, WelcomeMailWorker, Workers,
+    },
 };
 use uuid::Uuid;
 
@@ -72,8 +74,14 @@ async fn workers_runtime_starts_and_shuts_down_cleanly() {
 
     clear_mail_queues(&config).await;
 
-    let workers = Workers::init(&config, ctx).await.unwrap();
-    let runtime = workers.start();
+    let workers = Workers::init(&config).await.unwrap();
+    ctx.set_queue(workers.mail_queue().clone());
+
+    let mut processor = Processor::new();
+    processor.register(WelcomeMailWorker::build(&ctx));
+    processor.register(ForgotPasswordMailWorker::build(&ctx));
+
+    let runtime = workers.start(processor);
 
     runtime.shutdown().await;
 

@@ -21,7 +21,7 @@ use crate::{
         Attribute, AttributeValue, Category, Permission, Picture, Product, ProductOption,
         ProductVariant, Role, RolePermission, User, UserRole, VariantAttributeValue,
     },
-    workers::Workers,
+    workers::{AppWorker, ForgotPasswordMailWorker, Processor, WelcomeMailWorker, Workers},
 };
 
 #[derive(Debug, Parser)]
@@ -105,9 +105,11 @@ impl App {
 
         let ctx = self.init(&config).await?;
 
-        let workers = Workers::init(&config, Arc::clone(&ctx)).await?;
+        let workers = Workers::init(&config).await?;
         ctx.set_queue(workers.mail_queue().clone());
-        let workers = workers.start();
+        let mut processor = Processor::new();
+        Self::connect_workers(&mut processor, &ctx);
+        let workers = workers.start(processor);
 
         let allowed_origins = config
             .cors()
@@ -196,6 +198,11 @@ impl App {
         UserRole::seed_data(db, "userRoles.json").await?;
 
         Ok(())
+    }
+
+    fn connect_workers(processor: &mut Processor, ctx: &AppContext) {
+        processor.register(WelcomeMailWorker::build(ctx));
+        processor.register(ForgotPasswordMailWorker::build(ctx));
     }
 }
 

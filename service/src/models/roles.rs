@@ -63,7 +63,7 @@ impl Role {
         {
             return Err(ModelError::EntityAlreadyExists(format!(
                 "Role {} already exists",
-                &role.name
+                role.name
             )));
         }
 
@@ -147,7 +147,7 @@ impl Role {
             {
                 return Err(ModelError::EntityAlreadyExists(format!(
                     "Role {} already exists",
-                    &role.name
+                    role.name
                 )));
             }
         }

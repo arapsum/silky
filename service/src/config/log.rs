@@ -168,7 +168,7 @@ impl Logger {
                 }
 
                 if self.crates.is_empty() {
-                    EnvFilter::try_new(format!("{}={}", env!("CARGO_PKG_NAME"), &self.level))?
+                    EnvFilter::try_new(format!("{}={}", env!("CARGO_PKG_NAME"), self.level))?
                 } else {
                     EnvFilter::try_new("")?
                 }
@@ -254,7 +254,7 @@ impl Logger {
         self.crates
             .iter()
             .map(|c| -> Result<Directive> {
-                let str_directive = format!("{}={}", c, &self.level);
+                let str_directive = format!("{}={}", c, self.level);
                 Ok(Directive::from_str(&str_directive)?)
             })
             .collect()

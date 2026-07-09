@@ -1,10 +1,16 @@
+use std::borrow::Cow;
+
 use insta::{Settings, assert_debug_snapshot, with_settings};
 use rstest::rstest;
+use rust_decimal::Decimal;
 use serde_json::{Value, json};
 use serial_test::serial;
 use service::{
     models::{ModelError, Product},
-    schemas::{ProductListQuery, StockStatus},
+    schemas::{
+        CreateProductPicture, CreateProductVariant, CreateVariantOption, ProductListQuery,
+        StockStatus, UpdateProduct, UpdateProductPicture, UpdateProductVariant,
+    },
 };
 use uuid::Uuid;
 
@@ -33,6 +39,22 @@ fn default_query() -> ProductListQuery {
 
 fn uuid(value: &str) -> Uuid {
     Uuid::parse_str(value).expect("Failed to parse UUID")
+}
+
+fn decimal(value: &str) -> Decimal {
+    value.parse().expect("Failed to parse decimal")
+}
+
+fn update_product(params: Value) -> UpdateProduct {
+    serde_json::from_value(params).expect("Failed to parse update product")
+}
+
+fn update_variant(params: Value) -> UpdateProductVariant {
+    serde_json::from_value(params).expect("Failed to parse update variant")
+}
+
+fn update_picture(params: Value) -> UpdateProductPicture {
+    serde_json::from_value(params).expect("Failed to parse update picture")
 }
 
 fn snapshot_filters() -> Vec<(&'static str, &'static str)> {
@@ -200,4 +222,207 @@ async fn can_delete_product(#[case] pid: &str, #[case] should_exist: bool) {
     } else {
         assert!(matches!(result, Err(ModelError::EntityNotFound)));
     }
+}
+
+#[tokio::test]
+#[serial]
+async fn can_update_base_product() {
+    let ctx = boot_test().await.expect("Failed to boot test!");
+    seed_data(ctx.db()).await.expect("Failed to seed data");
+
+    let product = Product::update(
+        ctx.db(),
+        uuid("6d7b16c3-efbf-4e7e-9b70-4f43e1cc3001"),
+        &update_product(json!({
+            "categoryId": 103,
+            "name": "Updated Cotton T-shirt",
+            "description": null
+        })),
+    )
+    .await
+    .expect("Failed to update product");
+
+    assert_eq!(product.name, "Updated Cotton T-shirt");
+    assert_eq!(product.category.id, 103);
+    assert!(product.description.is_none());
+}
+
+#[tokio::test]
+#[serial]
+async fn can_create_variant_with_exact_product_options() {
+    let ctx = boot_test().await.expect("Failed to boot test!");
+    seed_data(ctx.db()).await.expect("Failed to seed data");
+
+    let params = CreateProductVariant::new(
+        Cow::Borrowed("TSHIRT-GRN-S"),
+        decimal("25.99"),
+        5,
+        true,
+        Some(vec![
+            CreateVariantOption::new(201, 203, Some(1)),
+            CreateVariantOption::new(202, 204, Some(2)),
+        ]),
+        None,
+    );
+
+    let product = Product::create_variant(
+        ctx.db(),
+        uuid("6d7b16c3-efbf-4e7e-9b70-4f43e1cc3001"),
+        &params,
+    )
+    .await
+    .expect("Failed to create variant");
+
+    let variant = product
+        .variants
+        .iter()
+        .find(|variant| variant.sku == "TSHIRT-GRN-S")
+        .expect("created variant missing");
+
+    assert!(!variant.is_default);
+    assert_eq!(variant.options.len(), 2);
+}
+
+#[tokio::test]
+#[serial]
+async fn cannot_create_variant_with_missing_product_option() {
+    let ctx = boot_test().await.expect("Failed to boot test!");
+    seed_data(ctx.db()).await.expect("Failed to seed data");
+
+    let params = CreateProductVariant::new(
+        Cow::Borrowed("TSHIRT-MISSING-OPTION"),
+        decimal("25.99"),
+        5,
+        false,
+        Some(vec![CreateVariantOption::new(201, 203, Some(1))]),
+        None,
+    );
+
+    let result = Product::create_variant(
+        ctx.db(),
+        uuid("6d7b16c3-efbf-4e7e-9b70-4f43e1cc3001"),
+        &params,
+    )
+    .await;
+
+    assert!(matches!(result, Err(ModelError::InvalidInput(_))));
+}
+
+#[tokio::test]
+#[serial]
+async fn can_update_variant_without_changing_options() {
+    let ctx = boot_test().await.expect("Failed to boot test!");
+    seed_data(ctx.db()).await.expect("Failed to seed data");
+
+    let product = Product::update_variant(
+        ctx.db(),
+        uuid("6d7b16c3-efbf-4e7e-9b70-4f43e1cc3001"),
+        uuid("6bf1821a-35d9-42cc-a2d8-b42fcf4f3402"),
+        &update_variant(json!({
+            "sku": "TSHIRT-BLU-L-UPDATED",
+            "price": "29.99",
+            "stockQuantity": 8
+        })),
+    )
+    .await
+    .expect("Failed to update variant");
+
+    let variant = product
+        .variants
+        .iter()
+        .find(|variant| variant.pid == uuid("6bf1821a-35d9-42cc-a2d8-b42fcf4f3402"))
+        .expect("updated variant missing");
+
+    assert_eq!(variant.sku, "TSHIRT-BLU-L-UPDATED");
+    assert_eq!(variant.price, decimal("29.99"));
+    assert_eq!(variant.stock_quantity, 8);
+}
+
+#[tokio::test]
+#[serial]
+async fn can_set_default_variant_and_reject_deleting_default() {
+    let ctx = boot_test().await.expect("Failed to boot test!");
+    seed_data(ctx.db()).await.expect("Failed to seed data");
+
+    let product = Product::set_default_variant(
+        ctx.db(),
+        uuid("6d7b16c3-efbf-4e7e-9b70-4f43e1cc3001"),
+        uuid("6bf1821a-35d9-42cc-a2d8-b42fcf4f3402"),
+    )
+    .await
+    .expect("Failed to set default variant");
+
+    assert!(product.variants.iter().any(|variant| variant.pid
+        == uuid("6bf1821a-35d9-42cc-a2d8-b42fcf4f3402")
+        && variant.is_default));
+
+    let result = Product::delete_variant(
+        ctx.db(),
+        uuid("6d7b16c3-efbf-4e7e-9b70-4f43e1cc3001"),
+        uuid("6bf1821a-35d9-42cc-a2d8-b42fcf4f3402"),
+    )
+    .await;
+
+    assert!(matches!(result, Err(ModelError::InvalidInput(_))));
+}
+
+#[tokio::test]
+#[serial]
+async fn can_soft_delete_non_default_variant() {
+    let ctx = boot_test().await.expect("Failed to boot test!");
+    seed_data(ctx.db()).await.expect("Failed to seed data");
+
+    let product = Product::delete_variant(
+        ctx.db(),
+        uuid("6d7b16c3-efbf-4e7e-9b70-4f43e1cc3001"),
+        uuid("6bf1821a-35d9-42cc-a2d8-b42fcf4f3402"),
+    )
+    .await
+    .expect("Failed to delete variant");
+
+    assert!(
+        product
+            .variants
+            .iter()
+            .all(|variant| variant.pid != uuid("6bf1821a-35d9-42cc-a2d8-b42fcf4f3402"))
+    );
+}
+
+#[tokio::test]
+#[serial]
+async fn can_manage_product_picture() {
+    let ctx = boot_test().await.expect("Failed to boot test!");
+    seed_data(ctx.db()).await.expect("Failed to seed data");
+
+    let picture = Product::add_picture(
+        ctx.db(),
+        uuid("6d7b16c3-efbf-4e7e-9b70-4f43e1cc3001"),
+        &CreateProductPicture::new(
+            Cow::Borrowed("https://cdn.example.com/products/tshirt-main.png"),
+            Some(3),
+        ),
+    )
+    .await
+    .expect("Failed to add picture");
+
+    let updated = Product::update_picture_order(
+        ctx.db(),
+        uuid("6d7b16c3-efbf-4e7e-9b70-4f43e1cc3001"),
+        picture.pid(),
+        &update_picture(json!({ "displayOrder": 1 })),
+    )
+    .await
+    .expect("Failed to update picture");
+
+    assert_eq!(updated.display_order(), Some(1));
+
+    let deleted = Product::delete_picture(
+        ctx.db(),
+        uuid("6d7b16c3-efbf-4e7e-9b70-4f43e1cc3001"),
+        picture.pid(),
+    )
+    .await
+    .expect("Failed to delete picture");
+
+    assert_eq!(deleted.pid(), picture.pid());
 }

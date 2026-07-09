@@ -78,6 +78,11 @@ async fn allow_product_deletes(db: &sqlx::PgPool) {
     grant_permission(db, "administrator", permissions::products::DELETE.as_str()).await;
 }
 
+async fn allow_product_updates(db: &sqlx::PgPool) {
+    assign_role(db, "john.doe@acme.com", "administrator").await;
+    grant_permission(db, "administrator", permissions::products::UPDATE.as_str()).await;
+}
+
 async fn allow_product_reads(db: &sqlx::PgPool) {
     assign_role(db, "john.doe@acme.com", "administrator").await;
     grant_permission(db, "administrator", permissions::products::READ.as_str()).await;
@@ -498,6 +503,203 @@ async fn cannot_delete_product_without_permission() {
             .await;
 
         assert_eq!(response.status_code(), StatusCode::FORBIDDEN);
+    })
+    .await;
+}
+
+#[tokio::test]
+#[serial]
+async fn can_update_product_base_details() {
+    crate::request(|server, ctx| async move {
+        crate::seed_data(ctx.db())
+            .await
+            .expect("Failed to seed data");
+        allow_product_updates(ctx.db()).await;
+
+        let token = access_token(&server).await;
+        let (auth_header, auth_value) = utils::auth_header(token);
+
+        let response = server
+            .patch("/products/6d7b16c3-efbf-4e7e-9b70-4f43e1cc3001")
+            .add_header(auth_header, auth_value)
+            .json(&serde_json::json!({
+                "name": "Updated API Product",
+                "description": null
+            }))
+            .await;
+
+        assert_eq!(response.status_code(), StatusCode::OK);
+        assert!(response.text().contains("Updated API Product"));
+    })
+    .await;
+}
+
+#[tokio::test]
+#[serial]
+async fn cannot_update_product_without_permission() {
+    crate::request(|server, ctx| async move {
+        crate::seed_data(ctx.db())
+            .await
+            .expect("Failed to seed data");
+
+        let token = access_token_for(&server, "jane.smith@globex.com").await;
+        let (auth_header, auth_value) = utils::auth_header(token);
+
+        let response = server
+            .patch("/products/6d7b16c3-efbf-4e7e-9b70-4f43e1cc3001")
+            .add_header(auth_header, auth_value)
+            .json(&serde_json::json!({ "name": "Forbidden Product" }))
+            .await;
+
+        assert_eq!(response.status_code(), StatusCode::FORBIDDEN);
+    })
+    .await;
+}
+
+#[tokio::test]
+#[serial]
+async fn can_create_update_and_default_variant() {
+    crate::request(|server, ctx| async move {
+        crate::seed_data(ctx.db())
+            .await
+            .expect("Failed to seed data");
+        allow_product_updates(ctx.db()).await;
+
+        let token = access_token(&server).await;
+        let (auth_header, auth_value) = utils::auth_header(token.clone());
+
+        let create = server
+            .post("/products/6d7b16c3-efbf-4e7e-9b70-4f43e1cc3001/variants")
+            .add_header(auth_header, auth_value)
+            .json(&serde_json::json!({
+                "sku": "TSHIRT-API-GRN-S",
+                "price": "25.99",
+                "stockQuantity": 4,
+                "isDefault": true,
+                "options": [
+                    { "attributeId": 201, "attributeValueId": 203 },
+                    { "attributeId": 202, "attributeValueId": 204 }
+                ]
+            }))
+            .await;
+
+        assert_eq!(create.status_code(), StatusCode::CREATED);
+        let body: serde_json::Value =
+            serde_json::from_str(&create.text()).expect("Failed to parse product response");
+        let variant_pid = body["variants"]
+            .as_array()
+            .expect("variants should be an array")
+            .iter()
+            .find(|variant| variant["sku"] == "TSHIRT-API-GRN-S")
+            .and_then(|variant| variant["pid"].as_str())
+            .expect("created variant pid missing")
+            .to_string();
+
+        let (auth_header, auth_value) = utils::auth_header(token.clone());
+        let update = server
+            .patch(&format!(
+                "/products/6d7b16c3-efbf-4e7e-9b70-4f43e1cc3001/variants/{variant_pid}"
+            ))
+            .add_header(auth_header, auth_value)
+            .json(&serde_json::json!({
+                "sku": "TSHIRT-API-GRN-S-UPDATED",
+                "price": "26.99",
+                "stockQuantity": 3
+            }))
+            .await;
+
+        assert_eq!(update.status_code(), StatusCode::OK);
+        assert!(update.text().contains("TSHIRT-API-GRN-S-UPDATED"));
+
+        let (auth_header, auth_value) = utils::auth_header(token);
+        let set_default = server
+            .post(&format!(
+                "/products/6d7b16c3-efbf-4e7e-9b70-4f43e1cc3001/variants/{variant_pid}/default"
+            ))
+            .add_header(auth_header, auth_value)
+            .await;
+
+        assert_eq!(set_default.status_code(), StatusCode::OK);
+    })
+    .await;
+}
+
+#[tokio::test]
+#[serial]
+async fn cannot_update_variant_options() {
+    crate::request(|server, ctx| async move {
+        crate::seed_data(ctx.db())
+            .await
+            .expect("Failed to seed data");
+        allow_product_updates(ctx.db()).await;
+
+        let token = access_token(&server).await;
+        let (auth_header, auth_value) = utils::auth_header(token);
+
+        let response = server
+            .patch(
+                "/products/6d7b16c3-efbf-4e7e-9b70-4f43e1cc3001/variants/6bf1821a-35d9-42cc-a2d8-b42fcf4f3402",
+            )
+            .add_header(auth_header, auth_value)
+            .json(&serde_json::json!({
+                "options": [
+                    { "attributeId": 201, "attributeValueId": 203 }
+                ]
+            }))
+            .await;
+
+        assert_eq!(response.status_code(), StatusCode::UNPROCESSABLE_ENTITY);
+    })
+    .await;
+}
+
+#[tokio::test]
+#[serial]
+async fn can_add_update_and_delete_product_picture() {
+    crate::request(|server, ctx| async move {
+        crate::seed_data(ctx.db())
+            .await
+            .expect("Failed to seed data");
+        allow_product_updates(ctx.db()).await;
+        allow_product_deletes(ctx.db()).await;
+
+        let token = access_token(&server).await;
+        let (auth_header, auth_value) = utils::auth_header(token.clone());
+
+        let create = server
+            .post("/products/6d7b16c3-efbf-4e7e-9b70-4f43e1cc3001/pictures")
+            .add_header(auth_header, auth_value)
+            .json(&serde_json::json!({
+                "imageLink": "https://cdn.example.com/products/api-tshirt-main.png",
+                "displayOrder": 3
+            }))
+            .await;
+
+        assert_eq!(create.status_code(), StatusCode::CREATED);
+        let body: serde_json::Value =
+            serde_json::from_str(&create.text()).expect("Failed to parse picture response");
+        let picture_pid = body["pid"].as_str().expect("picture pid missing");
+
+        let (auth_header, auth_value) = utils::auth_header(token.clone());
+        let update = server
+            .patch(&format!(
+                "/products/6d7b16c3-efbf-4e7e-9b70-4f43e1cc3001/pictures/{picture_pid}"
+            ))
+            .add_header(auth_header, auth_value)
+            .json(&serde_json::json!({ "displayOrder": 1 }))
+            .await;
+
+        assert_eq!(update.status_code(), StatusCode::OK);
+
+        let (auth_header, auth_value) = utils::auth_header(token);
+        let delete = server
+            .delete(&format!(
+                "/products/6d7b16c3-efbf-4e7e-9b70-4f43e1cc3001/pictures/{picture_pid}"
+            ))
+            .add_header(auth_header, auth_value)
+            .await;
+
+        assert_eq!(delete.status_code(), StatusCode::NO_CONTENT);
     })
     .await;
 }

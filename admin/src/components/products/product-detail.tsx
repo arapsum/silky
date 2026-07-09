@@ -357,7 +357,7 @@ export default function ProductDetailPage({ pid }: { pid: string }) {
         </Button>
 
         <div className="flex flex-wrap gap-3">
-          <Button variant="outline" disabled>
+          <Button variant="outline" render={<Link to="/products/$pid/edit" params={{ pid }} />}>
             <PencilSimpleIcon className="size-4" />
             Edit Product
           </Button>

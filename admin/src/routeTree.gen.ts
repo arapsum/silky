@@ -22,6 +22,7 @@ import { Route as MainPeopleCustomersIndexRouteImport } from './routes/_main/peo
 import { Route as MainCategoriesCreateIndexRouteImport } from './routes/_main/categories/create/index'
 import { Route as MainAccessControlRolesIndexRouteImport } from './routes/_main/access-control/roles/index'
 import { Route as MainAccessControlPermissionsIndexRouteImport } from './routes/_main/access-control/permissions/index'
+import { Route as MainProductsPidEditIndexRouteImport } from './routes/_main/products/$pid/edit/index'
 
 const MainRouteRoute = MainRouteRouteImport.update({
   id: '/_main',
@@ -91,6 +92,12 @@ const MainAccessControlPermissionsIndexRoute =
     path: '/access-control/permissions/',
     getParentRoute: () => MainRouteRoute,
   } as any)
+const MainProductsPidEditIndexRoute =
+  MainProductsPidEditIndexRouteImport.update({
+    id: '/products/$pid/edit/',
+    path: '/products/$pid/edit/',
+    getParentRoute: () => MainRouteRoute,
+  } as any)
 
 export interface FileRoutesByFullPath {
   '/': typeof MainIndexRoute
@@ -105,6 +112,7 @@ export interface FileRoutesByFullPath {
   '/people/staff/': typeof MainPeopleStaffIndexRoute
   '/products/$pid/': typeof MainProductsPidIndexRoute
   '/products/create/': typeof MainProductsCreateIndexRoute
+  '/products/$pid/edit/': typeof MainProductsPidEditIndexRoute
 }
 export interface FileRoutesByTo {
   '/': typeof MainIndexRoute
@@ -119,6 +127,7 @@ export interface FileRoutesByTo {
   '/people/staff': typeof MainPeopleStaffIndexRoute
   '/products/$pid': typeof MainProductsPidIndexRoute
   '/products/create': typeof MainProductsCreateIndexRoute
+  '/products/$pid/edit': typeof MainProductsPidEditIndexRoute
 }
 export interface FileRoutesById {
   __root__: typeof rootRouteImport
@@ -135,6 +144,7 @@ export interface FileRoutesById {
   '/_main/people/staff/': typeof MainPeopleStaffIndexRoute
   '/_main/products/$pid/': typeof MainProductsPidIndexRoute
   '/_main/products/create/': typeof MainProductsCreateIndexRoute
+  '/_main/products/$pid/edit/': typeof MainProductsPidEditIndexRoute
 }
 export interface FileRouteTypes {
   fileRoutesByFullPath: FileRoutesByFullPath
@@ -151,6 +161,7 @@ export interface FileRouteTypes {
     | '/people/staff/'
     | '/products/$pid/'
     | '/products/create/'
+    | '/products/$pid/edit/'
   fileRoutesByTo: FileRoutesByTo
   to:
     | '/'
@@ -165,6 +176,7 @@ export interface FileRouteTypes {
     | '/people/staff'
     | '/products/$pid'
     | '/products/create'
+    | '/products/$pid/edit'
   id:
     | '__root__'
     | '/_main'
@@ -180,6 +192,7 @@ export interface FileRouteTypes {
     | '/_main/people/staff/'
     | '/_main/products/$pid/'
     | '/_main/products/create/'
+    | '/_main/products/$pid/edit/'
   fileRoutesById: FileRoutesById
 }
 export interface RootRouteChildren {
@@ -280,6 +293,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof MainAccessControlPermissionsIndexRouteImport
       parentRoute: typeof MainRouteRoute
     }
+    '/_main/products/$pid/edit/': {
+      id: '/_main/products/$pid/edit/'
+      path: '/products/$pid/edit'
+      fullPath: '/products/$pid/edit/'
+      preLoaderRoute: typeof MainProductsPidEditIndexRouteImport
+      parentRoute: typeof MainRouteRoute
+    }
   }
 }
 
@@ -295,6 +315,7 @@ interface MainRouteRouteChildren {
   MainPeopleStaffIndexRoute: typeof MainPeopleStaffIndexRoute
   MainProductsPidIndexRoute: typeof MainProductsPidIndexRoute
   MainProductsCreateIndexRoute: typeof MainProductsCreateIndexRoute
+  MainProductsPidEditIndexRoute: typeof MainProductsPidEditIndexRoute
 }
 
 const MainRouteRouteChildren: MainRouteRouteChildren = {
@@ -310,6 +331,7 @@ const MainRouteRouteChildren: MainRouteRouteChildren = {
   MainPeopleStaffIndexRoute: MainPeopleStaffIndexRoute,
   MainProductsPidIndexRoute: MainProductsPidIndexRoute,
   MainProductsCreateIndexRoute: MainProductsCreateIndexRoute,
+  MainProductsPidEditIndexRoute: MainProductsPidEditIndexRoute,
 }
 
 const MainRouteRouteWithChildren = MainRouteRoute._addFileChildren(

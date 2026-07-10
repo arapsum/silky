@@ -79,13 +79,14 @@ cargo run -- seed
 Seed data is read from JSON files in `src/data/`. The seed command currently
 loads users, roles, permissions, role-permission assignments, categories, product
 catalog records, product variants, attributes, pictures, and user-role
-assignments.
+assignments. After seeding, the process continues by starting the API and mail
+workers.
 
 ## Commands
 
 ```bash
 cargo run              # start the API
-cargo run -- seed      # seed development data
+cargo run -- seed      # seed development data, then start the API
 cargo test             # run tests
 cargo fmt              # format Rust code
 cargo clippy           # run lints
@@ -108,17 +109,42 @@ Routes are mounted under `/api` when the binary starts the full application.
 | `POST` | `/api/auth/change-password` | Change the authenticated user's password |
 | `GET` | `/api/auth/me` | Return the current authenticated user |
 | `PATCH` | `/api/auth/me` | Update the current user's name, email, and optional profile image URL |
-| `GET` | `/api/categories` | List categories with pagination |
+| `GET` | `/api/categories` | List and filter categories with pagination |
 | `GET` | `/api/categories/{pid}` | Return a category by public ID |
 | `POST` | `/api/categories` | Create a category; requires `categories:create` |
 | `PATCH` | `/api/categories/{pid}` | Update a category; requires `categories:update` |
 | `DELETE` | `/api/categories/{pid}` | Soft-delete a category; requires `categories:delete` |
+| `GET` | `/api/products` | List and filter products with pagination |
+| `GET` | `/api/products/{pid}` | Return product details, variants, options, and pictures |
+| `GET` | `/api/products/attributes` | List product attributes and values; requires `products:read` |
+| `POST` | `/api/products` | Create a product; requires `products:create` |
+| `PATCH` | `/api/products/{pid}` | Update product metadata; requires `products:update` |
+| `DELETE` | `/api/products/{pid}` | Soft-delete a product; requires `products:delete` |
+| `POST` | `/api/products/{pid}/variants` | Add a variant; requires `products:update` |
+| `PATCH` | `/api/products/{pid}/variants/{variant_pid}` | Update a variant; requires `products:update` |
+| `DELETE` | `/api/products/{pid}/variants/{variant_pid}` | Soft-delete a variant; requires `products:delete` |
+| `POST` | `/api/products/{pid}/variants/{variant_pid}/default` | Make a variant the default; requires `products:update` |
+| `POST` | `/api/products/{pid}/pictures` | Add a product picture; requires `products:update` |
+| `PATCH` | `/api/products/{pid}/pictures/{picture_pid}` | Update product picture order; requires `products:update` |
+| `DELETE` | `/api/products/{pid}/pictures/{picture_pid}` | Delete a product picture; requires `products:delete` |
+| `POST` | `/api/products/{pid}/variants/{variant_pid}/pictures` | Add a variant picture; requires `products:update` |
+| `PATCH` | `/api/products/{pid}/variants/{variant_pid}/pictures/{picture_pid}` | Update variant picture order; requires `products:update` |
+| `DELETE` | `/api/products/{pid}/variants/{variant_pid}/pictures/{picture_pid}` | Delete a variant picture; requires `products:delete` |
+| `GET` | `/api/users` | List users, optionally by role; requires `users:read` |
 | `GET` | `/api/roles` | List roles; requires authentication |
 | `GET` | `/api/roles/{pid}` | Return a role by public ID; requires authentication |
 | `POST` | `/api/roles` | Create a role; requires authentication |
 | `PATCH` | `/api/roles/{pid}` | Update a role; requires authentication |
+| `POST` | `/api/roles/permissions` | Assign a permission to a role; requires `roles:update` |
 | `GET` | `/api/permissions` | List permissions; accepts optional `role` query and requires authentication |
 | `GET` | `/api/permissions/{pid}` | Return a permission by public ID; requires authentication |
+
+List endpoints use camel-case query parameters. Category filters are `page`,
+`limit`, `search`, `name`, `slug`, `parentId`, `hasParent`, and
+`includeDeleted`. Product filters are `page`, `limit`, `search`, `name`,
+`categoryId`, `categorySlug`, `sku`, `minPrice`, `maxPrice`, `stockStatus`
+(`inStock` or `outOfStock`), and `includeDeleted`. Deleted records are excluded
+unless `includeDeleted=true` is supplied.
 
 Request tests mount the controller router directly, so test paths omit the
 outer `/api` prefix. For example, the service route `/api/auth/login` is tested

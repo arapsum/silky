@@ -62,30 +62,35 @@ Typed environment variables are defined in `src/env.ts`.
 
 Supported variables:
 
-- `SERVER_URL` - optional server-side API base URL
-- `VITE_SERVER_URL` - optional client/browser API base URL
-- `VITE_APP_TITLE` - optional client/browser app title
-- `VITE_CLOUDINARY_CLOUD_NAME` - optional Cloudinary cloud name for avatar uploads
-- `VITE_CLOUDINARY_UPLOAD_PRESET` - optional unsigned Cloudinary upload preset for avatar uploads
+- `VITE_SERVER_URL` - browser API base URL; defaults to
+  `http://127.0.0.1:7150/api`
+- `VITE_CLOUDINARY_CLOUD_NAME` - Cloudinary cloud name for image uploads
+- `VITE_CLOUDINARY_UPLOAD_PRESET` - unsigned Cloudinary upload preset for image
+  uploads
+- `SERVER_URL` and `VITE_APP_TITLE` - optional values declared in the typed
+  environment schema but not currently consumed by the app
 
 Client-side variables must use the `VITE_` prefix.
 
 Example `.env`:
 
 ```env
-SERVER_URL=http://127.0.0.1:7150
 VITE_SERVER_URL=http://127.0.0.1:7150/api
-VITE_APP_TITLE=Silk Admin
 VITE_CLOUDINARY_CLOUD_NAME=silk
-VITE_CLOUDINARY_UPLOAD_PRESET=admin_avatars
+VITE_CLOUDINARY_UPLOAD_PRESET=silk_uploads
 ```
+
+The Cloudinary values are optional for browsing existing data, but are needed
+to upload account avatars, category images, and product images. Uploads use the
+`silk/users`, `silk/categories`, and `silk/products` folders respectively. The
+configured preset must permit unsigned uploads to those folders.
 
 Use environment values through the shared env module:
 
 ```ts
 import { env } from "#/env";
 
-console.log(env.VITE_APP_TITLE);
+console.log(env.VITE_SERVER_URL);
 ```
 
 ## Routing
@@ -98,7 +103,10 @@ Important files:
 - `src/routes/__root.tsx` - root document, global styles, devtools, and router
   context
 - `src/routes/_auth/sign-in/index.tsx` - sign-in page
-- `src/routes/index.tsx` - dashboard shell route
+- `src/routes/_main/route.tsx` - authenticated dashboard layout and session
+  guard
+- `src/routes/_main/` - protected catalogue, people, access-control, and
+  settings routes
 - `src/routeTree.gen.ts` - generated route tree
 
 Regenerate the route tree after route changes:
@@ -112,8 +120,9 @@ pnpm generate-routes
 ## Authentication And API
 
 API helpers live in `src/api/`. `src/api/client.ts` owns the API base URL,
-shared error response shape, and reusable error parsing. `src/api/auth.ts`
-contains the sign-in request.
+credentialed requests, shared error parsing, and session refresh. Resource
+modules cover authentication, the current account, categories, products,
+users, roles, permissions, and Cloudinary uploads.
 
 The sign-in page uses `LoginForm`, React Hook Form, Zod validation,
 `@hookform/resolvers`, TanStack Query mutation state, and Sonner toasts. On a
@@ -121,7 +130,10 @@ successful sign-in it redirects to `/`.
 
 The service sets auth cookies during login. The frontend sends credentialed
 requests so the browser can accept and return those cookies; it does not create
-or overwrite service auth cookies on the client.
+or overwrite service auth cookies on the client. Protected routes verify the
+current user before rendering. If an access session expires, the API client
+coalesces concurrent refresh attempts, retries the original requests, and
+redirects to `/sign-in` if refresh fails.
 
 ## Data Fetching
 
@@ -144,17 +156,22 @@ pnpm dlx shadcn@latest add button
 Use existing component and utility conventions before introducing new styling
 patterns.
 
-## Dashboard Shell
+## Implemented Screens
 
-The home route renders the dashboard shell with:
+The authenticated dashboard shell provides a floating sidebar, navbar,
+command-search trigger, notifications, theme toggle, and account menu. Its
+API-backed screens currently include:
 
-- Floating sidebar navigation
-- Top navbar with sidebar trigger, command-search trigger, notifications, and
-  theme toggle
-- Account dropdown with logout confirmation
+- Category listing, filtering, creation, image upload, and deletion
+- Product listing, filtering, creation, detail, editing, variants, image
+  management, and deletion
+- Customer and staff user lists
+- Role creation and editing, permission assignment, and permission browsing
+- Account profile, avatar, and password settings
 
-Sidebar and navbar components live under `src/components/sidebar/` and
-`src/components/dashboard-navbar.tsx`.
+Several additional sidebar entries are roadmap placeholders and currently use
+`#` links. Sidebar and navbar components live under `src/components/sidebar/`
+and `src/components/navbar.tsx`.
 
 ## Project Layout
 

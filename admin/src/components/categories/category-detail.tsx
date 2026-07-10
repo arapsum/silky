@@ -1,6 +1,7 @@
 "use client";
 
 import type React from "react";
+import { useState } from "react";
 import {
   ArrowLeftIcon,
   CheckCircleIcon,
@@ -37,87 +38,92 @@ function dateTime(value: string | null) {
   }).format(new Date(value));
 }
 
-function Panel({
-  title,
+function OverviewField({
   icon,
-  action,
+  label,
   children,
   className,
 }: {
-  title: string;
   icon: React.ReactNode;
-  action?: React.ReactNode;
+  label: string;
   children: React.ReactNode;
   className?: string;
 }) {
   return (
-    <section className={cn("border bg-card shadow-sm", className)}>
-      <div className="flex items-center justify-between gap-3 border-b px-4 py-3.5">
-        <div className="flex items-center gap-2">
-          <span className="text-muted-foreground">{icon}</span>
-          <h2 className="text-sm font-semibold">{title}</h2>
-        </div>
-        {action}
-      </div>
-      <div className="p-4">{children}</div>
-    </section>
+    <div className={cn("min-w-0", className)}>
+      <dt className="flex items-center gap-2 text-xs font-medium text-muted-foreground">
+        {icon}
+        {label}
+      </dt>
+      <dd className="mt-1.5 break-words text-sm font-medium">{children}</dd>
+    </div>
   );
 }
 
-function Metric({
+function Metric({ icon, label, value }: { icon: React.ReactNode; label: string; value: string }) {
+  return (
+    <div className="flex min-h-24 items-center gap-3 border bg-card p-4">
+      <span className="flex size-10 shrink-0 items-center justify-center bg-primary/10 text-primary">
+        {icon}
+      </span>
+      <div className="min-w-0">
+        <p className="text-xs font-medium text-muted-foreground">{label}</p>
+        <p className="mt-1 truncate text-2xl font-semibold tracking-tight">{value}</p>
+      </div>
+    </div>
+  );
+}
+
+function SectionHeader({
   icon,
-  label,
-  value,
-  tone = "blue",
+  title,
+  action,
 }: {
   icon: React.ReactNode;
-  label: string;
-  value: string;
-  tone?: "blue" | "green" | "amber";
+  title: string;
+  action?: React.ReactNode;
 }) {
   return (
-    <div className="flex items-center gap-3 border bg-card p-4 shadow-sm">
-      <div
-        className={cn(
-          "flex size-10 items-center justify-center",
-          tone === "green" && "bg-emerald-50 text-emerald-600 dark:bg-emerald-950/40",
-          tone === "amber" && "bg-amber-50 text-amber-600 dark:bg-amber-950/40",
-          tone === "blue" && "bg-blue-50 text-blue-600 dark:bg-blue-950/40",
-        )}
-      >
-        {icon}
+    <div className="flex min-h-14 items-center justify-between gap-4 border-b px-4 py-3">
+      <div className="flex min-w-0 items-center gap-2.5">
+        <span className="text-primary">{icon}</span>
+        <h2 className="truncate text-sm font-semibold">{title}</h2>
       </div>
-      <div>
-        <p className="text-xs text-muted-foreground">{label}</p>
-        <p className="mt-0.5 text-xl font-bold tracking-tight">{value}</p>
-      </div>
+      {action}
     </div>
   );
 }
 
 function CategoryDetailSkeleton() {
   return (
-    <div className="grid gap-6 pb-10">
-      <div className="flex items-center justify-between">
-        <Skeleton className="h-9 w-56" />
-        <Skeleton className="h-9 w-36" />
+    <div className="grid gap-5 pb-10">
+      <div className="flex items-center justify-between gap-4">
+        <Skeleton className="h-9 w-56 rounded-none" />
+        <Skeleton className="h-9 w-56 rounded-none" />
       </div>
-      <Skeleton className="h-64" />
-      <div className="grid gap-4 lg:grid-cols-4">
-        <Skeleton className="h-24" />
-        <Skeleton className="h-24" />
-        <Skeleton className="h-24" />
-        <Skeleton className="h-24" />
+      <div className="grid border lg:grid-cols-[minmax(18rem,.72fr)_minmax(0,1.28fr)]">
+        <Skeleton className="aspect-[4/3] w-full rounded-none lg:aspect-auto" />
+        <div className="grid gap-5 p-5 sm:grid-cols-2">
+          {Array.from({ length: 6 }).map((_, index) => (
+            <Skeleton key={index} className="h-12 rounded-none" />
+          ))}
+        </div>
       </div>
-      <div className="grid gap-5 lg:grid-cols-[1.25fr,.75fr]">
-        <Skeleton className="h-80" />
-        <Skeleton className="h-80" />
+      <div className="grid gap-3 sm:grid-cols-2 xl:grid-cols-4">
+        {Array.from({ length: 4 }).map((_, index) => (
+          <Skeleton key={index} className="h-24 rounded-none" />
+        ))}
+      </div>
+      <div className="grid gap-5 xl:grid-cols-[minmax(0,1.35fr)_minmax(20rem,.65fr)]">
+        <Skeleton className="h-80 rounded-none" />
+        <Skeleton className="h-80 rounded-none" />
       </div>
     </div>
   );
 }
 
 export default function CategoryDetailPage({ pid }: { pid: string }) {
+  const [failedImage, setFailedImage] = useState<string>();
   const categoryQuery = useQuery({
     queryKey: ["category-detail", pid],
     queryFn: () => getCategoryDetail(pid),
@@ -141,12 +147,17 @@ export default function CategoryDetailPage({ pid }: { pid: string }) {
       <EmptyState
         title="Category not found"
         description="The requested category no longer exists or is unavailable."
-        action={<Button render={<Link to="/categories" />}>Back to Categories</Button>}
+        action={
+          <Button className="rounded-none" render={<Link to="/categories" />}>
+            Back to Categories
+          </Button>
+        }
       />
     );
   }
 
   const category = detail.category;
+  const hasImage = Boolean(category.imageLink && failedImage !== category.imageLink);
 
   return (
     <div className="w-full pb-10">
@@ -154,18 +165,21 @@ export default function CategoryDetailPage({ pid }: { pid: string }) {
         title={
           <>
             <span>{titleCase(category.name)}</span>
-            <Badge className="h-6 bg-emerald-50 px-2 text-xs text-emerald-700 dark:bg-emerald-950/40 dark:text-emerald-300">
+            <Badge
+              variant="outline"
+              className="h-6 border-primary/25 bg-primary/10 px-2 text-xs text-primary"
+            >
               <CheckCircleIcon weight="fill" /> Active
             </Badge>
           </>
         }
         actions={
           <>
-            <Button variant="outline" render={<Link to="/categories" />}>
+            <Button className="rounded-none" variant="outline" render={<Link to="/categories" />}>
               <ArrowLeftIcon className="size-4" />
               Back
             </Button>
-            <Button render={<Link to="/categories/create" />}>
+            <Button className="rounded-none" render={<Link to="/categories/create" />}>
               <PlusIcon className="size-4" />
               Add category
             </Button>
@@ -173,75 +187,78 @@ export default function CategoryDetailPage({ pid }: { pid: string }) {
         }
       />
 
-      <section className="border bg-card p-4 shadow-sm sm:p-5">
-        <div className="grid gap-6 lg:grid-cols-[minmax(14rem,.62fr)_minmax(0,1.38fr)]">
-          <div className="flex aspect-[4/3] items-center justify-center overflow-hidden bg-muted/50">
-            {category.imageLink ? (
+      <section className="border bg-card">
+        <div
+          className={cn(
+            "grid",
+            hasImage
+              ? "lg:grid-cols-[minmax(18rem,.72fr)_minmax(0,1.28fr)]"
+              : "lg:grid-cols-[9rem_minmax(0,1fr)]",
+          )}
+        >
+          <div
+            className={cn(
+              "flex items-center justify-center border-b bg-muted/40 lg:border-r lg:border-b-0",
+              hasImage ? "aspect-[4/3] lg:aspect-auto" : "min-h-28 lg:min-h-full",
+            )}
+          >
+            {hasImage ? (
               <img
                 src={category.imageLink}
                 alt={category.name}
                 className="size-full object-cover"
+                onError={() => setFailedImage(category.imageLink)}
               />
             ) : (
-              <PackageIcon className="size-12 text-muted-foreground" />
+              <div className="flex flex-col items-center gap-2 text-muted-foreground">
+                <PackageIcon className="size-7" />
+                <span className="text-xs">No image</span>
+              </div>
             )}
           </div>
-          <dl className="grid content-center gap-x-10 gap-y-5 sm:grid-cols-2">
-            <div>
-              <dt className="flex items-center gap-2 text-xs text-muted-foreground">
-                <TagIcon className="size-4" /> Name
-              </dt>
-              <dd className="mt-1 text-sm font-medium">{titleCase(category.name)}</dd>
-            </div>
-            <div>
-              <dt className="flex items-center gap-2 text-xs text-muted-foreground">
-                <CheckCircleIcon className="size-4" /> Status
-              </dt>
-              <dd className="mt-1">
-                <Badge className="h-5 bg-emerald-50 px-1.5 text-[11px] text-emerald-700">
+
+          <div className="flex min-w-0 flex-col p-5 sm:p-6">
+            <dl className="grid gap-x-10 gap-y-6 sm:grid-cols-2 xl:grid-cols-3">
+              <OverviewField icon={<TagIcon className="size-4" />} label="Name">
+                {titleCase(category.name)}
+              </OverviewField>
+              <OverviewField icon={<CheckCircleIcon className="size-4" />} label="Status">
+                <Badge
+                  variant="outline"
+                  className="h-5 border-primary/25 bg-primary/10 px-1.5 text-[11px] text-primary"
+                >
                   Active
                 </Badge>
-              </dd>
-            </div>
-            <div>
-              <dt className="flex items-center gap-2 text-xs text-muted-foreground">
-                <TagIcon className="size-4" /> Slug
-              </dt>
-              <dd className="mt-1 font-mono text-xs">{category.slug}</dd>
-            </div>
-            <div>
-              <dt className="flex items-center gap-2 text-xs text-muted-foreground">
-                <StackIcon className="size-4" /> Child categories
-              </dt>
-              <dd className="mt-1 text-sm font-medium">{number(detail.children.length)}</dd>
-            </div>
-            <div>
-              <dt className="flex items-center gap-2 text-xs text-muted-foreground">
-                <CubeIcon className="size-4" /> Parent category
-              </dt>
-              <dd className="mt-1 text-sm font-medium">
+              </OverviewField>
+              <OverviewField icon={<TagIcon className="size-4" />} label="Slug">
+                <span className="font-mono text-xs">{category.slug}</span>
+              </OverviewField>
+              <OverviewField icon={<StackIcon className="size-4" />} label="Child categories">
+                {number(detail.children.length)}
+              </OverviewField>
+              <OverviewField icon={<CubeIcon className="size-4" />} label="Parent category">
                 {category.parentName ? titleCase(category.parentName) : "Top level"}
-              </dd>
+              </OverviewField>
+              <OverviewField
+                icon={<ImagesIcon className="size-4" />}
+                label="Description"
+                className="sm:col-span-2 xl:col-span-1"
+              >
+                <span className="font-normal leading-6 text-muted-foreground">
+                  {category.description || "No description"}
+                </span>
+              </OverviewField>
+            </dl>
+
+            <div className="mt-6 flex flex-wrap gap-x-6 gap-y-2 border-t pt-4 text-xs text-muted-foreground">
+              <span>Created {dateTime(category.createdAt)}</span>
+              <span>Updated {dateTime(category.updatedAt)}</span>
             </div>
-            <div>
-              <dt className="flex items-center gap-2 text-xs text-muted-foreground">
-                <ImagesIcon className="size-4" /> Description
-              </dt>
-              <dd className="mt-1 text-xs leading-5 text-muted-foreground">
-                {category.description || "No description"}
-              </dd>
-            </div>
-            <div className="text-xs text-muted-foreground">
-              Created <span className="ml-1 text-foreground">{dateTime(category.createdAt)}</span>
-            </div>
-            <div className="text-xs text-muted-foreground">
-              Updated <span className="ml-1 text-foreground">{dateTime(category.updatedAt)}</span>
-            </div>
-          </dl>
+          </div>
         </div>
       </section>
 
-      <div className="mt-5 grid gap-4 lg:grid-cols-4">
+      <div className="mt-3 grid gap-3 sm:grid-cols-2 xl:grid-cols-4">
         <Metric
           icon={<PackageIcon className="size-5" />}
           label="Total products"
@@ -251,13 +268,11 @@ export default function CategoryDetailPage({ pid }: { pid: string }) {
           icon={<CheckCircleIcon className="size-5" />}
           label="Active products"
           value={number(category.productCount ?? 0)}
-          tone="green"
         />
         <Metric
           icon={<StackIcon className="size-5" />}
           label="Total variants"
           value={number(detail.totalVariants)}
-          tone="amber"
         />
         <Metric
           icon={<CubeIcon className="size-5" />}
@@ -266,127 +281,153 @@ export default function CategoryDetailPage({ pid }: { pid: string }) {
         />
       </div>
 
-      <div className="mt-5 grid gap-5 lg:grid-cols-[1.25fr,.75fr]">
-        <Panel
-          title={`Child categories (${detail.children.length})`}
-          icon={<StackIcon className="size-4" />}
-          action={
-            <Button size="xs" variant="outline">
-              <PlusIcon /> Add subcategory
-            </Button>
-          }
-        >
-          {detail.children.length ? (
-            <div className="divide-y">
-              {detail.children.map((child) => (
-                <Link
-                  key={child.pid}
-                  to="/categories/$pid"
-                  params={{ pid: child.pid }}
-                  className="flex items-center gap-3 py-3 first:pt-0 last:pb-0 hover:bg-muted/20"
-                >
-                  <div className="size-10 shrink-0 overflow-hidden bg-muted">
-                    {child.imageLink ? (
-                      <img src={child.imageLink} alt="" className="size-full object-cover" />
-                    ) : (
-                      <PackageIcon className="m-2.5 size-5 text-muted-foreground" />
-                    )}
-                  </div>
-                  <div className="min-w-0 flex-1">
-                    <p className="truncate text-sm font-medium">{titleCase(child.name)}</p>
-                    <p className="truncate font-mono text-[11px] text-muted-foreground">
-                      /{child.slug}
-                    </p>
-                  </div>
-                  <span className="text-xs text-muted-foreground">
-                    {number(child.productCount)} products
-                  </span>
-                  <Badge className="h-5 bg-emerald-50 px-1.5 text-[11px] text-emerald-700">
-                    Active
-                  </Badge>
-                </Link>
-              ))}
-            </div>
-          ) : (
-            <p className="text-sm text-muted-foreground">No child categories.</p>
-          )}
-        </Panel>
-
-        <Panel title="Top products in this category" icon={<PackageIcon className="size-4" />}>
+      <div className="mt-5 grid items-start gap-5 xl:grid-cols-[minmax(0,1.35fr)_minmax(20rem,.65fr)]">
+        <section className="border bg-card">
+          <SectionHeader
+            title="Top products in this category"
+            icon={<PackageIcon className="size-4" />}
+          />
           {detail.topProducts.length ? (
-            <div className="divide-y">
+            <div className="divide-y px-4">
               {detail.topProducts.map((product) => (
                 <Link
                   key={product.pid}
                   to="/products/$pid"
                   params={{ pid: product.pid }}
-                  className="flex items-center gap-3 py-3 first:pt-0 last:pb-0"
+                  className="grid grid-cols-[2.75rem_minmax(0,1fr)_auto] items-center gap-3 py-3.5 transition-colors hover:bg-muted/30"
                 >
-                  <div className="size-10 shrink-0 overflow-hidden bg-muted">
+                  <div className="flex size-11 items-center justify-center overflow-hidden bg-muted">
                     {product.imageLink ? (
                       <img src={product.imageLink} alt="" className="size-full object-cover" />
                     ) : (
-                      <PackageIcon className="m-2.5 size-5 text-muted-foreground" />
+                      <PackageIcon className="size-4 text-muted-foreground" />
                     )}
                   </div>
-                  <div className="min-w-0 flex-1">
+                  <div className="min-w-0">
                     <p className="truncate text-sm font-medium">{product.name}</p>
-                    <p className="font-mono text-[11px] text-muted-foreground">
+                    <p className="mt-1 truncate font-mono text-[11px] text-muted-foreground">
                       SKU: {product.sku || "Not set"}
                     </p>
                   </div>
-                  <span className="text-right text-xs text-muted-foreground">
-                    {number(product.stockQuantity)}
-                    <br />
-                    units
-                  </span>
+                  <div className="min-w-16 text-right">
+                    <p className="text-sm font-semibold">{number(product.stockQuantity)}</p>
+                    <p className="text-[11px] text-muted-foreground">units</p>
+                  </div>
                 </Link>
               ))}
             </div>
           ) : (
-            <p className="text-sm text-muted-foreground">No products in this category.</p>
+            <div className="flex min-h-56 flex-col items-center justify-center px-6 text-center">
+              <span className="flex size-10 items-center justify-center bg-primary/10 text-primary">
+                <PackageIcon className="size-5" />
+              </span>
+              <p className="mt-3 text-sm text-muted-foreground">No products in this category.</p>
+            </div>
           )}
-        </Panel>
-      </div>
+        </section>
 
-      <div className="mt-5 grid gap-5 lg:grid-cols-2">
-        <Panel title="Category attributes" icon={<TagIcon className="size-4" />}>
-          {detail.attributes.length ? (
-            <div className="divide-y">
-              {detail.attributes.map((attribute) => (
-                <div
-                  key={attribute.pid}
-                  className="grid grid-cols-[minmax(0,.8fr)_minmax(0,1.2fr)] gap-4 py-3 first:pt-0 last:pb-0"
+        <section className="border bg-card">
+          <SectionHeader
+            title={`Child categories (${detail.children.length})`}
+            icon={<StackIcon className="size-4" />}
+            action={
+              <Button className="rounded-none" size="xs" variant="outline" disabled>
+                <PlusIcon /> Add subcategory
+              </Button>
+            }
+          />
+          {detail.children.length ? (
+            <div className="divide-y px-4">
+              {detail.children.map((child) => (
+                <Link
+                  key={child.pid}
+                  to="/categories/$pid"
+                  params={{ pid: child.pid }}
+                  className="grid grid-cols-[2.5rem_minmax(0,1fr)_auto] items-center gap-3 py-3.5 transition-colors hover:bg-muted/30"
                 >
-                  <span className="text-sm font-medium">{titleCase(attribute.name)}</span>
-                  <span className="text-sm text-muted-foreground">
-                    {attribute.description || "No description"}
-                  </span>
-                </div>
+                  <div className="flex size-10 items-center justify-center overflow-hidden bg-muted">
+                    {child.imageLink ? (
+                      <img src={child.imageLink} alt="" className="size-full object-cover" />
+                    ) : (
+                      <PackageIcon className="size-4 text-muted-foreground" />
+                    )}
+                  </div>
+                  <div className="min-w-0">
+                    <p className="truncate text-sm font-medium">{titleCase(child.name)}</p>
+                    <p className="mt-1 truncate font-mono text-[11px] text-muted-foreground">
+                      /{child.slug}
+                    </p>
+                  </div>
+                  <div className="text-right">
+                    <p className="text-xs text-muted-foreground">
+                      {number(child.productCount)} products
+                    </p>
+                    <Badge
+                      variant="outline"
+                      className="mt-1 h-5 border-primary/25 bg-primary/10 px-1.5 text-[11px] text-primary"
+                    >
+                      Active
+                    </Badge>
+                  </div>
+                </Link>
               ))}
             </div>
           ) : (
-            <p className="text-sm text-muted-foreground">No attributes linked to this category.</p>
+            <div className="flex min-h-56 flex-col items-center justify-center px-6 text-center">
+              <span className="flex size-10 items-center justify-center bg-primary/10 text-primary">
+                <StackIcon className="size-5" />
+              </span>
+              <p className="mt-3 text-sm text-muted-foreground">No child categories.</p>
+            </div>
           )}
-        </Panel>
-        <Panel title="Catalogue metadata" icon={<ImagesIcon className="size-4" />}>
-          <dl className="grid gap-4 sm:grid-cols-2">
-            <div>
-              <dt className="text-xs text-muted-foreground">Category path</dt>
-              <dd className="mt-1 text-sm font-medium">
-                {category.parentName ? `${titleCase(category.parentName)} > ` : ""}
-                {titleCase(category.name)}
-              </dd>
-            </div>
-            <div>
-              <dt className="text-xs text-muted-foreground">Media</dt>
-              <dd className="mt-1 text-sm font-medium">
-                {category.imageLink ? "1 image" : "No image"}
-              </dd>
-            </div>
-          </dl>
-        </Panel>
+        </section>
       </div>
+
+      <section className="mt-5 border bg-card">
+        <div className="grid lg:grid-cols-[minmax(0,1.35fr)_minmax(17rem,.65fr)]">
+          <div>
+            <SectionHeader title="Category attributes" icon={<TagIcon className="size-4" />} />
+            {detail.attributes.length ? (
+              <div className="grid gap-x-10 px-5 py-2 sm:grid-cols-2">
+                {detail.attributes.map((attribute) => (
+                  <div key={attribute.pid} className="border-b py-4 last:border-b-0">
+                    <p className="text-sm font-medium">{titleCase(attribute.name)}</p>
+                    <p className="mt-1.5 text-sm leading-5 text-muted-foreground">
+                      {attribute.description || "No description"}
+                    </p>
+                  </div>
+                ))}
+              </div>
+            ) : (
+              <div className="flex min-h-40 items-center gap-3 px-5 py-6">
+                <span className="flex size-10 shrink-0 items-center justify-center bg-primary/10 text-primary">
+                  <TagIcon className="size-5" />
+                </span>
+                <p className="text-sm text-muted-foreground">
+                  No attributes linked to this category.
+                </p>
+              </div>
+            )}
+          </div>
+
+          <aside className="border-t bg-muted/20 lg:border-t-0 lg:border-l">
+            <SectionHeader title="Catalogue metadata" icon={<ImagesIcon className="size-4" />} />
+            <dl className="grid gap-6 p-5">
+              <div>
+                <dt className="text-xs font-medium text-muted-foreground">Category path</dt>
+                <dd className="mt-1.5 text-sm font-medium">
+                  {category.parentName ? `${titleCase(category.parentName)} > ` : ""}
+                  {titleCase(category.name)}
+                </dd>
+              </div>
+              <div>
+                <dt className="text-xs font-medium text-muted-foreground">Media</dt>
+                <dd className="mt-1.5 text-sm font-medium">{hasImage ? "1 image" : "No image"}</dd>
+              </div>
+            </dl>
+          </aside>
+        </div>
+      </section>
     </div>
   );
 }

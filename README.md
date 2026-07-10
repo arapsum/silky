@@ -138,8 +138,9 @@ pnpm generate-routes   # regenerate TanStack Router route tree
 The admin app supports these environment variables:
 
 - `VITE_SERVER_URL` - optional browser API base URL
-- `VITE_CLOUDINARY_CLOUD_NAME` - Cloudinary cloud name for image uploads
-- `VITE_CLOUDINARY_UPLOAD_PRESET` - unsigned Cloudinary upload preset
+- `VITE_CLOUDINARY_*` variables are no longer required. The service signs
+  Cloudinary uploads server-side using `APP_CLOUDINARY_CLOUD_NAME`,
+  `APP_CLOUDINARY_API_KEY`, and `APP_CLOUDINARY_API_SECRET`.
 - `SERVER_URL` and `VITE_APP_TITLE` - optional typed values that are not
   currently consumed by the app
 

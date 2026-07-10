@@ -64,9 +64,9 @@ Supported variables:
 
 - `VITE_SERVER_URL` - browser API base URL; defaults to
   `http://127.0.0.1:7150/api`
-- `VITE_CLOUDINARY_CLOUD_NAME` - Cloudinary cloud name for image uploads
-- `VITE_CLOUDINARY_UPLOAD_PRESET` - unsigned Cloudinary upload preset for image
-  uploads
+- Cloudinary credentials are not exposed to the browser. Configure the service
+  with `APP_CLOUDINARY_CLOUD_NAME`, `APP_CLOUDINARY_API_KEY`, and
+  `APP_CLOUDINARY_API_SECRET`.
 - `SERVER_URL` and `VITE_APP_TITLE` - optional values declared in the typed
   environment schema but not currently consumed by the app
 
@@ -76,14 +76,12 @@ Example `.env`:
 
 ```env
 VITE_SERVER_URL=http://127.0.0.1:7150/api
-VITE_CLOUDINARY_CLOUD_NAME=silk
-VITE_CLOUDINARY_UPLOAD_PRESET=silk_uploads
 ```
 
-The Cloudinary values are optional for browsing existing data, but are needed
-to upload account avatars, category images, and product images. Uploads use the
-`silk/users`, `silk/categories`, and `silk/products` folders respectively. The
-configured preset must permit unsigned uploads to those folders.
+The service signs uploads into the `silk/users`, `silk/categories`, and
+`silk/products` folders respectively. Uploaded files are registered in the
+service's `media_assets` table before they are linked to a user, category, or
+product picture.
 
 Use environment values through the shared env module:
 

@@ -181,8 +181,15 @@ Profile endpoints:
   field is optional and must be a valid URL when provided. Omitting it preserves
   the user's existing profile image.
 
-The service stores only the profile image URL. Uploading image files to a media
-provider is handled by clients before they call `PATCH /api/auth/me`.
+Media uploads use a server-signed Cloudinary flow. Configure
+`APP_CLOUDINARY_CLOUD_NAME`, `APP_CLOUDINARY_API_KEY`, and
+`APP_CLOUDINARY_API_SECRET` in the service environment. Clients request a
+signature from `POST /api/media/sign`, upload directly to Cloudinary, then
+finalize the asset with `PUT /api/media/:pid/finalize`. The resulting asset PID
+can be supplied as `mediaAssetPid` when updating a profile, category, or
+product picture. The `media_assets` table is the registry and supports future
+reference reconciliation and quarantine cleanup without deleting files that
+are still linked.
 
 ## Testing
 

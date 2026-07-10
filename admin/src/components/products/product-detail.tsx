@@ -29,6 +29,7 @@ import {
 import { titleCase } from "#/components/catalogue/string-utils";
 import { EmptyState } from "#/components/empty-state";
 import { ErrorState } from "#/components/error-state";
+import { PageHeader } from "#/components/page-header";
 import { Badge } from "#/components/ui/badge";
 import { Button } from "#/components/ui/button";
 import { Skeleton } from "#/components/ui/skeleton";
@@ -199,25 +200,16 @@ function ProductHero({ product }: { product: ProductDetail }) {
 
   return (
     <section className="overflow-hidden border bg-gradient-to-br from-card via-card to-muted/50 p-4 shadow-sm sm:p-6 lg:p-8">
-      <div className="grid gap-8 lg:grid-cols-[minmax(20rem,0.9fr)_minmax(0,1.1fr)] lg:items-center">
+      <div className="grid gap-10 lg:grid-cols-[minmax(20rem,0.9fr)_minmax(0,1.1fr)] lg:items-start">
         <ProductGallery key={product.pid} product={product} pictures={images} />
 
-        <div className="min-w-0 lg:py-4">
-          <div className="flex flex-wrap items-center gap-2 text-sm font-medium text-primary">
+        <div className="min-w-0">
+          <div className="flex items-center gap-2 text-sm font-medium text-primary">
             <TagIcon className="size-4" weight="fill" />
             <span>{titleCase(product.category.name)}</span>
-            <span className="text-muted-foreground">/</span>
-            <span className="text-muted-foreground">{product.category.slug}</span>
           </div>
 
-          <h1 className="mt-4 max-w-3xl text-3xl font-bold tracking-tight text-balance sm:text-4xl">
-            {product.name}
-          </h1>
-          <p className="mt-4 max-w-2xl text-sm leading-6 text-muted-foreground sm:text-base">
-            {product.description || "No description has been added for this product."}
-          </p>
-
-          <div className="mt-6 flex flex-wrap gap-2">
+          <div className="mt-5 flex flex-wrap gap-2">
             <Badge
               variant="outline"
               className={cn(
@@ -241,7 +233,7 @@ function ProductHero({ product }: { product: ProductDetail }) {
             )}
           </div>
 
-          <div className="mt-8 grid gap-3 sm:grid-cols-3">
+          <div className="mt-10 grid gap-3 sm:grid-cols-3">
             <Metric
               icon={<TagIcon className="size-4" weight="bold" />}
               label="Default price"
@@ -262,13 +254,13 @@ function ProductHero({ product }: { product: ProductDetail }) {
             />
           </div>
 
-          <dl className="mt-6 grid grid-cols-2 gap-x-6 gap-y-5 border-t pt-6 sm:grid-cols-3">
+          <dl className="mt-8 grid grid-cols-2 gap-x-6 gap-y-5 border-t pt-7 sm:grid-cols-3">
             <Field label="Category" value={titleCase(product.category.name)} />
             <Field label="Category slug" value={product.category.slug} />
             <Field label="Media" value={`${number(images.length)} images`} />
           </dl>
 
-          <dl className="mt-5 flex flex-wrap gap-x-5 gap-y-2 border-t pt-4 text-xs text-muted-foreground">
+          <dl className="mt-6 flex flex-wrap gap-x-5 gap-y-2 border-t pt-5 text-xs text-muted-foreground">
             <Timestamp label="Created" value={dateTime(product.createdAt)} />
             <Timestamp label="Updated" value={dateTime(product.updatedAt)} />
             {product.deletedAt && <Timestamp label="Deleted" value={dateTime(product.deletedAt)} />}
@@ -503,25 +495,30 @@ export default function ProductDetailPage({ pid }: { pid: string }) {
 
   return (
     <div className="w-full pb-10">
-      <div className="mb-5 flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
-        <Button variant="ghost" className="w-fit px-0" render={<Link to="/products" />}>
-          <ArrowLeftIcon className="size-4" />
-          Products
-        </Button>
+      <PageHeader
+        title={product.name}
+        subtitle={product.description || "No description has been added for this product."}
+        actions={
+          <>
+            <Button variant="ghost" render={<Link to="/products" />}>
+              <ArrowLeftIcon className="size-4" />
+              Products
+            </Button>
+            <Button variant="outline" render={<Link to="/products/$pid/edit" params={{ pid }} />}>
+              <PencilSimpleIcon className="size-4" />
+              Edit product
+            </Button>
+            <Button render={<Link to="/products/create" />}>
+              <PlusIcon className="size-4" />
+              Add product
+            </Button>
+          </>
+        }
+      />
 
-        <div className="flex flex-wrap gap-2">
-          <Button variant="outline" render={<Link to="/products/$pid/edit" params={{ pid }} />}>
-            <PencilSimpleIcon className="size-4" />
-            Edit product
-          </Button>
-          <Button render={<Link to="/products/create" />}>
-            <PlusIcon className="size-4" />
-            Add product
-          </Button>
-        </div>
+      <div className="mt-8">
+        <ProductHero product={product} />
       </div>
-
-      <ProductHero product={product} />
 
       <div className="mt-6 grid gap-5 xl:grid-cols-[minmax(0,1.65fr)_minmax(20rem,0.75fr)] xl:items-start">
         <Panel

@@ -201,6 +201,25 @@ fn environment_variables_override_yaml_config_values() {
 
 #[test]
 #[serial]
+fn cloudinary_credentials_are_loaded_from_environment() {
+    let _guard = EnvGuard::set(&[
+        ("APP_CLOUDINARY_CLOUD_NAME", "test-cloud"),
+        ("APP_CLOUDINARY_API_KEY", "test-api-key"),
+        ("APP_CLOUDINARY_API_SECRET", "test-api-secret"),
+    ]);
+
+    let config = Config::from_env(&Environment::Testing).unwrap();
+    let cloudinary = config
+        .cloudinary()
+        .expect("Cloudinary config should be present");
+
+    assert_eq!(cloudinary.cloud_name(), "test-cloud");
+    assert_eq!(cloudinary.api_key(), "test-api-key");
+    assert_eq!(cloudinary.api_secret(), "test-api-secret");
+}
+
+#[test]
+#[serial]
 fn missing_environment_file_returns_error() {
     let result = Config::from_env(&Environment::Other("missing-config".to_string()));
 

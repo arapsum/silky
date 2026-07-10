@@ -1,8 +1,9 @@
 ---
 source: tests/requests/roles.rs
+assertion_line: 335
 expression: "(response.status_code(), response.text())"
 ---
 (
     201,
-    "{\"id\":21,\"pid\":\"PID\",\"roleId\":22,\"permissionId\":114,\"createdAt\":\"DATE\",\"updatedAt\":\"DATE\"}",
+    "{\"id\":25,\"pid\":\"PID\",\"roleId\":22,\"permissionId\":114,\"createdAt\":\"DATE\",\"updatedAt\":\"DATE\"}",
 )

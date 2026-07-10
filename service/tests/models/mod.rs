@@ -1,4 +1,5 @@
 mod categories;
+mod media_assets;
 mod permissions;
 mod products;
 mod roles;

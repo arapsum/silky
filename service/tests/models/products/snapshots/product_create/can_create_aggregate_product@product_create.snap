@@ -1,5 +1,6 @@
 ---
 source: tests/models/products/product_create.rs
+assertion_line: 194
 expression: "(result, product_count, variant_count)"
 ---
 (
@@ -49,6 +50,7 @@ expression: "(result, product_count, variant_count)"
                     display_order: Some(
                         1,
                     ),
+                    media_asset_id: None,
                     created_at: DATE,
                     updated_at: DATE,
                 },
@@ -63,6 +65,7 @@ expression: "(result, product_count, variant_count)"
                     display_order: Some(
                         2,
                     ),
+                    media_asset_id: None,
                     created_at: DATE,
                     updated_at: DATE,
                 },

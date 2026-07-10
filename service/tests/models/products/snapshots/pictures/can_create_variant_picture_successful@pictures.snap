@@ -1,5 +1,6 @@
 ---
 source: tests/models/products/pictures.rs
+assertion_line: 89
 expression: result
 ---
 Ok(
@@ -14,6 +15,7 @@ Ok(
         display_order: Some(
             2,
         ),
+        media_asset_id: None,
         created_at: DATE,
         updated_at: DATE,
     },

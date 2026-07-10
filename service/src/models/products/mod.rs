@@ -1,9 +1,9 @@
-use std::collections::{HashMap, HashSet};
+use std::collections::{BTreeMap, HashMap, HashSet};
 
 use chrono::{DateTime, FixedOffset};
 use rust_decimal::Decimal;
 use serde::{Deserialize, Serialize};
-use sqlx::{Encode, Executor, PgPool, Postgres, prelude::FromRow};
+use sqlx::{Encode, Executor, PgPool, Postgres, prelude::FromRow, types::Json};
 use uuid::Uuid;
 
 use crate::{
@@ -43,6 +43,8 @@ pub struct Product {
     category_id: i32,
     name: String,
     description: Option<String>,
+    #[serde(default)]
+    information: Json<BTreeMap<String, String>>,
     created_at: DateTime<FixedOffset>,
     updated_at: DateTime<FixedOffset>,
     deleted_at: Option<DateTime<FixedOffset>>,
@@ -53,6 +55,7 @@ struct ProductListRow {
     pid: Uuid,
     name: String,
     description: Option<String>,
+    information: Json<BTreeMap<String, String>>,
     category_id: i32,
     category_pid: Uuid,
     category_name: String,
@@ -76,6 +79,7 @@ impl ProductListRow {
             pid: self.pid,
             name: self.name,
             description: self.description,
+            information: self.information.0,
             category: ProductCategorySummary {
                 id: self.category_id,
                 pid: self.category_pid,
@@ -112,6 +116,7 @@ struct ProductDetailHeader {
     pid: Uuid,
     name: String,
     description: Option<String>,
+    information: Json<BTreeMap<String, String>>,
     category_id: i32,
     category_pid: Uuid,
     category_name: String,
@@ -248,17 +253,20 @@ impl Product {
             INSERT INTO products (
                 category_id,
                 name,
-                description
+                description,
+                information
             ) VALUES (
                 $1,
                 $2,
-                $3
+                $3,
+                $4
             ) RETURNING *
         ",
         )
         .bind(params.category_id())
         .bind(params.name().trim())
         .bind(params.description().map(|description| description.trim()))
+        .bind(Json(params.information().cloned().unwrap_or_default()))
         .fetch_one(&mut *txn)
         .await?;
 
@@ -381,7 +389,8 @@ impl Product {
             SET
                 category_id = COALESCE($2, category_id),
                 name = COALESCE($3, name),
-                description = CASE WHEN $4 THEN $5 ELSE description END
+                description = CASE WHEN $4 THEN $5 ELSE description END,
+                information = COALESCE($6, information)
             WHERE pid = $1
                 AND deleted_at IS NULL
             RETURNING *
@@ -392,6 +401,7 @@ impl Product {
         .bind(params.name().map(str::trim))
         .bind(description_was_provided)
         .bind(description)
+        .bind(params.information().cloned().map(Json))
         .fetch_optional(db)
         .await?
         .ok_or_else(|| ModelError::EntityNotFound)?;
@@ -716,6 +726,7 @@ impl Product {
                 p.pid,
                 p.name,
                 p.description,
+                p.information,
                 c.id AS category_id,
                 c.pid AS category_pid,
                 c.name AS category_name,
@@ -864,6 +875,7 @@ impl Product {
                 p.pid,
                 p.name,
                 p.description,
+                p.information,
                 c.id AS category_id,
                 c.pid AS category_pid,
                 c.name AS category_name,
@@ -1017,6 +1029,7 @@ impl Product {
             pid: product.pid,
             name: product.name,
             description: product.description,
+            information: product.information.0,
             category: ProductCategorySummary {
                 id: product.category_id,
                 pid: product.category_pid,
@@ -1221,6 +1234,12 @@ impl Product {
         self.description.as_ref()
     }
 
+    /// Returns product-level key-value information.
+    #[must_use]
+    pub const fn information(&self) -> &BTreeMap<String, String> {
+        &self.information.0
+    }
+
     /// Returns when the product was created.
     #[must_use]
     pub const fn created_at(&self) -> DateTime<FixedOffset> {
@@ -1251,6 +1270,7 @@ impl Seedable for Product {
                     category_id,
                     name,
                     description,
+                    information,
                     created_at,
                     updated_at,
                     deleted_at
@@ -1262,12 +1282,14 @@ impl Seedable for Product {
                     $5,
                     $6,
                     $7,
-                    $8
+                    $8,
+                    $9
                 ) ON CONFLICT (id) DO UPDATE SET
                     pid = EXCLUDED.pid,
                     category_id = EXCLUDED.category_id,
                     name = EXCLUDED.name,
                     description = EXCLUDED.description,
+                    information = EXCLUDED.information,
                     created_at = EXCLUDED.created_at,
                     updated_at = EXCLUDED.updated_at,
                     deleted_at = EXCLUDED.deleted_at
@@ -1278,6 +1300,7 @@ impl Seedable for Product {
             .bind(product.category_id())
             .bind(product.name())
             .bind(product.description())
+            .bind(Json(product.information()))
             .bind(product.created_at())
             .bind(product.updated_at())
             .bind(product.deleted_at())

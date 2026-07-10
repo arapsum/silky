@@ -1,4 +1,4 @@
-use std::borrow::Cow;
+use std::{borrow::Cow, collections::BTreeMap};
 
 use rust_decimal::Decimal;
 use serde::{Deserialize, Deserializer, Serialize};
@@ -109,6 +109,8 @@ pub struct CreateProduct<'a> {
     name: Cow<'a, str>,
     #[validate(length(max = 2000, message = "Description must be under 2000 characters"))]
     description: Option<Cow<'a, str>>,
+    #[serde(default)]
+    information: Option<BTreeMap<String, String>>,
     #[validate(nested)]
     pictures: Option<Vec<CreateProductPicture<'a>>>,
     #[validate(nested)]
@@ -128,6 +130,8 @@ pub struct UpdateProduct {
     )]
     #[serde(default, deserialize_with = "deserialize_nullable_description")]
     description: Option<Option<String>>,
+    #[serde(default)]
+    information: Option<BTreeMap<String, String>>,
 }
 
 impl UpdateProduct {
@@ -145,6 +149,11 @@ impl UpdateProduct {
     pub const fn description(&self) -> Option<&Option<String>> {
         self.description.as_ref()
     }
+
+    #[must_use]
+    pub const fn information(&self) -> Option<&BTreeMap<String, String>> {
+        self.information.as_ref()
+    }
 }
 
 impl<'a> CreateProduct<'a> {
@@ -160,9 +169,16 @@ impl<'a> CreateProduct<'a> {
             category_id,
             name,
             description,
+            information: None,
             pictures,
             variants,
         }
+    }
+
+    #[must_use]
+    pub fn with_information(mut self, information: BTreeMap<String, String>) -> Self {
+        self.information = Some(information);
+        self
     }
 
     #[must_use]
@@ -178,6 +194,11 @@ impl<'a> CreateProduct<'a> {
     #[must_use]
     pub const fn description(&self) -> Option<&Cow<'a, str>> {
         self.description.as_ref()
+    }
+
+    #[must_use]
+    pub const fn information(&self) -> Option<&BTreeMap<String, String>> {
+        self.information.as_ref()
     }
 
     #[must_use]

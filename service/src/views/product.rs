@@ -1,3 +1,5 @@
+use std::collections::BTreeMap;
+
 use chrono::{DateTime, FixedOffset};
 use rust_decimal::Decimal;
 use serde::{Deserialize, Serialize};
@@ -58,6 +60,7 @@ pub struct ProductListItem {
     pub pid: Uuid,
     pub name: String,
     pub description: Option<String>,
+    pub information: BTreeMap<String, String>,
     pub category: ProductCategorySummary,
     pub primary_image: Option<String>,
     pub default_variant: Option<ProductVariantSummary>,
@@ -131,6 +134,7 @@ pub struct ProductDetailResponse {
     pub pid: Uuid,
     pub name: String,
     pub description: Option<String>,
+    pub information: BTreeMap<String, String>,
     pub category: ProductCategorySummary,
     pub pictures: Vec<ProductPictureResponse>,
     pub options: Vec<ProductOptionResponse>,

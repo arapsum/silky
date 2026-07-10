@@ -194,6 +194,11 @@ jobs:
 
     if: needs.changes.outputs.service == 'true'
 
+    env:
+      APP_CLOUDINARY_CLOUD_NAME: ${{ vars.CLOUDINARY_CLOUD_NAME }}
+      APP_CLOUDINARY_API_KEY: ${{ secrets.CLOUDINARY_API_KEY }}
+      APP_CLOUDINARY_API_SECRET: ${{ secrets.CLOUDINARY_API_SECRET }}
+
     services:
       postgres:
         image: postgres:18.3-alpine

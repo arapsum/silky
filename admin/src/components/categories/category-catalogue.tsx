@@ -321,10 +321,7 @@ export default function CategoryCatalogue() {
         title="Categories"
         subtitle="Manage storefront category navigation and product grouping."
         actions={
-          <Button
-            className="bg-blue-600 hover:bg-blue-700"
-            render={<Link to="/categories/create" />}
-          >
+          <Button render={<Link to="/categories/create" />}>
             <PlusIcon className="size-4" />
             Add Category
           </Button>

@@ -283,11 +283,7 @@ function PersonalInformationSection({ user }: { user?: CurrentUser }) {
         />
 
         <div className="flex justify-end">
-          <Button
-            type="submit"
-            disabled={!user || updateProfileMutation.isPending}
-            className="bg-blue-600 hover:bg-blue-700"
-          >
+          <Button type="submit" disabled={!user || updateProfileMutation.isPending}>
             {updateProfileMutation.isPending ? "Saving..." : "Save Changes"}
           </Button>
         </div>
@@ -464,11 +460,7 @@ function EmailPasswordSection({ user }: { user?: CurrentUser }) {
         </div>
 
         <div className="flex justify-end">
-          <Button
-            type="submit"
-            disabled={!user || updateSecurityMutation.isPending}
-            className="bg-blue-600 hover:bg-blue-700"
-          >
+          <Button type="submit" disabled={!user || updateSecurityMutation.isPending}>
             {updateSecurityMutation.isPending ? "Saving..." : "Save Changes"}
           </Button>
         </div>

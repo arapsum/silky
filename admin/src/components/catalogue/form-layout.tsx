@@ -87,7 +87,7 @@ export function CatalogueFormActions({
       <Button type="button" variant="outline" onClick={onDraft}>
         {draftLabel}
       </Button>
-      <Button type="submit" className="bg-blue-600 hover:bg-blue-700" disabled={isPending}>
+      <Button type="submit" disabled={isPending}>
         {isPending ? pendingSubmitLabel : submitLabel}
       </Button>
     </div>

@@ -122,11 +122,7 @@ export default function RolesPage() {
               />
               Refresh
             </Button>
-            <Button
-              type="button"
-              className="bg-blue-600 hover:bg-blue-700"
-              onClick={() => setDialogMode({ type: "create" })}
-            >
+            <Button type="button" onClick={() => setDialogMode({ type: "create" })}>
               <PlusIcon className="size-4" />
               New Role
             </Button>
@@ -407,11 +403,7 @@ function RoleDialog({
             >
               Cancel
             </Button>
-            <Button
-              type="submit"
-              className="bg-blue-600 hover:bg-blue-700"
-              disabled={mutation.isPending}
-            >
+            <Button type="submit" disabled={mutation.isPending}>
               {mutation.isPending ? "Saving..." : "Save Role"}
             </Button>
           </DialogFooter>

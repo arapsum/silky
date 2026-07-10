@@ -301,7 +301,7 @@ export default function ProductCatalogue() {
         title="Products"
         subtitle="Manage product catalogue rows, stock, pricing, and variants."
         actions={
-          <Button className="bg-blue-600 hover:bg-blue-700" render={<Link to="/products/create" />}>
+          <Button render={<Link to="/products/create" />}>
             <PlusIcon className="size-4" />
             Add Product
           </Button>

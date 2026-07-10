@@ -305,11 +305,14 @@ export default function EditProductForm({ pid }: { pid: string }) {
   });
 
   const addProductImageMutation = useMutation({
-    mutationFn: async (file: File) =>
-      addProductPicture(pid, {
-        imageLink: await uploadProductImage(file),
+    mutationFn: async (file: File) => {
+      const upload = await uploadProductImage(file);
+      return addProductPicture(pid, {
+        imageLink: upload.imageLink,
+        mediaAssetPid: upload.assetPid,
         displayOrder: (product?.pictures.length ?? 0) + 1,
-      }),
+      });
+    },
     onSuccess: () => {
       toast.success("Product image added");
       refreshProduct();
@@ -384,8 +387,10 @@ export default function EditProductForm({ pid }: { pid: string }) {
   }
 
   async function addVariantImage(variant: ProductVariantDetail, file: File) {
+    const upload = await uploadProductImage(file);
     addVariantPicture(pid, variant.pid, {
-      imageLink: await uploadProductImage(file),
+      imageLink: upload.imageLink,
+      mediaAssetPid: upload.assetPid,
       displayOrder: variant.pictures.length + 1,
     })
       .then(() => {

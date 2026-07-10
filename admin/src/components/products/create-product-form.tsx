@@ -133,10 +133,11 @@ function VariantInputField({ id, label, value, onValueChange, ...props }: Varian
 }
 
 async function uploadPictures(images: ImageDraft[]): Promise<ProductPictureInput[]> {
-  const urls = await Promise.all(images.map((image) => uploadProductImage(image.file)));
+  const uploads = await Promise.all(images.map((image) => uploadProductImage(image.file)));
 
-  return urls.map((imageLink, index) => ({
-    imageLink,
+  return uploads.map((upload, index) => ({
+    imageLink: upload.imageLink,
+    mediaAssetPid: upload.assetPid,
     displayOrder: index + 1,
   }));
 }

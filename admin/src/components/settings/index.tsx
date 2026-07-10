@@ -179,12 +179,13 @@ function PersonalInformationSection({ user }: { user?: CurrentUser }) {
   const updateProfileMutation = useMutation({
     mutationFn: async (values: PersonalInfoValues) => {
       if (!user) throw new Error("Unable to load account details");
-      const image = avatarFile ? await uploadAvatarImage(avatarFile) : user.image || undefined;
+      const uploadedImage = avatarFile ? await uploadAvatarImage(avatarFile) : undefined;
 
       return updateCurrentUser({
         name: values.name,
         email: user.email,
-        image,
+        image: uploadedImage?.imageLink ?? user.image ?? undefined,
+        mediaAssetPid: uploadedImage?.assetPid,
       });
     },
     onSuccess: (updatedUser) => {

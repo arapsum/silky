@@ -16,6 +16,7 @@ export type UpdateProfileInput = {
   name: string;
   email: string;
   image?: string;
+  mediaAssetPid?: string;
 };
 
 export type ChangePasswordInput = {

@@ -95,7 +95,7 @@ export default function CreateCategoryForm() {
         throw new Error("Select a thumbnail image before creating the category");
       }
 
-      const imageLink = await uploadCategoryImage(thumbnail.file);
+      const uploadedImage = await uploadCategoryImage(thumbnail.file);
       const parentId =
         values.parentCategory && values.parentCategory !== "none"
           ? Number(values.parentCategory)
@@ -104,7 +104,8 @@ export default function CreateCategoryForm() {
       return createCategory({
         name: values.name.trim(),
         slug: values.slug.trim(),
-        imageLink,
+        imageLink: uploadedImage.imageLink,
+        mediaAssetPid: uploadedImage.assetPid,
         parentId,
         ...(values.description?.trim() ? { description: values.description.trim() } : {}),
       });

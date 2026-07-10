@@ -123,6 +123,7 @@ export type ProductListParams = {
 
 export type ProductPictureInput = {
   imageLink: string;
+  mediaAssetPid?: string;
   displayOrder?: number;
 };
 

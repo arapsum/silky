@@ -8,6 +8,7 @@ export type Category = {
   name: string;
   slug: string;
   imageLink: string;
+  mediaAssetPid?: string;
   description: string | null;
   parentId: number | null;
   productCount?: number;
@@ -20,6 +21,7 @@ export type CategoryInput = {
   name: string;
   slug?: string;
   imageLink: string;
+  mediaAssetPid?: string;
   parentId?: number;
   description?: string;
 };

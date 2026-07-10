@@ -36,6 +36,11 @@ import { titleCase } from "#/components/catalogue/string-utils";
 import { EmptyState } from "#/components/empty-state";
 import { ErrorState } from "#/components/error-state";
 import FormField from "#/components/form-field";
+import {
+  ProductInformationFields,
+  productInformation,
+  type ProductInformationEntry,
+} from "#/components/products/product-information-fields";
 import { Button } from "#/components/ui/button";
 import { Input } from "#/components/ui/input";
 import { Label } from "#/components/ui/label";
@@ -146,6 +151,7 @@ export default function CreateProductForm() {
   const navigate = useNavigate();
   const previewUrlsRef = useRef<string[]>([]);
   const [productImages, setProductImages] = useState<ImageDraft[]>([]);
+  const [information, setInformation] = useState<ProductInformationEntry[]>([]);
   const [defaultOptions, setDefaultOptions] = useState<DefaultOptionDraft[]>([]);
   const [variants, setVariants] = useState<VariantDraft[]>([]);
 
@@ -294,6 +300,7 @@ export default function CreateProductForm() {
     const skuSet = new Set([defaultSku.toLowerCase()]);
 
     const productPictures = await uploadPictures(productImages);
+    const productInformationValues = productInformation(information);
     const extraVariants: ProductVariantInput[] = [];
 
     for (const variant of variants) {
@@ -341,6 +348,9 @@ export default function CreateProductForm() {
       categoryId: Number(values.categoryId),
       name: values.name.trim(),
       ...(values.description?.trim() ? { description: values.description.trim() } : {}),
+      ...(Object.keys(productInformationValues).length
+        ? { information: productInformationValues }
+        : {}),
       ...(productPictures.length ? { pictures: productPictures } : {}),
       variants: [defaultVariant, ...extraVariants],
     };
@@ -354,6 +364,7 @@ export default function CreateProductForm() {
       });
       form.reset();
       setProductImages([]);
+      setInformation([]);
       setDefaultOptions([]);
       setVariants([]);
       await navigate({ to: "/products/create" });
@@ -369,6 +380,7 @@ export default function CreateProductForm() {
     console.info("Product draft", {
       ...values,
       productImages: productImages.map((image) => image.file.name),
+      information,
       defaultOptions,
       variants,
     });
@@ -428,6 +440,9 @@ export default function CreateProductForm() {
             placeholder="Describe this product for catalogue teams and shoppers."
             className="min-h-36 resize-y"
           />
+        </div>
+        <div className="lg:col-span-2">
+          <ProductInformationFields entries={information} onChange={setInformation} />
         </div>
       </CatalogueFormSection>
 

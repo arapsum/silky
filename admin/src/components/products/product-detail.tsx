@@ -507,6 +507,7 @@ export default function ProductDetailPage({ pid }: { pid: string }) {
   }
 
   const images = productImages(product);
+  const information = Object.entries(product.information);
 
   return (
     <div className="w-full pb-10">
@@ -609,13 +610,28 @@ export default function ProductDetailPage({ pid }: { pid: string }) {
         <VariantTable variants={product.variants} />
       </section>
 
-      <div className="mt-6 grid gap-5 lg:grid-cols-[minmax(0,1.25fr)_minmax(18rem,.75fr)]">
+      <div className="mt-6 grid gap-5 lg:grid-cols-3">
         <Panel title="Product description" icon={<PackageIcon className="size-4" />}>
           <p className="text-sm leading-6 text-muted-foreground">
             {product.description || "No product description has been added yet."}
           </p>
         </Panel>
-        <Panel title="Catalogue details" icon={<TagIcon className="size-4" />}>
+        <Panel title="Product information" icon={<StackIcon className="size-4" />}>
+          {information.length ? (
+            <dl className="grid gap-4">
+              {information.map(([key, value]) => (
+                <DetailField key={key} label={key}>
+                  {value}
+                </DetailField>
+              ))}
+            </dl>
+          ) : (
+            <p className="text-sm leading-6 text-muted-foreground">
+              No additional product information has been added.
+            </p>
+          )}
+        </Panel>
+        <Panel title="Category information" icon={<TagIcon className="size-4" />}>
           <dl className="grid gap-4">
             <DetailField label="Category">{titleCase(product.category.name)}</DetailField>
             <DetailField label="Category slug">{product.category.slug}</DetailField>

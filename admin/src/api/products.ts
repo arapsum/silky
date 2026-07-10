@@ -78,6 +78,7 @@ export type ProductDetail = {
   pid: string;
   name: string;
   description: string | null;
+  information: Record<string, string>;
   category: ProductCategorySummary;
   pictures: ProductPicture[];
   options: ProductOption[];
@@ -91,6 +92,7 @@ export type ProductListItem = {
   pid: string;
   name: string;
   description: string | null;
+  information: Record<string, string>;
   category: ProductCategorySummary;
   primaryImage: string | null;
   defaultVariant: ProductVariantSummary | null;
@@ -146,6 +148,7 @@ export type ProductInput = {
   categoryId: number;
   name: string;
   description?: string;
+  information?: Record<string, string>;
   pictures?: ProductPictureInput[];
   variants: ProductVariantInput[];
 };
@@ -154,6 +157,7 @@ export type ProductUpdateInput = {
   categoryId?: number;
   name?: string;
   description?: string | null;
+  information?: Record<string, string>;
 };
 
 export type ProductVariantUpdateInput = {

@@ -46,6 +46,12 @@ import { titleCase } from "#/components/catalogue/string-utils";
 import { EmptyState } from "#/components/empty-state";
 import { ErrorState } from "#/components/error-state";
 import FormField from "#/components/form-field";
+import {
+  ProductInformationFields,
+  informationEntries,
+  productInformation,
+  type ProductInformationEntry,
+} from "#/components/products/product-information-fields";
 import { Button } from "#/components/ui/button";
 import { Input } from "#/components/ui/input";
 import { Label } from "#/components/ui/label";
@@ -220,6 +226,7 @@ function VariantPictureRow({
 export default function EditProductForm({ pid }: { pid: string }) {
   const queryClient = useQueryClient();
   const [variantDrafts, setVariantDrafts] = useState<Record<string, VariantDraft>>({});
+  const [information, setInformation] = useState<ProductInformationEntry[]>([]);
   const [newVariant, setNewVariant] = useState<NewVariantDraft>({
     sku: "",
     price: "",
@@ -275,6 +282,7 @@ export default function EditProductForm({ pid }: { pid: string }) {
       categoryId: String(product.category.id),
       description: product.description ?? "",
     });
+    setInformation(informationEntries(product.information));
 
     setVariantDrafts(
       Object.fromEntries(
@@ -296,6 +304,7 @@ export default function EditProductForm({ pid }: { pid: string }) {
         name: values.name.trim(),
         categoryId: Number(values.categoryId),
         description: values.description?.trim() ? values.description.trim() : null,
+        information: productInformation(information),
       }),
     onSuccess: () => {
       toast.success("Product updated");
@@ -470,6 +479,9 @@ export default function EditProductForm({ pid }: { pid: string }) {
             label="Description"
             className="min-h-32 resize-y"
           />
+        </div>
+        <div className="lg:col-span-2">
+          <ProductInformationFields entries={information} onChange={setInformation} />
         </div>
       </CatalogueFormSection>
 

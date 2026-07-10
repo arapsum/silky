@@ -5,4 +5,5 @@ mod product_create;
 mod product_fetch;
 mod product_options;
 mod product_variants;
+mod tags;
 mod variant_attribute_values;

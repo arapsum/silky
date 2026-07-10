@@ -3,6 +3,18 @@ import { Input } from "@/components/ui/input";
 import { Checkbox } from "@/components/ui/checkbox";
 import { Textarea } from "@/components/ui/textarea";
 import { Select, SelectContent, SelectItem, SelectTrigger } from "@/components/ui/select";
+import {
+  Combobox,
+  ComboboxChips,
+  ComboboxChip,
+  ComboboxChipsInput,
+  ComboboxContent,
+  ComboboxEmpty,
+  ComboboxItem,
+  ComboboxList,
+  ComboboxValue,
+  useComboboxAnchor,
+} from "@/components/ui/combobox";
 import { cn } from "@/lib/utils";
 import type React from "react";
 import { useState } from "react";
@@ -30,8 +42,17 @@ type TextareaInputProps = Omit<
   type: "textarea";
 };
 
-type FieldInputProps = (BaseInputProps | TextareaInputProps) & {
-  type?: HTMLInputElement["type"] | "select" | "textarea";
+type ComboboxMultipleInputProps = {
+  type: "combobox-multiple";
+  options: SelectOption[];
+  placeholder?: string;
+  className?: string;
+  disabled?: boolean;
+  required?: boolean;
+};
+
+type FieldInputProps = (BaseInputProps | TextareaInputProps | ComboboxMultipleInputProps) & {
+  type?: HTMLInputElement["type"] | "select" | "textarea" | "combobox-multiple";
   /** Required when type="select" */
   options?: SelectOption[];
 };
@@ -111,6 +132,7 @@ function RenderInput<TField extends FieldValues>({
   input,
 }: RenderInputProps<TField>) {
   const [visible, setVisible] = useState(false);
+  const comboboxAnchor = useComboboxAnchor();
   const type = input.type ?? "text";
 
   switch (type) {
@@ -253,6 +275,58 @@ function RenderInput<TField extends FieldValues>({
           className={className}
           aria-invalid={fieldState.invalid}
         />
+      );
+    }
+
+    case "combobox-multiple": {
+      const { options, placeholder, className, disabled, required } =
+        input as ComboboxMultipleInputProps;
+      const values = Array.isArray(field.value) ? field.value : [];
+
+      return (
+        <Combobox
+          items={options}
+          multiple
+          value={values}
+          onValueChange={(value) => {
+            field.onChange(value);
+            field.onBlur();
+          }}
+          disabled={disabled}
+        >
+          <ComboboxChips ref={comboboxAnchor} className={cn("w-full", className)}>
+            <ComboboxValue>
+              {(selectedValues: string[]) => (
+                <>
+                  {selectedValues.map((value) => {
+                    const option = options.find((entry) => entry.value === value);
+
+                    return <ComboboxChip key={value}>{option?.label ?? value}</ComboboxChip>;
+                  })}
+                  <ComboboxChipsInput
+                    id={field.name}
+                    ref={field.ref}
+                    placeholder={selectedValues.length ? "" : placeholder}
+                    onBlur={field.onBlur}
+                    disabled={disabled}
+                    required={required}
+                    aria-invalid={fieldState.invalid}
+                  />
+                </>
+              )}
+            </ComboboxValue>
+          </ComboboxChips>
+          <ComboboxContent anchor={comboboxAnchor}>
+            <ComboboxEmpty>No matching options.</ComboboxEmpty>
+            <ComboboxList>
+              {(option: SelectOption) => (
+                <ComboboxItem key={option.value} value={option.value}>
+                  {option.label}
+                </ComboboxItem>
+              )}
+            </ComboboxList>
+          </ComboboxContent>
+        </Combobox>
       );
     }
 

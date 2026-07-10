@@ -13,7 +13,9 @@ import { categoriesQueryKey, listCategories } from "#/api/categories.ts";
 import {
   createProduct,
   listProductAttributes,
+  listProductTags,
   productAttributesQueryKey,
+  productTagsQueryKey,
   type ProductAttributeWithValues,
   type ProductInput,
   type ProductPictureInput,
@@ -61,6 +63,7 @@ const productSchema = z.object({
     .trim()
     .regex(/^\d+(\.\d{1,2})?$/, "Use a valid price"),
   defaultStockQuantity: z.string().trim().regex(/^\d+$/, "Use a whole stock quantity"),
+  tagPids: z.array(z.string()),
 });
 
 type ProductFormValues = z.infer<typeof productSchema>;
@@ -164,6 +167,7 @@ export default function CreateProductForm() {
       defaultSku: "",
       defaultPrice: "",
       defaultStockQuantity: "0",
+      tagPids: [],
     },
   });
 
@@ -183,6 +187,11 @@ export default function CreateProductForm() {
     queryFn: listProductAttributes,
   });
 
+  const tagsQuery = useQuery({
+    queryKey: productTagsQueryKey,
+    queryFn: listProductTags,
+  });
+
   const categoryOptions = useMemo(
     () =>
       (categoriesQuery.data?.data ?? []).map((category) => ({
@@ -193,6 +202,11 @@ export default function CreateProductForm() {
   );
 
   const attributes = attributesQuery.data ?? [];
+  const tags = tagsQuery.data ?? [];
+  const tagOptions = useMemo(
+    () => tags.map((tag) => ({ label: tag.name, value: tag.pid })),
+    [tags],
+  );
 
   function addPreview(file: File) {
     const draft = createImageDraft(file);
@@ -351,6 +365,7 @@ export default function CreateProductForm() {
       ...(Object.keys(productInformationValues).length
         ? { information: productInformationValues }
         : {}),
+      ...(values.tagPids.length ? { tagPids: values.tagPids } : {}),
       ...(productPictures.length ? { pictures: productPictures } : {}),
       variants: [defaultVariant, ...extraVariants],
     };
@@ -394,6 +409,17 @@ export default function CreateProductForm() {
         title="Unable to load product options"
         description={attributesQuery.error.message}
         onRetry={() => void attributesQuery.refetch()}
+      />
+    );
+  }
+
+  if (tagsQuery.isError) {
+    return (
+      <ErrorState
+        icon={<PackageIcon className="size-8" />}
+        title="Unable to load product tags"
+        description={tagsQuery.error.message}
+        onRetry={() => void tagsQuery.refetch()}
       />
     );
   }
@@ -443,6 +469,18 @@ export default function CreateProductForm() {
         </div>
         <div className="lg:col-span-2">
           <ProductInformationFields entries={information} onChange={setInformation} />
+        </div>
+        <div className="space-y-3 lg:col-span-2">
+          <FormField
+            control={form.control}
+            name="tagPids"
+            type="combobox-multiple"
+            label="Tags"
+            description="Assign reusable labels for catalogue filtering and merchandising."
+            placeholder={tagsQuery.isLoading ? "Loading tags..." : "Search or select tags"}
+            options={tagOptions}
+            disabled={tagsQuery.isLoading}
+          />
         </div>
       </CatalogueFormSection>
 

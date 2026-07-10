@@ -568,42 +568,46 @@ export default function ProductDetailPage({ pid }: { pid: string }) {
         <VariantTable variants={product.variants} />
       </section>
 
-      <div className="mt-5 grid items-start gap-5 lg:grid-cols-[minmax(0,1.15fr)_minmax(18rem,.85fr)]">
-        <div className="grid gap-5">
-          <Panel title="Product information" icon={<StackIcon className="size-4" />}>
-            {information.length ? (
-              <dl className="grid gap-x-8 gap-y-5 sm:grid-cols-2">
-                {information.map(([key, value]) => (
-                  <DetailField key={key} label={key}>
-                    {value}
-                  </DetailField>
-                ))}
-              </dl>
-            ) : (
-              <p className="text-sm leading-6 text-muted-foreground">
-                No additional product information has been added.
-              </p>
-            )}
-          </Panel>
-          <Panel title="Product description" icon={<PackageIcon className="size-4" />}>
-            <p className="max-w-3xl text-sm leading-6 text-muted-foreground">
-              {product.description || "No product description has been added yet."}
+      <div className="mt-5 grid items-start gap-5 lg:grid-cols-3">
+        <Panel title="Product information" icon={<StackIcon className="size-4" />}>
+          {information.length || product.tags.length ? (
+            <div className="space-y-6">
+              {information.length > 0 && (
+                <dl className="grid gap-x-8 gap-y-5 sm:grid-cols-2">
+                  {information.map(([key, value]) => (
+                    <DetailField key={key} label={key}>
+                      {value}
+                    </DetailField>
+                  ))}
+                </dl>
+              )}
+              {product.tags.length > 0 && (
+                <div>
+                  <p className="text-xs font-medium text-muted-foreground">Tags</p>
+                  <div className="mt-2 flex flex-wrap gap-1.5">
+                    {product.tags.map((tag) => (
+                      <Badge key={tag.pid} variant="outline" className="h-7 px-2.5 font-normal">
+                        {tag.name}
+                      </Badge>
+                    ))}
+                  </div>
+                </div>
+              )}
+            </div>
+          ) : (
+            <p className="text-sm leading-6 text-muted-foreground">
+              No additional product information has been added.
             </p>
-          </Panel>
-        </div>
-
-        <div className="grid gap-5">
-          <Panel title="Category information" icon={<TagIcon className="size-4" />}>
-            <dl className="grid gap-4">
-              <DetailField label="Category">{titleCase(product.category.name)}</DetailField>
-              <DetailField label="Category slug">{product.category.slug}</DetailField>
-              <DetailField label="Media">{number(images.length)} images</DetailField>
-            </dl>
-          </Panel>
-          <Panel title="Product options" icon={<StackIcon className="size-4" />}>
-            <OptionSummary product={product} />
-          </Panel>
-        </div>
+          )}
+        </Panel>
+        <Panel title="Product description" icon={<PackageIcon className="size-4" />}>
+          <p className="max-w-3xl text-sm leading-6 text-muted-foreground">
+            {product.description || "No product description has been added yet."}
+          </p>
+        </Panel>
+        <Panel title="Product options" icon={<StackIcon className="size-4" />}>
+          <OptionSummary product={product} />
+        </Panel>
       </div>
     </div>
   );

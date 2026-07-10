@@ -10,6 +10,7 @@ import {
   SquaresFourIcon,
 } from "@phosphor-icons/react";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
+import type React from "react";
 import { useEffect, useMemo, useState } from "react";
 import { toast } from "sonner";
 
@@ -17,8 +18,9 @@ import { listPermissions, permissionsQueryKey, type Permission } from "#/api/per
 import { assignPermissionToRole, listRoles, rolesQueryKey, type Role } from "#/api/roles.ts";
 import { EmptyState } from "#/components/empty-state";
 import { ErrorState } from "#/components/error-state";
-import { Button } from "#/components/ui/button";
 import { PageHeader } from "#/components/page-header";
+import { Badge } from "#/components/ui/badge";
+import { Button } from "#/components/ui/button";
 import { Checkbox } from "#/components/ui/checkbox";
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "#/components/ui/collapsible";
 import { Input } from "#/components/ui/input";
@@ -55,15 +57,15 @@ function formatPermissionName(name: string) {
 function actionBadgeClass(action: string) {
   switch (action.toLowerCase()) {
     case "read":
-      return "bg-blue-50 text-blue-700 ring-blue-200 dark:bg-blue-950 dark:text-blue-300 dark:ring-blue-900";
+      return "border-blue-200 bg-blue-50 text-blue-700 dark:border-blue-900 dark:bg-blue-950 dark:text-blue-300";
     case "create":
-      return "bg-green-50 text-green-700 ring-green-200 dark:bg-green-950 dark:text-green-300 dark:ring-green-900";
+      return "border-emerald-200 bg-emerald-50 text-emerald-700 dark:border-emerald-900 dark:bg-emerald-950 dark:text-emerald-300";
     case "update":
-      return "bg-amber-50 text-amber-700 ring-amber-200 dark:bg-amber-950 dark:text-amber-300 dark:ring-amber-900";
+      return "border-amber-200 bg-amber-50 text-amber-700 dark:border-amber-900 dark:bg-amber-950 dark:text-amber-300";
     case "delete":
-      return "bg-red-50 text-red-700 ring-red-200 dark:bg-red-950 dark:text-red-300 dark:ring-red-900";
+      return "border-red-200 bg-red-50 text-red-700 dark:border-red-900 dark:bg-red-950 dark:text-red-300";
     default:
-      return "bg-muted text-muted-foreground ring-border";
+      return "border-border bg-muted text-muted-foreground";
   }
 }
 
@@ -78,6 +80,11 @@ function groupPermissions(permissions: Permission[]) {
 
 function roleLabel(role: Role) {
   return titleCase(role.name);
+}
+
+function percentage(value: number, total: number) {
+  if (!total) return 0;
+  return Math.round((value / total) * 100);
 }
 
 export default function PermissionsPage() {
@@ -112,6 +119,7 @@ export default function PermissionsPage() {
   );
 
   const permissions = allPermissionsQuery.data ?? [];
+  const resources = useMemo(() => groupPermissions(permissions), [permissions]);
   const pendingPermissionIds = useMemo(
     () =>
       [...selectedPermissionIds].filter((permissionId) => !assignedPermissionIds.has(permissionId)),
@@ -139,9 +147,7 @@ export default function PermissionsPage() {
     [filteredPermissions],
   );
   const groupEntries = Object.entries(groupedPermissions).sort(([a], [b]) => a.localeCompare(b));
-  const permissionsCountLabel = isAssignmentMode
-    ? `${assignedPermissionIds.size} of ${permissions.length} assigned`
-    : `${permissions.length} ${permissions.length === 1 ? "permission" : "permissions"}`;
+  const coverage = percentage(assignedPermissionIds.size, permissions.length);
 
   const assignmentMutation = useMutation({
     mutationFn: async () => {
@@ -180,11 +186,8 @@ export default function PermissionsPage() {
     setSelectedPermissionIds((current) => {
       const next = new Set(current);
 
-      if (checked) {
-        next.add(permissionId);
-      } else {
-        next.delete(permissionId);
-      }
+      if (checked) next.add(permissionId);
+      else next.delete(permissionId);
 
       return next;
     });
@@ -200,92 +203,191 @@ export default function PermissionsPage() {
     await assignmentMutation.mutateAsync();
   }
 
+  const isRefreshing = allPermissionsQuery.isFetching || assignedPermissionsQuery.isFetching;
+
   return (
     <div className="w-full pb-10">
       <PageHeader
         title="Permissions"
-        subtitle="Review permission grants available to roles across the admin system."
+        subtitle="Define the actions each role can perform across the admin system."
         actions={
-          <Button
-            type="button"
-            variant="outline"
-            onClick={refresh}
-            disabled={allPermissionsQuery.isFetching || assignedPermissionsQuery.isFetching}
-          >
-            <ArrowClockwiseIcon
-              className={cn(
-                "size-4",
-                (allPermissionsQuery.isFetching || assignedPermissionsQuery.isFetching) &&
-                  "animate-spin",
-              )}
-            />
+          <Button type="button" variant="outline" onClick={refresh} disabled={isRefreshing}>
+            <ArrowClockwiseIcon className={cn("size-4", isRefreshing && "animate-spin")} />
             Refresh
           </Button>
         }
       />
 
-      <div className="mb-4 grid gap-3 border-b pb-4 xl:grid-cols-[minmax(0,1fr)_16rem_auto_auto] xl:items-center">
-        <div className="relative">
-          <MagnifyingGlassIcon
-            className="pointer-events-none absolute left-3 top-1/2 size-4 -translate-y-1/2 text-muted-foreground"
-            aria-hidden
-          />
-          <Input
-            value={query}
-            onChange={(event) => setQuery(event.target.value)}
-            placeholder="Search permissions"
-            className="pl-9"
-          />
-        </div>
-
-        <Select value={selectedRole} onValueChange={(value) => setSelectedRole(value ?? ALL_ROLES)}>
-          <SelectTrigger className="w-full">
-            <SelectValue placeholder="Filter by role" />
-          </SelectTrigger>
-          <SelectContent>
-            <SelectItem value={ALL_ROLES}>All roles</SelectItem>
-            {rolesQuery.data?.map((role) => (
-              <SelectItem key={role.pid} value={role.name}>
-                {titleCase(role.name)}
-              </SelectItem>
-            ))}
-          </SelectContent>
-        </Select>
-
-        <div className="text-sm text-muted-foreground">{permissionsCountLabel}</div>
-
-        <Button
-          type="button"
-          className="bg-blue-600 hover:bg-blue-700"
-          disabled={
-            !isAssignmentMode || !pendingPermissionIds.length || assignmentMutation.isPending
+      <div className="grid border border-b-0 bg-card sm:grid-cols-3">
+        <OverviewStat
+          icon={<KeyIcon className="size-5" />}
+          label="Permissions"
+          value={permissions.length.toLocaleString()}
+          detail="Available actions"
+        />
+        <OverviewStat
+          icon={<SquaresFourIcon className="size-5" />}
+          label="Resources"
+          value={Object.keys(resources).length.toLocaleString()}
+          detail="Protected areas"
+        />
+        <OverviewStat
+          icon={<ShieldCheckIcon className="size-5" />}
+          label={isAssignmentMode ? `${roleLabel(selectedRoleModel)} coverage` : "Role coverage"}
+          value={isAssignmentMode ? `${coverage}%` : "—"}
+          detail={
+            isAssignmentMode
+              ? `${assignedPermissionIds.size} of ${permissions.length} assigned`
+              : "Select a role to review"
           }
-          onClick={submitAssignments}
-        >
-          <CheckCircleIcon className="size-4" />
-          {assignmentMutation.isPending ? "Assigning..." : `Assign ${pendingPermissionIds.length}`}
-        </Button>
+          last
+        />
       </div>
 
-      <PermissionsContent
-        groups={groupEntries}
-        query={query}
-        isLoading={
-          allPermissionsQuery.isLoading ||
-          rolesQuery.isLoading ||
-          (isAssignmentMode && assignedPermissionsQuery.isLoading)
-        }
-        isError={
-          allPermissionsQuery.isError ||
-          rolesQuery.isError ||
-          (isAssignmentMode && assignedPermissionsQuery.isError)
-        }
-        isAssignmentMode={isAssignmentMode}
-        assignedPermissionIds={assignedPermissionIds}
-        selectedPermissionIds={selectedPermissionIds}
-        onTogglePermission={togglePermission}
-        onRetry={refresh}
-      />
+      <section className="border bg-card">
+        <div className="flex flex-col gap-1 border-b px-5 py-4 md:flex-row md:items-center md:justify-between">
+          <div>
+            <h2 className="font-semibold">Permission catalogue</h2>
+            <p className="mt-0.5 text-sm text-muted-foreground">
+              Browse every permission or select a role to assign additional access.
+            </p>
+          </div>
+          <p className="text-sm font-medium text-muted-foreground">
+            {filteredPermissions.length} shown
+          </p>
+        </div>
+
+        <div className="grid gap-4 border-b bg-muted/20 p-4 lg:grid-cols-[minmax(18rem,1fr)_16rem_auto] lg:items-end">
+          <div className="grid gap-1.5">
+            <label htmlFor="permission-search" className="text-xs font-medium text-foreground">
+              Search permissions
+            </label>
+            <div className="relative">
+              <MagnifyingGlassIcon
+                className="pointer-events-none absolute left-3 top-1/2 size-4 -translate-y-1/2 text-muted-foreground"
+                aria-hidden
+              />
+              <Input
+                id="permission-search"
+                value={query}
+                onChange={(event) => setQuery(event.target.value)}
+                placeholder="Search by action, resource, or description"
+                className="bg-background pl-9"
+              />
+            </div>
+          </div>
+
+          <div className="grid gap-1.5">
+            <label className="text-xs font-medium text-foreground">Review access for</label>
+            <Select
+              value={selectedRole}
+              onValueChange={(value) => setSelectedRole(value ?? ALL_ROLES)}
+            >
+              <SelectTrigger className="w-full bg-background">
+                <SelectValue placeholder="Select a role" />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value={ALL_ROLES}>All permissions</SelectItem>
+                {rolesQuery.data?.map((role) => (
+                  <SelectItem key={role.pid} value={role.name}>
+                    {titleCase(role.name)}
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+          </div>
+
+          <Button
+            type="button"
+            className="bg-blue-600 hover:bg-blue-700"
+            disabled={
+              !isAssignmentMode || !pendingPermissionIds.length || assignmentMutation.isPending
+            }
+            onClick={submitAssignments}
+          >
+            <CheckCircleIcon className="size-4" />
+            {assignmentMutation.isPending
+              ? "Assigning..."
+              : pendingPermissionIds.length
+                ? `Assign ${pendingPermissionIds.length}`
+                : "Assign permissions"}
+          </Button>
+        </div>
+
+        {isAssignmentMode && (
+          <div className="flex flex-col gap-3 border-b bg-blue-50/60 px-4 py-3 dark:bg-blue-950/20 sm:flex-row sm:items-center sm:justify-between">
+            <div className="flex items-center gap-3">
+              <span className="flex size-8 items-center justify-center bg-blue-600 text-white">
+                <ShieldCheckIcon className="size-4" weight="fill" />
+              </span>
+              <div>
+                <p className="text-sm font-medium">
+                  Assigning access to {roleLabel(selectedRoleModel)}
+                </p>
+                <p className="text-xs text-muted-foreground">
+                  Assigned permissions are locked; select any additional permissions to grant.
+                </p>
+              </div>
+            </div>
+            <Badge variant="outline" className="border-blue-200 bg-background text-blue-700">
+              {assignedPermissionIds.size} assigned · {pendingPermissionIds.length} selected
+            </Badge>
+          </div>
+        )}
+
+        <div className="p-4 sm:p-5">
+          <PermissionsContent
+            groups={groupEntries}
+            query={query}
+            isLoading={
+              allPermissionsQuery.isLoading ||
+              rolesQuery.isLoading ||
+              (isAssignmentMode && assignedPermissionsQuery.isLoading)
+            }
+            isError={
+              allPermissionsQuery.isError ||
+              rolesQuery.isError ||
+              (isAssignmentMode && assignedPermissionsQuery.isError)
+            }
+            isAssignmentMode={isAssignmentMode}
+            assignedPermissionIds={assignedPermissionIds}
+            selectedPermissionIds={selectedPermissionIds}
+            onTogglePermission={togglePermission}
+            onRetry={refresh}
+          />
+        </div>
+      </section>
+    </div>
+  );
+}
+
+function OverviewStat({
+  icon,
+  label,
+  value,
+  detail,
+  last = false,
+}: {
+  icon: React.ReactNode;
+  label: string;
+  value: string;
+  detail: string;
+  last?: boolean;
+}) {
+  return (
+    <div
+      className={cn("flex items-center gap-4 border-b p-5 sm:border-r", last && "sm:border-r-0")}
+    >
+      <span className="flex size-10 shrink-0 items-center justify-center bg-blue-50 text-blue-700 dark:bg-blue-950/40 dark:text-blue-300">
+        {icon}
+      </span>
+      <div className="min-w-0">
+        <p className="text-xs font-medium uppercase tracking-wide text-muted-foreground">{label}</p>
+        <div className="mt-1 flex items-baseline gap-2">
+          <span className="text-2xl font-semibold tracking-tight">{value}</span>
+          <span className="truncate text-xs text-muted-foreground">{detail}</span>
+        </div>
+      </div>
     </div>
   );
 }
@@ -315,15 +417,18 @@ function PermissionsContent({
     return (
       <div className="grid gap-4 lg:grid-cols-2">
         {Array.from({ length: 4 }).map((_, index) => (
-          <div key={index} className="rounded-lg border p-5">
+          <div key={index} className="border p-5">
             <div className="mb-5 flex items-center gap-3">
-              <Skeleton className="size-10 rounded-lg" />
-              <Skeleton className="h-5 w-36" />
+              <Skeleton className="size-10" />
+              <div className="grid gap-2">
+                <Skeleton className="h-4 w-36" />
+                <Skeleton className="h-3 w-24" />
+              </div>
             </div>
             <div className="grid gap-3">
-              <Skeleton className="h-14 w-full rounded-lg" />
-              <Skeleton className="h-14 w-full rounded-lg" />
-              <Skeleton className="h-14 w-full rounded-lg" />
+              <Skeleton className="h-16 w-full" />
+              <Skeleton className="h-16 w-full" />
+              <Skeleton className="h-16 w-full" />
             </div>
           </div>
         ))}
@@ -357,7 +462,7 @@ function PermissionsContent({
   }
 
   return (
-    <div className="columns-1 gap-4 lg:columns-2">
+    <div className="grid items-start gap-4 lg:grid-cols-2">
       {groups.map(([resource, permissions]) => (
         <PermissionGroup
           key={resource}
@@ -392,25 +497,26 @@ function PermissionGroup({
   const assignedCount = isAssignmentMode
     ? permissions.filter((permission) => assignedPermissionIds.has(permission.id)).length
     : permissions.length;
+  const groupCoverage = percentage(assignedCount, permissions.length);
 
   return (
-    <Collapsible className="mb-4 break-inside-avoid" open={isOpen} onOpenChange={setIsOpen}>
-      <section className="rounded-lg border bg-background p-5">
+    <Collapsible open={isOpen} onOpenChange={setIsOpen}>
+      <section className="border bg-background">
         <CollapsibleTrigger
           render={
             <button
               type="button"
-              className="group flex w-full items-center justify-between gap-4 text-left outline-none focus-visible:ring-3 focus-visible:ring-ring/30"
+              className="group flex w-full items-center justify-between gap-4 border-b px-4 py-3.5 text-left outline-none focus-visible:ring-3 focus-visible:ring-ring/30"
             />
           }
         >
           <div className="flex min-w-0 items-center gap-3">
-            <span className="flex size-10 shrink-0 items-center justify-center rounded-lg bg-blue-600 text-white">
-              <SquaresFourIcon className="size-5" aria-hidden />
+            <span className="flex size-9 shrink-0 items-center justify-center bg-slate-900 text-white dark:bg-slate-100 dark:text-slate-900">
+              <SquaresFourIcon className="size-4" weight="fill" aria-hidden />
             </span>
             <div className="min-w-0">
-              <h2 className="truncate text-lg font-semibold">{titleCase(resource)}</h2>
-              <p className="text-sm text-muted-foreground">
+              <h2 className="truncate text-sm font-semibold">{titleCase(resource)}</h2>
+              <p className="mt-0.5 text-xs text-muted-foreground">
                 {isAssignmentMode
                   ? `${assignedCount} of ${permissions.length} assigned`
                   : `${permissions.length} ${permissions.length === 1 ? "permission" : "permissions"}`}
@@ -418,17 +524,33 @@ function PermissionGroup({
             </div>
           </div>
 
-          <CaretDownIcon
-            className={cn(
-              "size-5 shrink-0 text-muted-foreground transition-transform",
-              isOpen && "rotate-180",
+          <div className="flex items-center gap-3">
+            {isAssignmentMode && (
+              <span className="hidden text-xs font-medium text-muted-foreground sm:inline">
+                {groupCoverage}% coverage
+              </span>
             )}
-            aria-hidden
-          />
+            <CaretDownIcon
+              className={cn(
+                "size-4 shrink-0 text-muted-foreground transition-transform",
+                isOpen && "rotate-180",
+              )}
+              aria-hidden
+            />
+          </div>
         </CollapsibleTrigger>
 
+        {isAssignmentMode && (
+          <div className="h-1 bg-muted">
+            <div
+              className="h-full bg-blue-600 transition-[width]"
+              style={{ width: `${groupCoverage}%` }}
+            />
+          </div>
+        )}
+
         <CollapsibleContent>
-          <div className="mt-5 grid gap-3">
+          <div className="divide-y px-4">
             {permissions.map((permission) => (
               <PermissionRow
                 key={permission.pid}
@@ -460,55 +582,50 @@ function PermissionRow({
   onToggle: (checked: boolean) => void;
 }) {
   const { action } = splitPermissionName(permission.name);
+  const selected = isAssigned || isSelected;
+
   const content = (
     <>
-      {isAssignmentMode && (
+      {isAssignmentMode ? (
         <Checkbox
-          className="mt-1"
-          checked={isAssigned || isSelected}
+          checked={selected}
           disabled={isAssigned}
           onCheckedChange={(checked) => onToggle(checked === true)}
           aria-label={formatPermissionName(permission.name)}
         />
-      )}
-
-      {!isAssignmentMode && (
-        <span className="mt-0.5 flex size-8 shrink-0 items-center justify-center rounded-lg bg-background text-muted-foreground">
-          <ShieldCheckIcon className="size-4" aria-hidden />
+      ) : (
+        <span className="flex size-7 shrink-0 items-center justify-center bg-muted text-muted-foreground">
+          <ShieldCheckIcon className="size-3.5" aria-hidden />
         </span>
       )}
 
       <div className="min-w-0 flex-1">
-        <div className="flex flex-wrap items-center gap-2">
+        <div className="flex flex-wrap items-center gap-x-2 gap-y-1">
           <h3 className="text-sm font-medium">{formatPermissionName(permission.name)}</h3>
-          <span
-            className={cn(
-              "rounded-full px-2 py-0.5 text-xs font-medium ring-1",
-              actionBadgeClass(action),
-            )}
-          >
-            {titleCase(action)}
-          </span>
           {isAssigned && (
-            <span className="rounded-full bg-green-50 px-2 py-0.5 text-xs font-medium text-green-700 ring-1 ring-green-200 dark:bg-green-950 dark:text-green-300 dark:ring-green-900">
-              Assigned
+            <span className="inline-flex items-center gap-1 text-[11px] font-medium text-emerald-700 dark:text-emerald-300">
+              <CheckCircleIcon className="size-3" weight="fill" /> Assigned
             </span>
           )}
         </div>
-        <p className="mt-1 text-sm text-muted-foreground">
-          {permission.description || "No description"}
+        <p className="mt-1 line-clamp-2 text-xs leading-5 text-muted-foreground">
+          {permission.description || "No description provided."}
         </p>
-        <p className="mt-2 text-xs text-muted-foreground">{permission.name}</p>
+        <code className="mt-1.5 block text-[10px] text-muted-foreground/70">{permission.name}</code>
       </div>
+
+      <Badge variant="outline" className={cn("self-start", actionBadgeClass(action))}>
+        {titleCase(action)}
+      </Badge>
     </>
   );
 
-  if (isAssignmentMode) {
+  if (isAssignmentMode && !isAssigned) {
     return (
       <label
         className={cn(
-          "flex items-start gap-3 rounded-lg border bg-muted/20 p-3",
-          isAssigned && "bg-green-50/60 dark:bg-green-950/20",
+          "flex cursor-pointer items-start gap-3 py-3.5 transition-colors hover:bg-muted/30",
+          isSelected && "bg-blue-50/60 dark:bg-blue-950/20",
         )}
       >
         {content}
@@ -516,5 +633,14 @@ function PermissionRow({
     );
   }
 
-  return <div className="flex items-start gap-3 rounded-lg border bg-muted/20 p-3">{content}</div>;
+  return (
+    <div
+      className={cn(
+        "flex items-start gap-3 py-3.5",
+        isAssigned && "bg-emerald-50/40 dark:bg-emerald-950/10",
+      )}
+    >
+      {content}
+    </div>
+  );
 }

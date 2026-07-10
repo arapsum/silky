@@ -7,6 +7,7 @@ import { useMemo, useState } from "react";
 
 import { listUsers, usersQueryKey, type User } from "#/api/users.ts";
 import { DataTable } from "#/components/data-table";
+import { PageHeader } from "#/components/page-header";
 import { Avatar, AvatarFallback, AvatarImage } from "#/components/ui/avatar";
 import { Button } from "#/components/ui/button";
 import { Input } from "#/components/ui/input";
@@ -198,22 +199,21 @@ export default function PeopleTablePage({ title, description, category }: People
 
   return (
     <div className="w-full pb-10">
-      <div className="mb-6 flex flex-col gap-4 lg:flex-row lg:items-end lg:justify-between">
-        <div>
-          <h1 className="text-2xl font-bold tracking-tight">{title}</h1>
-          <p className="mt-1 text-sm text-muted-foreground">{description}</p>
-        </div>
-
-        <Button
-          type="button"
-          variant="outline"
-          onClick={() => usersQuery.refetch()}
-          disabled={usersQuery.isFetching}
-        >
-          <ArrowClockwiseIcon className={cn("size-4", usersQuery.isFetching && "animate-spin")} />
-          Refresh
-        </Button>
-      </div>
+      <PageHeader
+        title={title}
+        subtitle={description}
+        actions={
+          <Button
+            type="button"
+            variant="outline"
+            onClick={() => usersQuery.refetch()}
+            disabled={usersQuery.isFetching}
+          >
+            <ArrowClockwiseIcon className={cn("size-4", usersQuery.isFetching && "animate-spin")} />
+            Refresh
+          </Button>
+        }
+      />
 
       <div className="mb-4 grid gap-3 border-b pb-4 lg:grid-cols-[minmax(0,1fr)_auto] lg:items-center">
         <div className="relative">

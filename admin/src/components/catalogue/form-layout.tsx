@@ -1,5 +1,6 @@
 import type React from "react";
 
+import { PageHeader } from "#/components/page-header";
 import { Button } from "#/components/ui/button";
 
 type CatalogueFormHeaderProps = {
@@ -33,16 +34,16 @@ export function CatalogueFormHeader({
   cancelLabel = "Cancel",
 }: CatalogueFormHeaderProps) {
   return (
-    <div className="mb-8 flex flex-col gap-4 md:flex-row md:items-start md:justify-between">
-      <div>
-        <h1 className="text-2xl font-bold tracking-tight">{title}</h1>
-        <p className="mt-1 text-sm text-muted-foreground">{description}</p>
-      </div>
-
-      <Button type="button" variant="outline" onClick={onCancel}>
-        {cancelLabel}
-      </Button>
-    </div>
+    <PageHeader
+      title={title}
+      subtitle={description}
+      className="mb-8"
+      actions={
+        <Button type="button" variant="outline" onClick={onCancel}>
+          {cancelLabel}
+        </Button>
+      }
+    />
   );
 }
 

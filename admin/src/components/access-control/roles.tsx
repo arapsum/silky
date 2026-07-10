@@ -28,6 +28,7 @@ import { ErrorState } from "#/components/error-state";
 import FormField from "#/components/form-field";
 import { Avatar, AvatarFallback, AvatarImage } from "#/components/ui/avatar";
 import { Button } from "#/components/ui/button";
+import { PageHeader } from "#/components/page-header";
 import {
   Dialog,
   DialogContent,
@@ -105,34 +106,33 @@ export default function RolesPage() {
 
   return (
     <div className="w-full pb-10">
-      <div className="mb-6 flex flex-col gap-4 lg:flex-row lg:items-end lg:justify-between">
-        <div>
-          <h1 className="text-2xl font-bold tracking-tight">Roles</h1>
-          <p className="mt-1 text-sm text-muted-foreground">
-            Manage access roles used to group permissions across the admin system.
-          </p>
-        </div>
-
-        <div className="flex flex-wrap items-center gap-2">
-          <Button
-            type="button"
-            variant="outline"
-            onClick={() => rolesQuery.refetch()}
-            disabled={rolesQuery.isFetching}
-          >
-            <ArrowClockwiseIcon className={cn("size-4", rolesQuery.isFetching && "animate-spin")} />
-            Refresh
-          </Button>
-          <Button
-            type="button"
-            className="bg-blue-600 hover:bg-blue-700"
-            onClick={() => setDialogMode({ type: "create" })}
-          >
-            <PlusIcon className="size-4" />
-            New Role
-          </Button>
-        </div>
-      </div>
+      <PageHeader
+        title="Roles"
+        subtitle="Manage access roles used to group permissions across the admin system."
+        actions={
+          <>
+            <Button
+              type="button"
+              variant="outline"
+              onClick={() => rolesQuery.refetch()}
+              disabled={rolesQuery.isFetching}
+            >
+              <ArrowClockwiseIcon
+                className={cn("size-4", rolesQuery.isFetching && "animate-spin")}
+              />
+              Refresh
+            </Button>
+            <Button
+              type="button"
+              className="bg-blue-600 hover:bg-blue-700"
+              onClick={() => setDialogMode({ type: "create" })}
+            >
+              <PlusIcon className="size-4" />
+              New Role
+            </Button>
+          </>
+        }
+      />
 
       <div className="mb-4 flex flex-col gap-3 border-b pb-4 md:flex-row md:items-center md:justify-between">
         <div className="relative w-full md:max-w-sm">

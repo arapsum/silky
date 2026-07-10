@@ -28,6 +28,7 @@ import {
 } from "#/api/products.ts";
 import { titleCase } from "#/components/catalogue/string-utils";
 import { DataTable } from "#/components/data-table";
+import { PageHeader } from "#/components/page-header";
 import {
   AlertDialog,
   AlertDialogAction,
@@ -296,19 +297,16 @@ export default function ProductCatalogue() {
 
   return (
     <div className="w-full pb-10">
-      <div className="mb-6 flex flex-col gap-4 md:flex-row md:items-start md:justify-between">
-        <div>
-          <h1 className="text-2xl font-bold tracking-tight">Products</h1>
-          <p className="mt-1 text-sm text-muted-foreground">
-            Manage product catalogue rows, stock, pricing, and variants.
-          </p>
-        </div>
-
-        <Button className="bg-blue-600 hover:bg-blue-700" render={<Link to="/products/create" />}>
-          <PlusIcon className="size-4" />
-          Add Product
-        </Button>
-      </div>
+      <PageHeader
+        title="Products"
+        subtitle="Manage product catalogue rows, stock, pricing, and variants."
+        actions={
+          <Button className="bg-blue-600 hover:bg-blue-700" render={<Link to="/products/create" />}>
+            <PlusIcon className="size-4" />
+            Add Product
+          </Button>
+        }
+      />
 
       <div className="mb-4 flex flex-col gap-3 lg:flex-row lg:items-center lg:justify-between">
         <div className="relative w-full lg:max-w-96">

@@ -25,6 +25,7 @@ import {
   type Pagination,
 } from "#/api/categories.ts";
 import { DataTable } from "#/components/data-table";
+import { PageHeader } from "#/components/page-header";
 import {
   AlertDialog,
   AlertDialogAction,
@@ -306,19 +307,19 @@ export default function CategoryCatalogue() {
 
   return (
     <div className="w-full pb-10">
-      <div className="mb-6 flex flex-col gap-4 md:flex-row md:items-start md:justify-between">
-        <div>
-          <h1 className="text-2xl font-bold tracking-tight">Categories</h1>
-          <p className="mt-1 text-sm text-muted-foreground">
-            Manage storefront category navigation and product grouping.
-          </p>
-        </div>
-
-        <Button className="bg-blue-600 hover:bg-blue-700" render={<Link to="/categories/create" />}>
-          <PlusIcon className="size-4" />
-          Add Category
-        </Button>
-      </div>
+      <PageHeader
+        title="Categories"
+        subtitle="Manage storefront category navigation and product grouping."
+        actions={
+          <Button
+            className="bg-blue-600 hover:bg-blue-700"
+            render={<Link to="/categories/create" />}
+          >
+            <PlusIcon className="size-4" />
+            Add Category
+          </Button>
+        }
+      />
 
       <div className="mb-4 flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
         <div className="relative w-full sm:max-w-80">

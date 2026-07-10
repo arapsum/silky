@@ -18,6 +18,7 @@ import { assignPermissionToRole, listRoles, rolesQueryKey, type Role } from "#/a
 import { EmptyState } from "#/components/empty-state";
 import { ErrorState } from "#/components/error-state";
 import { Button } from "#/components/ui/button";
+import { PageHeader } from "#/components/page-header";
 import { Checkbox } from "#/components/ui/checkbox";
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "#/components/ui/collapsible";
 import { Input } from "#/components/ui/input";
@@ -201,30 +202,27 @@ export default function PermissionsPage() {
 
   return (
     <div className="w-full pb-10">
-      <div className="mb-6 flex flex-col gap-4 lg:flex-row lg:items-end lg:justify-between">
-        <div>
-          <h1 className="text-2xl font-bold tracking-tight">Permissions</h1>
-          <p className="mt-1 text-sm text-muted-foreground">
-            Review permission grants available to roles across the admin system.
-          </p>
-        </div>
-
-        <Button
-          type="button"
-          variant="outline"
-          onClick={refresh}
-          disabled={allPermissionsQuery.isFetching || assignedPermissionsQuery.isFetching}
-        >
-          <ArrowClockwiseIcon
-            className={cn(
-              "size-4",
-              (allPermissionsQuery.isFetching || assignedPermissionsQuery.isFetching) &&
-                "animate-spin",
-            )}
-          />
-          Refresh
-        </Button>
-      </div>
+      <PageHeader
+        title="Permissions"
+        subtitle="Review permission grants available to roles across the admin system."
+        actions={
+          <Button
+            type="button"
+            variant="outline"
+            onClick={refresh}
+            disabled={allPermissionsQuery.isFetching || assignedPermissionsQuery.isFetching}
+          >
+            <ArrowClockwiseIcon
+              className={cn(
+                "size-4",
+                (allPermissionsQuery.isFetching || assignedPermissionsQuery.isFetching) &&
+                  "animate-spin",
+              )}
+            />
+            Refresh
+          </Button>
+        }
+      />
 
       <div className="mb-4 grid gap-3 border-b pb-4 xl:grid-cols-[minmax(0,1fr)_16rem_auto_auto] xl:items-center">
         <div className="relative">

@@ -21,6 +21,7 @@ import { Avatar, AvatarFallback, AvatarImage } from "#/components/ui/avatar";
 import { Button } from "#/components/ui/button";
 import { Separator } from "#/components/ui/separator";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "#/components/ui/tabs";
+import { PageHeader } from "#/components/page-header";
 import { cn } from "#/lib/utils";
 
 const PASSWORD_RULES: { id: string; label: string; test: (v: string) => boolean }[] = [
@@ -503,12 +504,10 @@ export default function AccountSettingsPage() {
 
   return (
     <div className="w-full pb-10">
-      <div className="mb-6">
-        <h1 className="text-2xl font-bold tracking-tight">Account & User Management</h1>
-        <p className="mt-1 text-sm text-muted-foreground">
-          Manage your account settings and user preferences.
-        </p>
-      </div>
+      <PageHeader
+        title="Account & User Management"
+        subtitle="Manage your account settings and user preferences."
+      />
 
       <Tabs defaultValue="general" className="w-full">
         <TabsList className="h-auto w-full justify-start gap-6 rounded-none border-b bg-transparent p-0">

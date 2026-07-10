@@ -32,7 +32,7 @@ import {
 import { Skeleton } from "@/components/ui/skeleton";
 import { cn } from "@/lib/utils";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
-import { useNavigate } from "@tanstack/react-router";
+import { Link, useNavigate } from "@tanstack/react-router";
 import {
   PulseIcon,
   CurrencyDollarIcon,
@@ -316,24 +316,26 @@ export function AppSidebar() {
   const isCollapsed = state === "collapsed";
 
   return (
-    <Sidebar variant="inset" collapsible="icon">
+    <Sidebar variant="sidebar" collapsible="icon">
       <SidebarHeader
         className={cn(
-          "flex md:pt-3.5",
+          "flex min-h-16 justify-center border-b px-3",
           isCollapsed
-            ? "flex-row items-center justify-between gap-y-4 md:flex-col md:items-start md:justify-start"
+            ? "flex-row items-center md:flex-col md:items-center"
             : "flex-row items-center justify-between",
         )}
       >
-        <a href="#" className="flex items-center gap-2">
-          <Logo className="h-8 w-8" />
-          {!isCollapsed && <span className="font-semibold text-black dark:text-white">Silk</span>}
-        </a>
+        <Link to="/" className="flex items-center gap-2.5" aria-label="Silk dashboard">
+          <Logo className="h-8 w-7 text-foreground" />
+          {!isCollapsed && (
+            <span className="text-base font-semibold tracking-tight text-foreground">Silk</span>
+          )}
+        </Link>
       </SidebarHeader>
-      <SidebarContent className="gap-4 px-2 py-4">
+      <SidebarContent className="gap-0 px-2 py-3">
         <DashboardNavigation routes={dashboardRoutes} />
       </SidebarContent>
-      <SidebarFooter className="px-2">
+      <SidebarFooter className="border-t px-2 py-2">
         <UserAccountMenu isCollapsed={isCollapsed} />
       </SidebarFooter>
     </Sidebar>
@@ -383,7 +385,7 @@ function UserAccountMenu({ isCollapsed }: { isCollapsed: boolean }) {
               type="button"
               variant="ghost"
               className={cn(
-                "h-12 w-full justify-start gap-3 rounded-xl px-2",
+                "h-12 w-full justify-start gap-3 rounded-none px-2",
                 isCollapsed && "size-10 justify-center px-0",
               )}
             />
@@ -399,7 +401,7 @@ function UserAccountMenu({ isCollapsed }: { isCollapsed: boolean }) {
           )}
         </DropdownMenuTrigger>
 
-        <DropdownMenuContent align="end" side="right" sideOffset={8} className="w-64">
+        <DropdownMenuContent align="end" side="right" sideOffset={8} className="w-64 rounded-none">
           <DropdownMenuLabel>
             <div className="flex items-center gap-3">
               <AccountAvatar user={currentUser} fallback={fallback} size="lg" />
@@ -414,14 +416,18 @@ function UserAccountMenu({ isCollapsed }: { isCollapsed: boolean }) {
 
           <DropdownMenuSeparator />
 
-          <DropdownMenuItem variant="destructive" onClick={() => setIsLogoutDialogOpen(true)}>
+          <DropdownMenuItem
+            variant="destructive"
+            className="rounded-none"
+            onClick={() => setIsLogoutDialogOpen(true)}
+          >
             <SignOutIcon className="size-4" />
             Sign out
           </DropdownMenuItem>
         </DropdownMenuContent>
       </DropdownMenu>
 
-      <AlertDialogContent>
+      <AlertDialogContent className="rounded-none">
         <AlertDialogHeader>
           <AlertDialogTitle>Sign out?</AlertDialogTitle>
           <AlertDialogDescription>
@@ -432,9 +438,12 @@ function UserAccountMenu({ isCollapsed }: { isCollapsed: boolean }) {
         </AlertDialogHeader>
 
         <AlertDialogFooter>
-          <AlertDialogCancel disabled={logoutMutation.isPending}>Cancel</AlertDialogCancel>
+          <AlertDialogCancel className="rounded-none" disabled={logoutMutation.isPending}>
+            Cancel
+          </AlertDialogCancel>
           <AlertDialogAction
             variant="destructive"
+            className="rounded-none"
             disabled={logoutMutation.isPending}
             onClick={handleConfirmLogout}
           >

@@ -1,6 +1,5 @@
 "use client";
 
-import { Avatar, AvatarFallback, AvatarImage } from "#/components/ui/avatar";
 import { Button } from "#/components/ui/button";
 import {
   Command,
@@ -16,90 +15,85 @@ import { Separator } from "#/components/ui/separator";
 import { SidebarTrigger } from "#/components/ui/sidebar";
 import {
   BellIcon,
-  CalendarIcon,
-  EnvelopeIcon,
+  ChartPieIcon,
   GearIcon,
-  LinkIcon,
+  HouseIcon,
+  KeyIcon,
   MagnifyingGlassIcon,
   MoonIcon,
-  QuestionIcon,
-  RocketLaunchIcon,
+  PackageIcon,
+  ShieldCheckIcon,
   SunIcon,
-  TrendUpIcon,
-  XIcon,
+  UsersIcon,
 } from "@phosphor-icons/react";
+import { useNavigate, useRouterState } from "@tanstack/react-router";
 import { useTheme } from "next-themes";
 import { useEffect, useState } from "react";
 
-const notifications = [
-  {
-    id: "mark-bush",
-    avatar: "",
-    fallback: "MB",
-    title: "Mark Bush",
-    time: "12 Minutes ago",
-    meta: "New post",
-    unread: true,
-  },
-  {
-    id: "aaron-black",
-    avatar: "",
-    fallback: "AB",
-    title: "Aaron Black",
-    time: "27 Minutes ago",
-    meta: "New comment",
-    unread: true,
-  },
-  {
-    id: "anna-campaign",
-    avatar: "",
-    fallback: "AN",
-    title: "Anna has applied to create an ad for your campaign",
-    time: "2 hours ago",
-    meta: "New request for campaign",
-    actions: true,
-  },
-  {
-    id: "jason-file",
-    avatar: "",
-    fallback: "JS",
-    title: "Jason attached the file",
-    time: "6 hours ago",
-    meta: "Attached files",
-    attachment: "Work examples.com",
-  },
-];
-
 const commandSuggestions = [
   {
-    id: "mail",
-    title: "Mail - App",
-    icon: EnvelopeIcon,
+    id: "dashboard",
+    title: "Dashboard",
+    description: "Admin overview",
+    to: "/",
+    icon: HouseIcon,
   },
   {
-    id: "contact",
-    title: "Contact - App",
-    icon: CalendarIcon,
+    id: "products",
+    title: "Products",
+    description: "Manage catalogue products",
+    to: "/products",
+    icon: PackageIcon,
   },
   {
-    id: "sales",
-    title: "Sales - Dashboard",
-    icon: TrendUpIcon,
+    id: "categories",
+    title: "Categories",
+    description: "Organise the catalogue",
+    to: "/categories",
+    icon: ChartPieIcon,
   },
   {
-    id: "pricing",
-    title: "Pricing - Page",
-    icon: RocketLaunchIcon,
+    id: "customers",
+    title: "Customers",
+    description: "Review customer accounts",
+    to: "/people/customers",
+    icon: UsersIcon,
   },
   {
-    id: "faq",
-    title: "FAQ - Page",
-    icon: QuestionIcon,
+    id: "roles",
+    title: "Roles",
+    description: "Manage access roles",
+    to: "/access-control/roles",
+    icon: ShieldCheckIcon,
   },
-];
+  {
+    id: "permissions",
+    title: "Permissions",
+    description: "Review role permissions",
+    to: "/access-control/permissions",
+    icon: KeyIcon,
+  },
+  {
+    id: "settings",
+    title: "Settings",
+    description: "Manage your account",
+    to: "/settings",
+    icon: GearIcon,
+  },
+] as const;
+
+function sectionLabel(pathname: string) {
+  if (pathname.startsWith("/products")) return "Catalogue";
+  if (pathname.startsWith("/categories")) return "Categories";
+  if (pathname.startsWith("/people")) return "People";
+  if (pathname.startsWith("/access-control")) return "Access Control";
+  if (pathname.startsWith("/settings")) return "Settings";
+  return "Dashboard";
+}
 
 export function Navbar() {
   const [isCommandOpen, setIsCommandOpen] = useState(false);
+  const pathname = useRouterState({ select: (state) => state.location.pathname });
 
   useEffect(() => {
     const handleKeyDown = (event: KeyboardEvent) => {
@@ -115,14 +109,17 @@ export function Navbar() {
 
   return (
     <>
-      <header className="sticky top-0 z-20  bg-background/95 px-4 py-3 backdrop-blur md:px-8">
-        <div className="mx-auto flex h-12 w-full max-w-360 items-center gap-3 rounded-xl border bg-card px-4 shadow-sm">
-          <SidebarTrigger className="size-8" />
-          <Separator orientation="vertical" className="h-8 my-auto" />
+      <header className="sticky top-0 z-20 border-b bg-background/95 backdrop-blur">
+        <div className="mx-auto flex h-16 w-full max-w-360 items-center gap-3 px-4 md:px-8">
+          <SidebarTrigger className="size-8 rounded-none" />
+          <Separator orientation="vertical" className="my-auto h-7" />
+          <span className="hidden min-w-28 text-sm font-semibold md:block">
+            {sectionLabel(pathname)}
+          </span>
 
           <button
             type="button"
-            className="relative flex h-9 min-w-0 flex-1 items-center rounded-lg px-9 text-left text-sm text-muted-foreground outline-none hover:bg-muted focus-visible:ring-2 focus-visible:ring-ring md:max-w-sm"
+            className="relative flex h-9 min-w-0 flex-1 items-center border bg-muted/30 px-9 text-left text-sm text-muted-foreground outline-none transition-colors hover:bg-muted focus-visible:border-primary focus-visible:ring-3 focus-visible:ring-primary/15 md:max-w-md"
             onClick={() => setIsCommandOpen(true)}
           >
             <MagnifyingGlassIcon
@@ -130,7 +127,7 @@ export function Navbar() {
               aria-hidden
             />
             <span className="truncate">Type to search...</span>
-            <kbd className="absolute right-2 top-1/2 hidden h-5 -translate-y-1/2 items-center rounded border bg-muted px-1.5 font-mono text-[10px] font-medium text-muted-foreground sm:flex">
+            <kbd className="absolute right-2 top-1/2 hidden h-5 -translate-y-1/2 items-center border bg-background px-1.5 font-mono text-[10px] font-medium text-muted-foreground sm:flex">
               Ctrl K
             </kbd>
           </button>
@@ -154,13 +151,15 @@ function CommandSearchDialog({
   open: boolean;
   onOpenChange: (open: boolean) => void;
 }) {
+  const navigate = useNavigate();
+
   return (
     <CommandDialog
       open={open}
       onOpenChange={onOpenChange}
       title="Command search"
       description="Search for a page or command"
-      className="max-w-[calc(100%-2rem)] rounded-xl! sm:max-w-md"
+      className="max-w-[calc(100%-2rem)] rounded-none! [&_[data-slot=command]]:rounded-none! [&_[data-slot=input-group]]:rounded-none! sm:max-w-md"
     >
       <Command>
         <CommandInput placeholder="Type a command or search..." autoFocus />
@@ -168,9 +167,19 @@ function CommandSearchDialog({
           <CommandEmpty>No results found.</CommandEmpty>
           <CommandGroup heading="Suggestions">
             {commandSuggestions.map((suggestion) => (
-              <CommandItem key={suggestion.id} onSelect={() => onOpenChange(false)}>
+              <CommandItem
+                key={suggestion.id}
+                className="rounded-none!"
+                onSelect={() => {
+                  onOpenChange(false);
+                  void navigate({ to: suggestion.to });
+                }}
+              >
                 <suggestion.icon className="size-4" />
-                <span>{suggestion.title}</span>
+                <div className="min-w-0">
+                  <p className="text-sm font-medium">{suggestion.title}</p>
+                  <p className="text-xs text-muted-foreground">{suggestion.description}</p>
+                </div>
               </CommandItem>
             ))}
           </CommandGroup>
@@ -189,108 +198,31 @@ function NotificationsButton() {
             type="button"
             variant="ghost"
             size="icon-sm"
-            className="relative"
+            className="relative rounded-none"
             aria-label="Notifications"
           />
         }
       >
         <BellIcon className="size-4" />
-        <span className="absolute right-2 top-2 size-1.5 rounded-full bg-destructive" />
       </PopoverTrigger>
 
       <PopoverContent
         align="end"
         sideOffset={10}
-        className="w-[min(calc(100vw-2rem),28rem)] gap-0 rounded-md p-0"
+        className="w-[min(calc(100vw-2rem),22rem)] gap-0 rounded-none p-0"
       >
-        <div className="flex items-center justify-between px-3 py-3">
-          <p className="text-xs font-medium uppercase tracking-wide text-muted-foreground">
-            Notifications
-          </p>
-          <span className="rounded-full bg-blue-50 px-2 py-1 text-xs font-medium text-blue-600 dark:bg-blue-950 dark:text-blue-300">
-            8 New
+        <div className="border-b px-4 py-3">
+          <p className="text-sm font-semibold">Notifications</p>
+          <p className="mt-0.5 text-xs text-muted-foreground">Store and account updates</p>
+        </div>
+        <div className="flex flex-col items-center px-6 py-9 text-center">
+          <span className="flex size-10 items-center justify-center bg-primary/10 text-primary">
+            <BellIcon className="size-5" />
           </span>
-        </div>
-
-        <div className="flex items-end justify-between border-b px-3">
-          <div className="flex items-center gap-5 text-sm">
-            <button type="button" className="border-b-2 border-foreground pb-2 text-foreground">
-              Inbox
-            </button>
-            <button type="button" className="pb-2 text-muted-foreground hover:text-foreground">
-              General
-            </button>
-          </div>
-          <Button type="button" variant="ghost" size="icon-sm" aria-label="Notification settings">
-            <GearIcon className="size-4" />
-          </Button>
-        </div>
-
-        <div className="grid">
-          {notifications.map((notification) => (
-            <div key={notification.id} className="border-b px-3 py-4 last:border-b-0">
-              <div className="flex items-start gap-3">
-                <Avatar className="mt-0.5">
-                  <AvatarImage src={notification.avatar} alt={notification.title} />
-                  <AvatarFallback>{notification.fallback}</AvatarFallback>
-                </Avatar>
-
-                <div className="min-w-0 flex-1">
-                  <div className="flex items-start justify-between gap-3">
-                    <p className="text-sm font-medium leading-snug">{notification.title}</p>
-                    <Button
-                      type="button"
-                      variant="ghost"
-                      size="icon-xs"
-                      className="-mr-1 -mt-1 shrink-0"
-                      aria-label="Dismiss notification"
-                    >
-                      <XIcon className="size-3.5" />
-                    </Button>
-                  </div>
-
-                  <div className="mt-1 flex flex-wrap items-center gap-2 text-xs text-muted-foreground">
-                    <span>{notification.time}</span>
-                    <span className="size-1 rounded-full bg-blue-200" />
-                    <span>{notification.meta}</span>
-                    {notification.unread && (
-                      <span className="ml-auto size-1.5 rounded-full bg-blue-500" />
-                    )}
-                  </div>
-
-                  {notification.actions && (
-                    <div className="mt-3 flex items-center gap-2">
-                      <Button
-                        type="button"
-                        variant="secondary"
-                        size="sm"
-                        className="h-8 rounded-md px-3"
-                      >
-                        Decline
-                      </Button>
-                      <Button
-                        type="button"
-                        size="sm"
-                        className="h-8 rounded-md bg-blue-600 px-3 text-white hover:bg-blue-700"
-                      >
-                        Accept
-                      </Button>
-                    </div>
-                  )}
-
-                  {notification.attachment && (
-                    <a
-                      href="#"
-                      className="mt-3 flex items-center gap-2 text-sm text-foreground hover:underline"
-                    >
-                      <LinkIcon className="size-4" />
-                      {notification.attachment}
-                    </a>
-                  )}
-                </div>
-              </div>
-            </div>
-          ))}
+          <p className="mt-3 text-sm font-medium">No notifications</p>
+          <p className="mt-1 max-w-56 text-xs leading-5 text-muted-foreground">
+            Store and account updates will appear here when they are available.
+          </p>
         </div>
       </PopoverContent>
     </Popover>
@@ -316,6 +248,7 @@ function ThemeToggle() {
       type="button"
       variant="ghost"
       size="icon-sm"
+      className="rounded-none"
       aria-label={isDark ? "Switch to light theme" : "Switch to dark theme"}
       onClick={toggleTheme}
     >

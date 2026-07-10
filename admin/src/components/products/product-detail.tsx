@@ -98,10 +98,8 @@ function statusClass(status: string) {
 function DetailField({ label, children }: { label: string; children: React.ReactNode }) {
   return (
     <div className="min-w-0">
-      <dt className="text-[11px] font-medium tracking-wide text-muted-foreground uppercase">
-        {label}
-      </dt>
-      <dd className="mt-1.5 min-h-5 break-words text-sm font-medium">{children}</dd>
+      <dt className="text-xs font-medium text-muted-foreground">{label}</dt>
+      <dd className="mt-1 min-h-5 break-words text-sm font-medium">{children}</dd>
     </div>
   );
 }
@@ -117,9 +115,9 @@ function ProductGallery({
   const selectedPicture = pictures.find((picture) => picture.pid === selectedPid) ?? pictures[0];
 
   return (
-    <div className="flex min-w-0 gap-3">
+    <div className="flex min-w-0 flex-col-reverse gap-3 sm:flex-row">
       {pictures.length > 0 && (
-        <div className="order-2 flex shrink-0 gap-2 overflow-x-auto pb-1 lg:order-1 lg:max-h-[25rem] lg:flex-col lg:overflow-y-auto lg:pb-0">
+        <div className="flex shrink-0 gap-2 overflow-x-auto pb-1 sm:max-h-[28rem] sm:flex-col sm:overflow-y-auto sm:pb-0">
           {pictures.map((picture, index) => {
             const isSelected = picture.pid === selectedPicture?.pid;
 
@@ -142,7 +140,7 @@ function ProductGallery({
         </div>
       )}
 
-      <div className="relative flex aspect-square min-w-0 flex-1 items-center justify-center overflow-hidden bg-muted/50">
+      <div className="relative flex aspect-[4/3] min-w-0 flex-1 items-center justify-center overflow-hidden bg-muted/50 lg:aspect-square">
         {selectedPicture ? (
           <img
             src={selectedPicture.imageLink}
@@ -161,58 +159,95 @@ function ProductGallery({
   );
 }
 
+function ProductMetric({
+  icon,
+  label,
+  value,
+  detail,
+}: {
+  icon: React.ReactNode;
+  label: string;
+  value: string;
+  detail: string;
+}) {
+  return (
+    <div className="flex min-w-0 items-start gap-3 border-b px-4 py-4 last:border-b-0 sm:border-r sm:border-b-0 sm:first:pl-0 sm:last:border-r-0 sm:last:pr-0">
+      <span className="flex size-9 shrink-0 items-center justify-center bg-primary/10 text-primary">
+        {icon}
+      </span>
+      <div className="min-w-0">
+        <p className="text-xs text-muted-foreground">{label}</p>
+        <p className="mt-0.5 truncate text-lg font-semibold tracking-tight">{value}</p>
+        <p className="mt-0.5 truncate text-[11px] text-muted-foreground">{detail}</p>
+      </div>
+    </div>
+  );
+}
+
 function ProductHero({ product }: { product: ProductDetail }) {
   const images = productImages(product);
   const variant = defaultVariant(product);
+  const stock = totalStock(product);
+  const prices = product.variants.map((item) => Number(item.price)).filter(Number.isFinite);
+  const lowestPrice = prices.length ? Math.min(...prices) : undefined;
+  const highestPrice = prices.length ? Math.max(...prices) : undefined;
+  const priceRange =
+    lowestPrice === undefined
+      ? "Not set"
+      : lowestPrice === highestPrice
+        ? money(String(lowestPrice))
+        : `${money(String(lowestPrice))} to ${money(String(highestPrice))}`;
 
   return (
-    <section className="border bg-card p-4 shadow-sm sm:p-5">
-      <div className="grid gap-7 lg:grid-cols-[minmax(19rem,.86fr)_minmax(0,1.14fr)] lg:gap-8">
+    <section className="border bg-card p-4 sm:p-5">
+      <div className="grid gap-7 lg:grid-cols-[minmax(20rem,.92fr)_minmax(0,1.08fr)] lg:gap-10">
         <ProductGallery key={product.pid} product={product} pictures={images} />
 
-        <div className="flex min-w-0 flex-col lg:py-3">
-          <div className="flex flex-wrap items-center gap-x-5 gap-y-2 text-sm">
-            <span className="text-muted-foreground">
-              SKU: <span className="font-medium text-foreground">{variant?.sku ?? "Not set"}</span>
-            </span>
-            <span className="flex items-center gap-1.5 text-muted-foreground">
-              <TagIcon className="size-3.5 text-primary" weight="fill" />
-              Category:{" "}
-              <span className="font-medium text-foreground">
-                {titleCase(product.category.name)}
-              </span>
+        <div className="flex min-w-0 flex-col">
+          <div className="flex flex-wrap items-center gap-2">
+            <Badge variant="outline" className="h-7 border-primary/25 bg-primary/5 text-primary">
+              <TagIcon className="size-3.5" weight="fill" />
+              {titleCase(product.category.name)}
+            </Badge>
+            <span className="font-mono text-xs text-muted-foreground">
+              {variant?.sku ?? "SKU not set"}
             </span>
           </div>
 
-          <p className="mt-6 max-w-2xl text-sm leading-6 text-muted-foreground">
+          <p className="mt-5 max-w-2xl text-sm leading-6 text-muted-foreground">
             {product.description || "No product description has been added yet."}
           </p>
 
-          <dl className="mt-auto grid grid-cols-2 gap-x-6 gap-y-5 border-t pt-6 sm:grid-cols-4">
-            <DetailField label="Status">
-              <Badge
-                variant="outline"
-                className={cn(
-                  "h-5 px-1.5 text-[11px]",
-                  product.deletedAt
-                    ? "border-red-200 bg-red-50 text-red-700 dark:border-red-900 dark:bg-red-950/40 dark:text-red-300"
-                    : "border-emerald-200 bg-emerald-50 text-emerald-700 dark:border-emerald-900 dark:bg-emerald-950/40 dark:text-emerald-300",
-                )}
-              >
-                {product.deletedAt ? "Deleted" : "Active"}
-              </Badge>
-            </DetailField>
-            <DetailField label="Type">Simple product</DetailField>
-            <DetailField label="Created at">
-              <span className="text-xs font-normal text-muted-foreground">
-                {dateTime(product.createdAt)}
-              </span>
-            </DetailField>
-            <DetailField label="Updated at">
-              <span className="text-xs font-normal text-muted-foreground">
-                {dateTime(product.updatedAt)}
-              </span>
-            </DetailField>
+          <div className="mt-6 grid border-y sm:grid-cols-3">
+            <ProductMetric
+              icon={<TagIcon className="size-4" />}
+              label="Price"
+              value={priceRange}
+              detail={variant ? `Default ${money(variant.price)}` : "No default price"}
+            />
+            <ProductMetric
+              icon={<CubeIcon className="size-4" />}
+              label="Inventory"
+              value={number(stock)}
+              detail="Units across all SKUs"
+            />
+            <ProductMetric
+              icon={<StackIcon className="size-4" />}
+              label="Variants"
+              value={number(product.variants.length)}
+              detail={`${number(product.options.length)} option dimensions`}
+            />
+          </div>
+
+          <dl className="mt-auto grid grid-cols-2 gap-x-8 gap-y-5 pt-6 sm:grid-cols-3">
+            <DetailField label="Product type">Simple product</DetailField>
+            <DetailField label="Media">{number(images.length)} images</DetailField>
+            <DetailField label="Category slug">{product.category.slug}</DetailField>
+            <div className="text-xs text-muted-foreground sm:col-span-3">
+              Created {dateTime(product.createdAt)}
+              <span className="mx-2 text-border">|</span>
+              Updated {dateTime(product.updatedAt)}
+            </div>
           </dl>
         </div>
       </div>
@@ -232,7 +267,7 @@ function Panel({
   className?: string;
 }) {
   return (
-    <section className={cn("border bg-card shadow-sm", className)}>
+    <section className={cn("border bg-card", className)}>
       <div className="flex items-center gap-2 border-b px-4 py-3.5">
         <span className="text-muted-foreground">{icon}</span>
         <h2 className="text-sm font-semibold">{title}</h2>
@@ -287,79 +322,6 @@ function OptionSummary({ product }: { product: ProductDetail }) {
   );
 }
 
-function SummaryRow({
-  label,
-  value,
-  valueClassName,
-}: {
-  label: string;
-  value: string;
-  valueClassName?: string;
-}) {
-  return (
-    <div className="flex items-center justify-between gap-4 py-2.5 text-sm not-last:border-b">
-      <span className="text-muted-foreground">{label}</span>
-      <span className={cn("font-medium", valueClassName)}>{value}</span>
-    </div>
-  );
-}
-
-function InventorySummary({ product }: { product: ProductDetail }) {
-  const stock = totalStock(product);
-  const lowStock = product.variants.filter(
-    (variant) => variant.stockQuantity > 0 && variant.stockQuantity < 10,
-  ).length;
-  const outOfStock = product.variants.filter((variant) => variant.stockQuantity === 0).length;
-
-  return (
-    <div>
-      <SummaryRow label="Total variants" value={number(product.variants.length)} />
-      <SummaryRow
-        label="Total stock"
-        value={`${number(stock)} units`}
-        valueClassName="text-emerald-600"
-      />
-      <SummaryRow
-        label="Available stock"
-        value={`${number(stock)} units`}
-        valueClassName="text-emerald-600"
-      />
-      <SummaryRow
-        label="Low stock variants"
-        value={number(lowStock)}
-        valueClassName={lowStock ? "text-amber-600" : undefined}
-      />
-      <SummaryRow
-        label="Out of stock variants"
-        value={number(outOfStock)}
-        valueClassName={outOfStock ? "text-red-600" : undefined}
-      />
-    </div>
-  );
-}
-
-function PricingSummary({ product }: { product: ProductDetail }) {
-  const prices = product.variants.map((variant) => Number(variant.price)).filter(Number.isFinite);
-  const lowest = prices.length ? Math.min(...prices) : undefined;
-  const highest = prices.length ? Math.max(...prices) : undefined;
-  const average = prices.length
-    ? prices.reduce((sum, price) => sum + price, 0) / prices.length
-    : undefined;
-
-  const format = (value: number | undefined) =>
-    value === undefined ? "Not set" : money(String(value));
-
-  return (
-    <div>
-      <SummaryRow label="Price range" value={`${format(lowest)} – ${format(highest)}`} />
-      <SummaryRow label="Average price" value={format(average)} />
-      <SummaryRow label="Lowest price" value={format(lowest)} />
-      <SummaryRow label="Highest price" value={format(highest)} />
-      <SummaryRow label="Default SKU" value={defaultVariant(product)?.sku ?? "Not set"} />
-    </div>
-  );
-}
-
 function VariantTable({ variants }: { variants: ProductVariantDetail[] }) {
   if (!variants.length) {
     return (
@@ -410,7 +372,7 @@ function VariantTable({ variants }: { variants: ProductVariantDetail[] }) {
                         </span>
                       ))
                     ) : (
-                      <span className="text-xs text-muted-foreground">—</span>
+                      <span className="text-xs text-muted-foreground">Not configured</span>
                     )}
                   </div>
                 </td>
@@ -438,23 +400,23 @@ function ProductDetailSkeleton() {
   return (
     <div className="grid gap-6 pb-10">
       <div className="flex items-center justify-between">
-        <Skeleton className="h-9 w-72" />
-        <Skeleton className="h-9 w-36" />
+        <Skeleton className="h-9 w-72 rounded-none" />
+        <Skeleton className="h-9 w-36 rounded-none" />
       </div>
       <div className="grid gap-8 border p-5 lg:grid-cols-2">
-        <Skeleton className="aspect-square w-full" />
+        <Skeleton className="aspect-square w-full rounded-none" />
         <div className="grid content-center gap-5">
-          <Skeleton className="h-5 w-3/5" />
-          <Skeleton className="h-20 w-full" />
-          <Skeleton className="h-20 w-full" />
+          <Skeleton className="h-5 w-3/5 rounded-none" />
+          <Skeleton className="h-20 w-full rounded-none" />
+          <Skeleton className="h-20 w-full rounded-none" />
         </div>
       </div>
       <div className="grid gap-5 lg:grid-cols-3">
-        <Skeleton className="h-64" />
-        <Skeleton className="h-64" />
-        <Skeleton className="h-64" />
+        <Skeleton className="h-64 rounded-none" />
+        <Skeleton className="h-64 rounded-none" />
+        <Skeleton className="h-64 rounded-none" />
       </div>
-      <Skeleton className="h-96" />
+      <Skeleton className="h-96 rounded-none" />
     </div>
   );
 }
@@ -498,7 +460,7 @@ export default function ProductDetailPage({ pid }: { pid: string }) {
         title="Product not found"
         description="The requested product no longer exists or is unavailable."
         action={
-          <Button variant="outline" render={<Link to="/products" />}>
+          <Button className="rounded-none" variant="outline" render={<Link to="/products" />}>
             Back to Products
           </Button>
         }
@@ -533,9 +495,10 @@ export default function ProductDetailPage({ pid }: { pid: string }) {
             </Badge>
           </>
         }
+        subtitle="Manage catalogue information, media, variants, pricing, and inventory."
         actions={
           <>
-            <Button variant="outline" render={<Link to="/products" />}>
+            <Button className="rounded-none" variant="outline" render={<Link to="/products" />}>
               <ArrowLeftIcon className="size-4" />
               Back
             </Button>
@@ -543,6 +506,7 @@ export default function ProductDetailPage({ pid }: { pid: string }) {
               <AlertDialogTrigger
                 render={
                   <Button
+                    className="rounded-none"
                     variant="outline"
                     disabled={deleteMutation.isPending || Boolean(product.deletedAt)}
                   />
@@ -551,7 +515,7 @@ export default function ProductDetailPage({ pid }: { pid: string }) {
                 <TrashIcon className="size-4" />
                 Delete
               </AlertDialogTrigger>
-              <AlertDialogContent>
+              <AlertDialogContent className="rounded-none">
                 <AlertDialogHeader>
                   <AlertDialogTitle>Delete product?</AlertDialogTitle>
                   <AlertDialogDescription>
@@ -559,9 +523,12 @@ export default function ProductDetailPage({ pid }: { pid: string }) {
                   </AlertDialogDescription>
                 </AlertDialogHeader>
                 <AlertDialogFooter>
-                  <AlertDialogCancel disabled={deleteMutation.isPending}>Cancel</AlertDialogCancel>
+                  <AlertDialogCancel className="rounded-none" disabled={deleteMutation.isPending}>
+                    Cancel
+                  </AlertDialogCancel>
                   <AlertDialogAction
                     variant="destructive"
+                    className="rounded-none"
                     disabled={deleteMutation.isPending}
                     onClick={() => deleteMutation.mutate()}
                   >
@@ -570,7 +537,10 @@ export default function ProductDetailPage({ pid }: { pid: string }) {
                 </AlertDialogFooter>
               </AlertDialogContent>
             </AlertDialog>
-            <Button render={<Link to="/products/$pid/edit" params={{ pid }} />}>
+            <Button
+              className="rounded-none"
+              render={<Link to="/products/$pid/edit" params={{ pid }} />}
+            >
               <PencilSimpleIcon className="size-4" />
               Edit product
             </Button>
@@ -580,19 +550,7 @@ export default function ProductDetailPage({ pid }: { pid: string }) {
 
       <ProductHero product={product} />
 
-      <div className="mt-6 grid gap-5 lg:grid-cols-3">
-        <Panel title="Product options" icon={<StackIcon className="size-4" />}>
-          <OptionSummary product={product} />
-        </Panel>
-        <Panel title="Inventory summary" icon={<CubeIcon className="size-4" />}>
-          <InventorySummary product={product} />
-        </Panel>
-        <Panel title="Pricing summary" icon={<TagIcon className="size-4" />}>
-          <PricingSummary product={product} />
-        </Panel>
-      </div>
-
-      <section className="mt-6 border bg-card shadow-sm">
+      <section className="mt-5 border bg-card">
         <div className="flex flex-col gap-3 border-b px-4 py-4 sm:flex-row sm:items-center sm:justify-between">
           <div>
             <h2 className="text-base font-semibold">
@@ -610,34 +568,42 @@ export default function ProductDetailPage({ pid }: { pid: string }) {
         <VariantTable variants={product.variants} />
       </section>
 
-      <div className="mt-6 grid gap-5 lg:grid-cols-3">
-        <Panel title="Product description" icon={<PackageIcon className="size-4" />}>
-          <p className="text-sm leading-6 text-muted-foreground">
-            {product.description || "No product description has been added yet."}
-          </p>
-        </Panel>
-        <Panel title="Product information" icon={<StackIcon className="size-4" />}>
-          {information.length ? (
-            <dl className="grid gap-4">
-              {information.map(([key, value]) => (
-                <DetailField key={key} label={key}>
-                  {value}
-                </DetailField>
-              ))}
-            </dl>
-          ) : (
-            <p className="text-sm leading-6 text-muted-foreground">
-              No additional product information has been added.
+      <div className="mt-5 grid items-start gap-5 lg:grid-cols-[minmax(0,1.15fr)_minmax(18rem,.85fr)]">
+        <div className="grid gap-5">
+          <Panel title="Product information" icon={<StackIcon className="size-4" />}>
+            {information.length ? (
+              <dl className="grid gap-x-8 gap-y-5 sm:grid-cols-2">
+                {information.map(([key, value]) => (
+                  <DetailField key={key} label={key}>
+                    {value}
+                  </DetailField>
+                ))}
+              </dl>
+            ) : (
+              <p className="text-sm leading-6 text-muted-foreground">
+                No additional product information has been added.
+              </p>
+            )}
+          </Panel>
+          <Panel title="Product description" icon={<PackageIcon className="size-4" />}>
+            <p className="max-w-3xl text-sm leading-6 text-muted-foreground">
+              {product.description || "No product description has been added yet."}
             </p>
-          )}
-        </Panel>
-        <Panel title="Category information" icon={<TagIcon className="size-4" />}>
-          <dl className="grid gap-4">
-            <DetailField label="Category">{titleCase(product.category.name)}</DetailField>
-            <DetailField label="Category slug">{product.category.slug}</DetailField>
-            <DetailField label="Media">{number(images.length)} images</DetailField>
-          </dl>
-        </Panel>
+          </Panel>
+        </div>
+
+        <div className="grid gap-5">
+          <Panel title="Category information" icon={<TagIcon className="size-4" />}>
+            <dl className="grid gap-4">
+              <DetailField label="Category">{titleCase(product.category.name)}</DetailField>
+              <DetailField label="Category slug">{product.category.slug}</DetailField>
+              <DetailField label="Media">{number(images.length)} images</DetailField>
+            </dl>
+          </Panel>
+          <Panel title="Product options" icon={<StackIcon className="size-4" />}>
+            <OptionSummary product={product} />
+          </Panel>
+        </div>
       </div>
     </div>
   );

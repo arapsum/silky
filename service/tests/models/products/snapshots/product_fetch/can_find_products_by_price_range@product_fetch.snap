@@ -11,6 +11,11 @@ Ok(
                 description: Some(
                     "Low-profile leather sneakers with cushioned insoles.",
                 ),
+                information: {
+                    "Care": "Wipe clean",
+                    "Material": "Leather",
+                    "Sole": "Rubber",
+                },
                 category: ProductCategorySummary {
                     id: ID,
                     pid: PID,
@@ -41,6 +46,11 @@ Ok(
                 description: Some(
                     "Mid-weight chinos with a tapered leg and stretch waistband.",
                 ),
+                information: {
+                    "Care": "Machine wash cold",
+                    "Fit": "Tapered",
+                    "Material": "Cotton blend",
+                },
                 category: ProductCategorySummary {
                     id: ID,
                     pid: PID,

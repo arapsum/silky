@@ -1,6 +1,5 @@
 ---
 source: tests/models/products/product_create.rs
-assertion_line: 194
 expression: "(result, product_count, variant_count)"
 ---
 (
@@ -13,6 +12,9 @@ expression: "(result, product_count, variant_count)"
                 name: "Aggregate Product",
                 description: Some(
                     "A product with complete setup records",
+                ),
+                information: Json(
+                    {},
                 ),
                 created_at: DATE,
                 updated_at: DATE,

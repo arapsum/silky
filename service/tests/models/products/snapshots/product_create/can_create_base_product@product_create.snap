@@ -13,6 +13,12 @@ expression: "(result, product_count, variant_count)"
                 description: Some(
                     "A product without setup records",
                 ),
+                information: Json(
+                    {
+                        "Material": "Cotton",
+                        "Origin": "Kenya",
+                    },
+                ),
                 created_at: DATE,
                 updated_at: DATE,
                 deleted_at: None,

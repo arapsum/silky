@@ -5,6 +5,11 @@
     "categoryId": 101,
     "name": "Classic Cotton T-shirt",
     "description": "Soft everyday cotton t-shirt with a relaxed fit.",
+    "information": {
+      "Material": "100% cotton",
+      "Fit": "Relaxed",
+      "Care": "Machine wash cold"
+    },
     "createdAt": "2026-07-02T15:10:00+03:00",
     "updatedAt": "2026-07-02T15:10:00+03:00",
     "deletedAt": null
@@ -15,6 +20,11 @@
     "categoryId": 102,
     "name": "Tailored Chino Trousers",
     "description": "Mid-weight chinos with a tapered leg and stretch waistband.",
+    "information": {
+      "Material": "Cotton blend",
+      "Fit": "Tapered",
+      "Care": "Machine wash cold"
+    },
     "createdAt": "2026-07-02T15:11:00+03:00",
     "updatedAt": "2026-07-02T15:11:00+03:00",
     "deletedAt": null
@@ -25,6 +35,11 @@
     "categoryId": 103,
     "name": "Court Leather Sneakers",
     "description": "Low-profile leather sneakers with cushioned insoles.",
+    "information": {
+      "Material": "Leather",
+      "Sole": "Rubber",
+      "Care": "Wipe clean"
+    },
     "createdAt": "2026-07-02T15:12:00+03:00",
     "updatedAt": "2026-07-02T15:12:00+03:00",
     "deletedAt": null

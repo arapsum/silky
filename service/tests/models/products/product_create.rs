@@ -1,4 +1,4 @@
-use std::borrow::Cow;
+use std::{borrow::Cow, collections::BTreeMap};
 
 use insta::{Settings, assert_debug_snapshot, with_settings};
 use rstest::rstest;
@@ -53,7 +53,11 @@ fn base_product() -> ProductCreateScenario {
             Some(Cow::Borrowed("A product without setup records")),
             None,
             None,
-        ),
+        )
+        .with_information(BTreeMap::from([
+            ("Material".to_string(), "Cotton".to_string()),
+            ("Origin".to_string(), "Kenya".to_string()),
+        ])),
         "Minimal Product",
         None,
     )

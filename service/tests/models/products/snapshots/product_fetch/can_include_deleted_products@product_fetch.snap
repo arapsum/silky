@@ -12,6 +12,11 @@ expression: "(without_deleted, with_deleted)"
                     description: Some(
                         "Low-profile leather sneakers with cushioned insoles.",
                     ),
+                    information: {
+                        "Care": "Wipe clean",
+                        "Material": "Leather",
+                        "Sole": "Rubber",
+                    },
                     category: ProductCategorySummary {
                         id: ID,
                         pid: PID,
@@ -42,6 +47,11 @@ expression: "(without_deleted, with_deleted)"
                     description: Some(
                         "Soft everyday cotton t-shirt with a relaxed fit.",
                     ),
+                    information: {
+                        "Care": "Machine wash cold",
+                        "Fit": "Relaxed",
+                        "Material": "100% cotton",
+                    },
                     category: ProductCategorySummary {
                         id: ID,
                         pid: PID,
@@ -86,6 +96,11 @@ expression: "(without_deleted, with_deleted)"
                     description: Some(
                         "Low-profile leather sneakers with cushioned insoles.",
                     ),
+                    information: {
+                        "Care": "Wipe clean",
+                        "Material": "Leather",
+                        "Sole": "Rubber",
+                    },
                     category: ProductCategorySummary {
                         id: ID,
                         pid: PID,
@@ -116,6 +131,11 @@ expression: "(without_deleted, with_deleted)"
                     description: Some(
                         "Mid-weight chinos with a tapered leg and stretch waistband.",
                     ),
+                    information: {
+                        "Care": "Machine wash cold",
+                        "Fit": "Tapered",
+                        "Material": "Cotton blend",
+                    },
                     category: ProductCategorySummary {
                         id: ID,
                         pid: PID,
@@ -148,6 +168,11 @@ expression: "(without_deleted, with_deleted)"
                     description: Some(
                         "Soft everyday cotton t-shirt with a relaxed fit.",
                     ),
+                    information: {
+                        "Care": "Machine wash cold",
+                        "Fit": "Relaxed",
+                        "Material": "100% cotton",
+                    },
                     category: ProductCategorySummary {
                         id: ID,
                         pid: PID,

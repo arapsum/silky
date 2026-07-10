@@ -11,6 +11,11 @@ Ok(
                 description: Some(
                     "Soft everyday cotton t-shirt with a relaxed fit.",
                 ),
+                information: {
+                    "Care": "Machine wash cold",
+                    "Fit": "Relaxed",
+                    "Material": "100% cotton",
+                },
                 category: ProductCategorySummary {
                     id: ID,
                     pid: PID,

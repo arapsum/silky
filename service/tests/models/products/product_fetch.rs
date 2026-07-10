@@ -236,7 +236,11 @@ async fn can_update_base_product() {
         &update_product(json!({
             "categoryId": 103,
             "name": "Updated Cotton T-shirt",
-            "description": null
+            "description": null,
+            "information": {
+                "Material": "Organic cotton",
+                "Origin": "Kenya"
+            }
         })),
     )
     .await
@@ -245,6 +249,10 @@ async fn can_update_base_product() {
     assert_eq!(product.name, "Updated Cotton T-shirt");
     assert_eq!(product.category.id, 103);
     assert!(product.description.is_none());
+    assert_eq!(
+        product.information.get("Material"),
+        Some(&"Organic cotton".to_string())
+    );
 }
 
 #[tokio::test]

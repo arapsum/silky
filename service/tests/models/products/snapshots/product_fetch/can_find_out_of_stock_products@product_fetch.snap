@@ -11,6 +11,11 @@ Ok(
                 description: Some(
                     "Low-profile leather sneakers with cushioned insoles.",
                 ),
+                information: {
+                    "Care": "Wipe clean",
+                    "Material": "Leather",
+                    "Sole": "Rubber",
+                },
                 category: ProductCategorySummary {
                     id: ID,
                     pid: PID,

@@ -102,6 +102,10 @@ fn aggregate_body() -> serde_json::Value {
         "categoryId": 103,
         "name": "API Aggregate Product",
         "description": "Created from the aggregate API",
+        "information": {
+            "Material": "Leather",
+            "Origin": "Kenya"
+        },
         "pictures": [
             {
                 "imageLink": "https://cdn.example.com/products/api-aggregate-main.png",
@@ -524,12 +528,16 @@ async fn can_update_product_base_details() {
             .add_header(auth_header, auth_value)
             .json(&serde_json::json!({
                 "name": "Updated API Product",
-                "description": null
+                "description": null,
+                "information": {
+                    "Material": "Organic cotton"
+                }
             }))
             .await;
 
         assert_eq!(response.status_code(), StatusCode::OK);
         assert!(response.text().contains("Updated API Product"));
+        assert!(response.text().contains("Organic cotton"));
     })
     .await;
 }

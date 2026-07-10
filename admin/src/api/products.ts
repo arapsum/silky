@@ -2,6 +2,7 @@ import { apiRequest } from "#/api/client.ts";
 
 export const productsQueryKey = ["products"] as const;
 export const productAttributesQueryKey = ["products", "attributes"] as const;
+export const productTagsQueryKey = ["products", "tags"] as const;
 
 export type Pagination = {
   page: number;
@@ -79,6 +80,7 @@ export type ProductDetail = {
   name: string;
   description: string | null;
   information: Record<string, string>;
+  tags: ProductTag[];
   category: ProductCategorySummary;
   pictures: ProductPicture[];
   options: ProductOption[];
@@ -149,6 +151,7 @@ export type ProductInput = {
   name: string;
   description?: string;
   information?: Record<string, string>;
+  tagPids?: string[];
   pictures?: ProductPictureInput[];
   variants: ProductVariantInput[];
 };
@@ -191,6 +194,14 @@ export type ProductAttributeValue = {
 export type ProductAttributeWithValues = {
   attribute: ProductAttribute;
   values: ProductAttributeValue[];
+};
+
+export type ProductTag = {
+  id: number;
+  pid: string;
+  name: string;
+  createdAt: string;
+  updatedAt: string;
 };
 
 function productSearchParams(params: ProductListParams) {
@@ -336,5 +347,19 @@ export function deleteVariantPicture(pid: string, variantPid: string, picturePid
 export function listProductAttributes() {
   return apiRequest<ProductAttributeWithValues[]>("/products/attributes", {
     fallback: "Unable to load product attributes",
+  });
+}
+
+export function listProductTags() {
+  return apiRequest<ProductTag[]>("/products/tags", {
+    fallback: "Unable to load product tags",
+  });
+}
+
+export function createProductTag(name: string) {
+  return apiRequest<ProductTag>("/products/tags", {
+    method: "POST",
+    body: JSON.stringify({ name }),
+    fallback: "Unable to create product tag",
   });
 }

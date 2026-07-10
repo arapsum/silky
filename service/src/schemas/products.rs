@@ -111,10 +111,30 @@ pub struct CreateProduct<'a> {
     description: Option<Cow<'a, str>>,
     #[serde(default)]
     information: Option<BTreeMap<String, String>>,
+    #[serde(default)]
+    tag_pids: Vec<Uuid>,
     #[validate(nested)]
     pictures: Option<Vec<CreateProductPicture<'a>>>,
     #[validate(nested)]
     variants: Option<Vec<CreateProductVariant<'a>>>,
+}
+
+#[derive(Debug, Deserialize, Serialize, Clone, Validate)]
+#[serde(rename_all = "camelCase")]
+pub struct CreateProductTag {
+    #[validate(length(
+        min = 1,
+        max = 64,
+        message = "Tag name must contain between 1 and 64 characters"
+    ))]
+    name: String,
+}
+
+impl CreateProductTag {
+    #[must_use]
+    pub fn name(&self) -> &str {
+        &self.name
+    }
 }
 
 #[derive(Debug, Deserialize, Serialize, Clone, Validate)]
@@ -170,6 +190,7 @@ impl<'a> CreateProduct<'a> {
             name,
             description,
             information: None,
+            tag_pids: Vec::new(),
             pictures,
             variants,
         }
@@ -178,6 +199,12 @@ impl<'a> CreateProduct<'a> {
     #[must_use]
     pub fn with_information(mut self, information: BTreeMap<String, String>) -> Self {
         self.information = Some(information);
+        self
+    }
+
+    #[must_use]
+    pub fn with_tag_pids(mut self, tag_pids: Vec<Uuid>) -> Self {
+        self.tag_pids = tag_pids;
         self
     }
 
@@ -199,6 +226,11 @@ impl<'a> CreateProduct<'a> {
     #[must_use]
     pub const fn information(&self) -> Option<&BTreeMap<String, String>> {
         self.information.as_ref()
+    }
+
+    #[must_use]
+    pub fn tag_pids(&self) -> &[Uuid] {
+        &self.tag_pids
     }
 
     #[must_use]

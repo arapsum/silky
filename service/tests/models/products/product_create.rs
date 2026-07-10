@@ -5,9 +5,10 @@ use rstest::rstest;
 use rust_decimal::Decimal;
 use serial_test::serial;
 use service::{
-    models::Product,
+    models::{ModelError, Product, Tag},
     schemas::{CreateProduct, CreateProductPicture, CreateProductVariant, CreateVariantOption},
 };
+use uuid::Uuid;
 
 use crate::{
     boot_test, seed_data,
@@ -160,6 +161,76 @@ async fn variant_count(db: &sqlx::PgPool, sku: Option<&str>) -> i64 {
         .fetch_one(db)
         .await
         .expect("Failed to count product variants")
+}
+
+#[tokio::test]
+#[serial]
+async fn creates_product_tag_assignments_atomically() {
+    let ctx = boot_test().await.expect("Failed to boot test");
+    seed_data(ctx.db()).await.expect("Failed to seed data");
+    sqlx::query(
+        "DELETE FROM products WHERE name IN ('Tagged Creation Product', 'Invalid Tagged Product')",
+    )
+    .execute(ctx.db())
+    .await
+    .expect("Failed to clean tagged products");
+    sqlx::query("DELETE FROM tags WHERE name IN ('Creation casual', 'Creation summer')")
+        .execute(ctx.db())
+        .await
+        .expect("Failed to clean tag creation fixtures");
+
+    let casual = Tag::create(ctx.db(), "Creation casual")
+        .await
+        .expect("Failed to create casual tag");
+    let summer = Tag::create(ctx.db(), "Creation summer")
+        .await
+        .expect("Failed to create summer tag");
+    let params = CreateProduct::new(
+        103,
+        Cow::Borrowed("Tagged Creation Product"),
+        None,
+        None,
+        None,
+    )
+    .with_tag_pids(vec![casual.pid(), summer.pid(), casual.pid()]);
+
+    let result = Product::create(ctx.db(), &params)
+        .await
+        .expect("Failed to create tagged product");
+    assert_eq!(result.tags.len(), 2);
+    assert_eq!(
+        Tag::find_by_product(ctx.db(), result.product.pid())
+            .await
+            .expect("Failed to load created product tags")
+            .len(),
+        2
+    );
+
+    let invalid_params = CreateProduct::new(
+        103,
+        Cow::Borrowed("Invalid Tagged Product"),
+        None,
+        None,
+        None,
+    )
+    .with_tag_pids(vec![Uuid::nil()]);
+    let invalid_result = Product::create(ctx.db(), &invalid_params).await;
+    assert!(matches!(
+        invalid_result,
+        Err(ModelError::InvalidReference(_))
+    ));
+    assert_eq!(product_count(ctx.db(), "Invalid Tagged Product").await, 0);
+
+    sqlx::query("DELETE FROM products WHERE name = 'Tagged Creation Product'")
+        .execute(ctx.db())
+        .await
+        .expect("Failed to clean tagged product");
+    Tag::delete(ctx.db(), casual.pid())
+        .await
+        .expect("Failed to clean casual tag");
+    Tag::delete(ctx.db(), summer.pid())
+        .await
+        .expect("Failed to clean summer tag");
 }
 
 #[rstest]

@@ -9,8 +9,9 @@ pub use self::{
     auth::{ChangePassword, ForgotPassword, LoginUser, RegisterUser, ResetPassword, UpdateProfile},
     categories::{CategoryAttributesInput, NewCategory, UpdateCategory},
     products::{
-        CreateProduct, CreateProductPicture, CreateProductVariant, CreateVariantOption,
-        ProductListQuery, StockStatus, UpdateProduct, UpdateProductPicture, UpdateProductVariant,
+        CreateProduct, CreateProductPicture, CreateProductTag, CreateProductVariant,
+        CreateVariantOption, ProductListQuery, StockStatus, UpdateProduct, UpdateProductPicture,
+        UpdateProductVariant,
     },
     request::{
         CategoryListQuery, PaginationQuery, PermissionListQuery, PermissionRoleQuery, UserListQuery,

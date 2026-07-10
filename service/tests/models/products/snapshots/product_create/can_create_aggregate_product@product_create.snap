@@ -20,6 +20,7 @@ expression: "(result, product_count, variant_count)"
                 updated_at: DATE,
                 deleted_at: None,
             },
+            tags: [],
             options: [
                 ProductOption {
                     id: ID,

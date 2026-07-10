@@ -5,12 +5,13 @@ use rust_decimal::Decimal;
 use serde::{Deserialize, Serialize};
 use uuid::Uuid;
 
-use crate::models::{Picture, Product, ProductOption, ProductVariant, VariantAttributeValue};
+use crate::models::{Picture, Product, ProductOption, ProductVariant, Tag, VariantAttributeValue};
 
 #[derive(Debug, Deserialize, Serialize, Clone)]
 #[serde(rename_all = "camelCase")]
 pub struct ProductCreateResponse {
     pub product: Product,
+    pub tags: Vec<Tag>,
     pub options: Vec<ProductOption>,
     pub pictures: Vec<Picture>,
     pub variants: Vec<ProductVariant>,
@@ -21,6 +22,7 @@ impl ProductCreateResponse {
     #[must_use]
     pub const fn new(
         product: Product,
+        tags: Vec<Tag>,
         options: Vec<ProductOption>,
         pictures: Vec<Picture>,
         variants: Vec<ProductVariant>,
@@ -28,6 +30,7 @@ impl ProductCreateResponse {
     ) -> Self {
         Self {
             product,
+            tags,
             options,
             pictures,
             variants,
@@ -135,6 +138,7 @@ pub struct ProductDetailResponse {
     pub name: String,
     pub description: Option<String>,
     pub information: BTreeMap<String, String>,
+    pub tags: Vec<Tag>,
     pub category: ProductCategorySummary,
     pub pictures: Vec<ProductPictureResponse>,
     pub options: Vec<ProductOptionResponse>,

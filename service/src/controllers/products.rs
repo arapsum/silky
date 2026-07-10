@@ -11,10 +11,10 @@ use crate::{
     AppState, Result,
     access_control::permissions,
     middlewares::{AuthLayer, RbacLayer},
-    models::{Attribute, Product},
+    models::{Attribute, Product, Tag},
     schemas::{
-        CreateProduct, CreateProductPicture, CreateProductVariant, ProductListQuery, UpdateProduct,
-        UpdateProductPicture, UpdateProductVariant, Validator,
+        CreateProduct, CreateProductPicture, CreateProductTag, CreateProductVariant,
+        ProductListQuery, UpdateProduct, UpdateProductPicture, UpdateProductVariant, Validator,
     },
     utils::{AppJson, AppPath, AppQuery},
 };
@@ -222,11 +222,40 @@ async fn attributes(State(ctx): State<AppState>) -> Result<Response> {
     Ok((StatusCode::OK, Json(attributes)).into_response())
 }
 
+#[tracing::instrument(skip(ctx))]
+#[debug_handler]
+async fn tags(State(ctx): State<AppState>) -> Result<Response> {
+    let tags = Tag::find_all(ctx.db()).await?;
+
+    Ok((StatusCode::OK, Json(tags)).into_response())
+}
+
+#[tracing::instrument(skip(ctx))]
+#[debug_handler]
+async fn create_tag(
+    State(ctx): State<AppState>,
+    AppJson(params): AppJson<CreateProductTag>,
+) -> Result<Response> {
+    let validator = Validator::new(params);
+    let validated = validator.validate()?;
+    let tag = Tag::create(ctx.db(), validated.name()).await?;
+
+    Ok((StatusCode::CREATED, Json(tag)).into_response())
+}
+
 fn protected(ctx: &AppState) -> Router {
     Router::new()
         .route(
             "/attributes",
             get(attributes).layer(RbacLayer::new(ctx.clone(), permissions::products::READ)),
+        )
+        .route(
+            "/tags",
+            get(tags).layer(RbacLayer::new(ctx.clone(), permissions::products::READ)),
+        )
+        .route(
+            "/tags",
+            post(create_tag).layer(RbacLayer::new(ctx.clone(), permissions::products::CREATE)),
         )
         .route(
             "/",

@@ -4,6 +4,7 @@ use insta::{Settings, assert_debug_snapshot, with_settings};
 use rstest::rstest;
 use serial_test::serial;
 use service::access_control::permissions;
+use service::models::Tag;
 
 use crate::utils;
 
@@ -188,6 +189,81 @@ async fn can_create_product(#[case] test_name: &str, #[case] params: serde_json:
         }, {
             assert_debug_snapshot!(test_name, (response.status_code(), response.text()))
         })
+    })
+    .await;
+}
+
+#[tokio::test]
+#[serial]
+async fn can_create_product_with_tags() {
+    crate::request(|server, ctx| async move {
+        crate::seed_data(ctx.db())
+            .await
+            .expect("Failed to seed data");
+        allow_product_writes(ctx.db()).await;
+        allow_product_reads(ctx.db()).await;
+        sqlx::query("DELETE FROM products WHERE name = 'API Tagged Product'")
+            .execute(ctx.db())
+            .await
+            .expect("Failed to clean tagged product");
+        sqlx::query("DELETE FROM tags WHERE name = 'API creation tag'")
+            .execute(ctx.db())
+            .await
+            .expect("Failed to clean tagged product fixtures");
+        let token = access_token(&server).await;
+        let (auth_header, auth_value) = utils::auth_header(token);
+
+        let created_tag_response = server
+            .post("/products/tags")
+            .add_header(auth_header.clone(), auth_value.clone())
+            .json(&serde_json::json!({ "name": "API creation tag" }))
+            .await;
+        assert_eq!(created_tag_response.status_code(), StatusCode::CREATED);
+        let tag_body: serde_json::Value = created_tag_response.json();
+        let tag_pid = tag_body["pid"]
+            .as_str()
+            .expect("Tag response did not include a PID")
+            .parse()
+            .expect("Failed to parse tag PID");
+
+        let tags_response = server
+            .get("/products/tags")
+            .add_header(auth_header.clone(), auth_value.clone())
+            .await;
+        assert_eq!(tags_response.status_code(), StatusCode::OK);
+        assert!(tags_response.text().contains("API creation tag"));
+
+        let params = serde_json::json!({
+            "categoryId": 103,
+            "name": "API Tagged Product",
+            "tagPids": [tag_pid, tag_pid],
+            "variants": []
+        });
+        let response = server
+            .post("/products")
+            .add_header(auth_header, auth_value)
+            .json(&params)
+            .await;
+        assert_eq!(response.status_code(), StatusCode::CREATED);
+        let body: serde_json::Value = response.json();
+        let product_pid = body["product"]["pid"]
+            .as_str()
+            .expect("Product response did not include a PID")
+            .parse()
+            .expect("Failed to parse product PID");
+        let assigned = Tag::find_by_product(ctx.db(), product_pid)
+            .await
+            .expect("Failed to load product tags");
+        assert_eq!(assigned.len(), 1);
+        assert_eq!(assigned[0].pid(), tag_pid);
+        sqlx::query("DELETE FROM products WHERE pid = $1")
+            .bind(product_pid)
+            .execute(ctx.db())
+            .await
+            .expect("Failed to clean tagged product");
+        Tag::delete(ctx.db(), tag_pid)
+            .await
+            .expect("Failed to clean product tag");
     })
     .await;
 }

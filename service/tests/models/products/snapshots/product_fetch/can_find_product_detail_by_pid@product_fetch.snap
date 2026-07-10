@@ -15,6 +15,7 @@ Ok(
             "Fit": "Relaxed",
             "Material": "100% cotton",
         },
+        tags: [],
         category: ProductCategorySummary {
             id: ID,
             pid: PID,

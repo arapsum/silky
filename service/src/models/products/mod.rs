@@ -3,7 +3,7 @@ use std::collections::{BTreeMap, HashMap, HashSet};
 use chrono::{DateTime, FixedOffset};
 use rust_decimal::Decimal;
 use serde::{Deserialize, Serialize};
-use sqlx::{Encode, Executor, PgPool, Postgres, prelude::FromRow, types::Json};
+use sqlx::{Encode, Executor, PgPool, Postgres, Transaction, prelude::FromRow, types::Json};
 use uuid::Uuid;
 
 use crate::{
@@ -227,9 +227,9 @@ impl ProductVariantOptionRow {
 impl Product {
     /// Creates a product and its optional setup records.
     ///
-    /// The base product, variant options, pictures, variants, and variant
-    /// attribute value links are inserted in a single transaction. If any nested insert
-    /// fails, the whole transaction is rolled back.
+    /// The base product, tags, variant options, pictures, variants, and variant
+    /// attribute value links are inserted in a single transaction. If any
+    /// nested insert fails, the whole transaction is rolled back.
     ///
     /// # Parameters
     ///
@@ -241,9 +241,13 @@ impl Product {
     /// Returns [`crate::models::ModelError::EntityAlreadyExists`] for product
     /// name, SKU, default-variant, option, or variant-attribute uniqueness
     /// violations. Returns [`crate::models::ModelError::InvalidReference`]
-    /// when a referenced category, attribute, attribute value, product, or
-    /// variant does not exist. Returns a database error if any insert or
+    /// when a referenced category, tag, attribute, attribute value, product,
+    /// or variant does not exist. Returns a database error if any insert or
     /// transaction operation fails for another reason.
+    #[expect(
+        clippy::too_many_lines,
+        reason = "Creation keeps the atomic nested catalogue writes in one transaction"
+    )]
     pub async fn create(
         db: &PgPool,
         params: &CreateProduct<'_>,
@@ -271,6 +275,8 @@ impl Product {
         .bind(Json(params.information().cloned().unwrap_or_default()))
         .fetch_one(&mut *txn)
         .await?;
+
+        let tags = Self::assign_tags(&mut txn, product.id(), params.tag_pids()).await?;
 
         let mut options = Vec::new();
         let mut pictures = Vec::with_capacity(params.pictures().len());
@@ -350,11 +356,53 @@ impl Product {
 
         Ok(ProductCreateResponse::new(
             product,
+            tags,
             options,
             pictures,
             variants,
             variant_attribute_values,
         ))
+    }
+
+    async fn assign_tags(
+        txn: &mut Transaction<'_, Postgres>,
+        product_id: i32,
+        tag_pids: &[Uuid],
+    ) -> ModelResult<Vec<Tag>> {
+        let unique_tag_pids = tag_pids.iter().copied().collect::<HashSet<_>>();
+        let unique_tag_pids = unique_tag_pids.into_iter().collect::<Vec<_>>();
+        let tags = if unique_tag_pids.is_empty() {
+            Vec::new()
+        } else {
+            sqlx::query_as::<_, Tag>(
+                "SELECT * FROM tags WHERE pid = ANY($1::uuid[]) ORDER BY LOWER(name), id",
+            )
+            .bind(&unique_tag_pids)
+            .fetch_all(&mut **txn)
+            .await?
+        };
+
+        if tags.len() != unique_tag_pids.len() {
+            return Err(ModelError::InvalidReference(
+                "One or more product tags do not exist.".to_string(),
+            ));
+        }
+
+        if !tags.is_empty() {
+            let internal_tag_ids = tags.iter().map(Tag::id).collect::<Vec<_>>();
+            sqlx::query(
+                r"
+                INSERT INTO product_tags (product_id, tag_id)
+                SELECT $1, UNNEST($2::integer[])
+                ",
+            )
+            .bind(product_id)
+            .bind(internal_tag_ids)
+            .execute(&mut **txn)
+            .await?;
+        }
+
+        Ok(tags)
     }
 
     /// Updates mutable base product fields and returns the refreshed aggregate.
@@ -936,6 +984,19 @@ impl Product {
         .map(ProductOptionRow::into_response)
         .collect();
 
+        let tags = sqlx::query_as::<_, Tag>(
+            r"
+            SELECT t.*
+            FROM tags t
+            INNER JOIN product_tags pt ON pt.tag_id = t.id
+            WHERE pt.product_id = $1
+            ORDER BY LOWER(t.name), t.id
+            ",
+        )
+        .bind(product.id)
+        .fetch_all(&mut *txn)
+        .await?;
+
         let variant_rows = sqlx::query_as::<_, ProductVariantRow>(
             r"
             SELECT id, pid, sku, price, stock_quantity, is_default, created_at, updated_at, deleted_at
@@ -1032,6 +1093,7 @@ impl Product {
             name: product.name,
             description: product.description,
             information: product.information.0,
+            tags,
             category: ProductCategorySummary {
                 id: product.category_id,
                 pid: product.category_pid,

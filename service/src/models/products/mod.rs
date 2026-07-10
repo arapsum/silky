@@ -23,6 +23,7 @@ mod attribute_values;
 mod attributes;
 mod options;
 mod pictures;
+mod tags;
 mod variant_attribute_values;
 mod variants;
 
@@ -31,6 +32,7 @@ pub use self::{
     attributes::{Attribute, AttributeWithValues},
     options::{NewProductOption, ProductOption},
     pictures::{NewPicture, Picture},
+    tags::Tag,
     variant_attribute_values::{NewVariantAttributeValue, VariantAttributeValue},
     variants::{NewVariant, ProductVariant},
 };

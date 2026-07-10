@@ -90,6 +90,10 @@ impl ModelError {
                 "Product attribute with this name already exists.".to_string()
             }
             Some("attributes_name_check") => "Product attribute name cannot be empty.".to_string(),
+            Some("tags_name_unique") => "Product tag with this name already exists.".to_string(),
+            Some("tags_name_check") => {
+                "Product tag name must contain between 1 and 64 characters.".to_string()
+            }
             Some("attribute_values_attribute_id_value_key") => {
                 "Attribute already has this value.".to_string()
             }

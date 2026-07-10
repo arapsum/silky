@@ -20,7 +20,7 @@ pub use self::{
     permissions::Permission,
     products::{
         Attribute, AttributeValue, NewPicture, NewProductOption, NewVariant,
-        NewVariantAttributeValue, Picture, Product, ProductOption, ProductVariant,
+        NewVariantAttributeValue, Picture, Product, ProductOption, ProductVariant, Tag,
         VariantAttributeValue,
     },
     roles::Role,

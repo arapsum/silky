@@ -10,19 +10,20 @@ import {
   ImagesIcon,
   PackageIcon,
   PencilSimpleIcon,
-  PlusIcon,
   StackIcon,
   TagIcon,
+  TrashIcon,
   WarningCircleIcon,
 } from "@phosphor-icons/react";
-import { useQuery } from "@tanstack/react-query";
-import { Link } from "@tanstack/react-router";
+import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
+import { Link, useNavigate } from "@tanstack/react-router";
+import { toast } from "sonner";
 
 import {
+  deleteProduct,
   getProduct,
   productsQueryKey,
   type ProductDetail,
-  type ProductOption,
   type ProductPicture,
   type ProductVariantDetail,
 } from "#/api/products.ts";
@@ -30,6 +31,17 @@ import { titleCase } from "#/components/catalogue/string-utils";
 import { EmptyState } from "#/components/empty-state";
 import { ErrorState } from "#/components/error-state";
 import { PageHeader } from "#/components/page-header";
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+  AlertDialogTrigger,
+} from "#/components/ui/alert-dialog";
 import { Badge } from "#/components/ui/badge";
 import { Button } from "#/components/ui/button";
 import { Skeleton } from "#/components/ui/skeleton";
@@ -47,7 +59,7 @@ function number(value: number) {
 }
 
 function dateTime(value: string | null) {
-  if (!value) return "N/A";
+  if (!value) return "Not available";
 
   return new Intl.DateTimeFormat(undefined, {
     dateStyle: "medium",
@@ -56,13 +68,7 @@ function dateTime(value: string | null) {
 }
 
 function productImages(product: ProductDetail) {
-  const images = [...product.pictures];
-
-  for (const variant of product.variants) {
-    images.push(...variant.pictures);
-  }
-
-  return images;
+  return [...product.pictures, ...product.variants.flatMap((variant) => variant.pictures)];
 }
 
 function defaultVariant(product: ProductDetail) {
@@ -73,45 +79,29 @@ function totalStock(product: ProductDetail) {
   return product.variants.reduce((total, variant) => total + variant.stockQuantity, 0);
 }
 
-function Field({ label, value }: { label: string; value: string | number }) {
+function stockStatus(variant: ProductVariantDetail) {
+  if (variant.stockQuantity === 0) return "Out of stock";
+  if (variant.stockQuantity < 10) return "Low stock";
+  return "In stock";
+}
+
+function statusClass(status: string) {
+  if (status === "Out of stock") {
+    return "border-red-200 bg-red-50 text-red-700 dark:border-red-900 dark:bg-red-950/40 dark:text-red-300";
+  }
+  if (status === "Low stock") {
+    return "border-amber-200 bg-amber-50 text-amber-700 dark:border-amber-900 dark:bg-amber-950/40 dark:text-amber-300";
+  }
+  return "border-emerald-200 bg-emerald-50 text-emerald-700 dark:border-emerald-900 dark:bg-emerald-950/40 dark:text-emerald-300";
+}
+
+function DetailField({ label, children }: { label: string; children: React.ReactNode }) {
   return (
     <div className="min-w-0">
-      <dt className="text-xs font-medium tracking-wide text-muted-foreground uppercase">{label}</dt>
-      <dd className="mt-1.5 break-words text-sm font-medium">{value}</dd>
-    </div>
-  );
-}
-
-function Timestamp({ label, value }: { label: string; value: string }) {
-  return (
-    <div className="flex items-center gap-1.5">
-      <dt className="font-medium">{label}</dt>
-      <dd>{value}</dd>
-    </div>
-  );
-}
-
-function Metric({
-  icon,
-  label,
-  value,
-  detail,
-}: {
-  icon: React.ReactNode;
-  label: string;
-  value: string;
-  detail: string;
-}) {
-  return (
-    <div className="flex min-w-0 items-start gap-3 border bg-background/80 p-4 shadow-sm backdrop-blur-sm">
-      <div className="flex size-9 shrink-0 items-center justify-center bg-primary/10 text-primary">
-        {icon}
-      </div>
-      <div className="min-w-0">
-        <p className="text-xs font-medium text-muted-foreground">{label}</p>
-        <p className="mt-0.5 truncate text-lg font-bold tracking-tight">{value}</p>
-        <p className="mt-0.5 truncate text-xs text-muted-foreground">{detail}</p>
-      </div>
+      <dt className="text-[11px] font-medium tracking-wide text-muted-foreground uppercase">
+        {label}
+      </dt>
+      <dd className="mt-1.5 min-h-5 break-words text-sm font-medium">{children}</dd>
     </div>
   );
 }
@@ -127,45 +117,9 @@ function ProductGallery({
   const selectedPicture = pictures.find((picture) => picture.pid === selectedPid) ?? pictures[0];
 
   return (
-    <div className="min-w-0">
-      <div className="relative flex aspect-[4/3] items-center justify-center overflow-hidden border bg-muted/70">
-        {selectedPicture ? (
-          <img
-            src={selectedPicture.imageLink}
-            alt={product.name}
-            className="h-full w-full object-cover transition-transform duration-500 hover:scale-[1.02]"
-            loading="eager"
-          />
-        ) : (
-          <div className="flex flex-col items-center gap-3 text-muted-foreground">
-            <div className="flex size-16 items-center justify-center bg-background/80 shadow-sm">
-              <PackageIcon className="size-8" />
-            </div>
-            <span className="text-sm font-medium">No product image</span>
-          </div>
-        )}
-
-        <div className="absolute top-4 left-4">
-          <Badge
-            variant={product.deletedAt ? "destructive" : "outline"}
-            className={cn(
-              "h-7 bg-background/90 px-2.5 font-semibold backdrop-blur-sm",
-              !product.deletedAt &&
-                "border-emerald-200 text-emerald-700 dark:border-emerald-900 dark:text-emerald-300",
-            )}
-          >
-            {product.deletedAt ? (
-              <WarningCircleIcon className="size-3.5" weight="fill" />
-            ) : (
-              <CheckCircleIcon className="size-3.5" weight="fill" />
-            )}
-            {product.deletedAt ? "Deleted" : "Active"}
-          </Badge>
-        </div>
-      </div>
-
+    <div className="flex min-w-0 gap-3">
       {pictures.length > 0 && (
-        <div className="mt-3 flex gap-2 overflow-x-auto pb-1">
+        <div className="order-2 flex shrink-0 gap-2 overflow-x-auto pb-1 lg:order-1 lg:max-h-[25rem] lg:flex-col lg:overflow-y-auto lg:pb-0">
           {pictures.map((picture, index) => {
             const isSelected = picture.pid === selectedPicture?.pid;
 
@@ -176,19 +130,33 @@ function ProductGallery({
                 aria-label={`View product image ${index + 1}`}
                 aria-pressed={isSelected}
                 className={cn(
-                  "size-16 shrink-0 overflow-hidden border-2 bg-muted p-0.5 transition",
-                  isSelected
-                    ? "border-primary shadow-sm"
-                    : "border-transparent opacity-65 hover:opacity-100",
+                  "size-14 shrink-0 overflow-hidden border-2 bg-muted p-0.5 transition",
+                  isSelected ? "border-primary" : "border-transparent opacity-65 hover:opacity-100",
                 )}
                 onClick={() => setSelectedPid(picture.pid)}
               >
-                <img src={picture.imageLink} alt="" className="h-full w-full object-cover" />
+                <img src={picture.imageLink} alt="" className="size-full object-cover" />
               </button>
             );
           })}
         </div>
       )}
+
+      <div className="relative flex aspect-square min-w-0 flex-1 items-center justify-center overflow-hidden bg-muted/50">
+        {selectedPicture ? (
+          <img
+            src={selectedPicture.imageLink}
+            alt={product.name}
+            className="size-full object-cover"
+            loading="eager"
+          />
+        ) : (
+          <div className="flex flex-col items-center gap-3 text-muted-foreground">
+            <PackageIcon className="size-10" />
+            <span className="text-sm">No product image</span>
+          </div>
+        )}
+      </div>
     </div>
   );
 }
@@ -196,74 +164,55 @@ function ProductGallery({
 function ProductHero({ product }: { product: ProductDetail }) {
   const images = productImages(product);
   const variant = defaultVariant(product);
-  const stock = totalStock(product);
 
   return (
-    <section className="overflow-hidden border bg-gradient-to-br from-card via-card to-muted/50 p-4 shadow-sm sm:p-6 lg:p-8">
-      <div className="grid gap-10 lg:grid-cols-[minmax(20rem,0.9fr)_minmax(0,1.1fr)] lg:items-start">
+    <section className="border bg-card p-4 shadow-sm sm:p-5">
+      <div className="grid gap-7 lg:grid-cols-[minmax(19rem,.86fr)_minmax(0,1.14fr)] lg:gap-8">
         <ProductGallery key={product.pid} product={product} pictures={images} />
 
-        <div className="min-w-0">
-          <div className="flex items-center gap-2 text-sm font-medium text-primary">
-            <TagIcon className="size-4" weight="fill" />
-            <span>{titleCase(product.category.name)}</span>
+        <div className="flex min-w-0 flex-col lg:py-3">
+          <div className="flex flex-wrap items-center gap-x-5 gap-y-2 text-sm">
+            <span className="text-muted-foreground">
+              SKU: <span className="font-medium text-foreground">{variant?.sku ?? "Not set"}</span>
+            </span>
+            <span className="flex items-center gap-1.5 text-muted-foreground">
+              <TagIcon className="size-3.5 text-primary" weight="fill" />
+              Category:{" "}
+              <span className="font-medium text-foreground">
+                {titleCase(product.category.name)}
+              </span>
+            </span>
           </div>
 
-          <div className="mt-5 flex flex-wrap gap-2">
-            <Badge
-              variant="outline"
-              className={cn(
-                "h-7 px-2.5 font-semibold",
-                stock > 0
-                  ? "border-emerald-200 bg-emerald-50 text-emerald-700 dark:border-emerald-900 dark:bg-emerald-950/50 dark:text-emerald-300"
-                  : "border-amber-200 bg-amber-50 text-amber-700 dark:border-amber-900 dark:bg-amber-950/50 dark:text-amber-300",
-              )}
-            >
-              {stock > 0 ? (
-                <CheckCircleIcon className="size-3.5" weight="fill" />
-              ) : (
-                <WarningCircleIcon className="size-3.5" weight="fill" />
-              )}
-              {stock > 0 ? `${number(stock)} units available` : "Out of stock"}
-            </Badge>
-            {variant && (
-              <Badge variant="secondary" className="h-7 px-2.5">
-                Default SKU · {variant.sku}
+          <p className="mt-6 max-w-2xl text-sm leading-6 text-muted-foreground">
+            {product.description || "No product description has been added yet."}
+          </p>
+
+          <dl className="mt-auto grid grid-cols-2 gap-x-6 gap-y-5 border-t pt-6 sm:grid-cols-4">
+            <DetailField label="Status">
+              <Badge
+                variant="outline"
+                className={cn(
+                  "h-5 px-1.5 text-[11px]",
+                  product.deletedAt
+                    ? "border-red-200 bg-red-50 text-red-700 dark:border-red-900 dark:bg-red-950/40 dark:text-red-300"
+                    : "border-emerald-200 bg-emerald-50 text-emerald-700 dark:border-emerald-900 dark:bg-emerald-950/40 dark:text-emerald-300",
+                )}
+              >
+                {product.deletedAt ? "Deleted" : "Active"}
               </Badge>
-            )}
-          </div>
-
-          <div className="mt-10 grid gap-3 sm:grid-cols-3">
-            <Metric
-              icon={<TagIcon className="size-4" weight="bold" />}
-              label="Default price"
-              value={variant ? money(variant.price) : "N/A"}
-              detail={variant ? variant.sku : "No default variant"}
-            />
-            <Metric
-              icon={<CubeIcon className="size-4" weight="bold" />}
-              label="Inventory"
-              value={number(stock)}
-              detail={stock > 0 ? "Units across all SKUs" : "Restock required"}
-            />
-            <Metric
-              icon={<StackIcon className="size-4" weight="bold" />}
-              label="Variants"
-              value={number(product.variants.length)}
-              detail={`${number(product.options.length)} option dimensions`}
-            />
-          </div>
-
-          <dl className="mt-8 grid grid-cols-2 gap-x-6 gap-y-5 border-t pt-7 sm:grid-cols-3">
-            <Field label="Category" value={titleCase(product.category.name)} />
-            <Field label="Category slug" value={product.category.slug} />
-            <Field label="Media" value={`${number(images.length)} images`} />
-          </dl>
-
-          <dl className="mt-6 flex flex-wrap gap-x-5 gap-y-2 border-t pt-5 text-xs text-muted-foreground">
-            <Timestamp label="Created" value={dateTime(product.createdAt)} />
-            <Timestamp label="Updated" value={dateTime(product.updatedAt)} />
-            {product.deletedAt && <Timestamp label="Deleted" value={dateTime(product.deletedAt)} />}
+            </DetailField>
+            <DetailField label="Type">Simple product</DetailField>
+            <DetailField label="Created at">
+              <span className="text-xs font-normal text-muted-foreground">
+                {dateTime(product.createdAt)}
+              </span>
+            </DetailField>
+            <DetailField label="Updated at">
+              <span className="text-xs font-normal text-muted-foreground">
+                {dateTime(product.updatedAt)}
+              </span>
+            </DetailField>
           </dl>
         </div>
       </div>
@@ -273,159 +222,215 @@ function ProductHero({ product }: { product: ProductDetail }) {
 
 function Panel({
   title,
-  description,
-  action,
+  icon,
   children,
   className,
 }: {
   title: string;
-  description?: string;
-  action?: React.ReactNode;
+  icon: React.ReactNode;
   children: React.ReactNode;
   className?: string;
 }) {
   return (
     <section className={cn("border bg-card shadow-sm", className)}>
-      <div className="flex flex-col gap-3 border-b px-5 py-5 sm:flex-row sm:items-start sm:justify-between sm:px-6">
-        <div>
-          <h2 className="text-base font-semibold">{title}</h2>
-          {description && <p className="mt-1 text-sm text-muted-foreground">{description}</p>}
-        </div>
-        {action}
+      <div className="flex items-center gap-2 border-b px-4 py-3.5">
+        <span className="text-muted-foreground">{icon}</span>
+        <h2 className="text-sm font-semibold">{title}</h2>
       </div>
-      <div className="p-5 sm:p-6">{children}</div>
+      <div className="p-4">{children}</div>
     </section>
   );
 }
 
-function VariantOptions({ variant }: { variant: ProductVariantDetail }) {
-  if (!variant.options.length) {
-    return <span className="text-xs text-muted-foreground">No differentiating options</span>;
+function OptionSummary({ product }: { product: ProductDetail }) {
+  if (!product.options.length) {
+    return <p className="text-sm text-muted-foreground">No product options configured.</p>;
   }
 
   return (
-    <div className="flex flex-wrap gap-2">
-      {variant.options.map((option) => (
-        <Badge
-          key={option.pid}
-          variant="secondary"
-          className="h-auto border border-border px-2.5 py-1 font-normal"
-        >
-          <span className="text-muted-foreground">{titleCase(option.attributeName)}</span>
-          <span className="font-semibold">{option.value}</span>
-        </Badge>
-      ))}
-    </div>
-  );
-}
-
-function VariantList({ variants }: { variants: ProductVariantDetail[] }) {
-  if (!variants.length) {
-    return (
-      <EmptyState
-        icon={<BarcodeIcon className="size-8" />}
-        title="No variants"
-        description="Create at least one SKU to sell this product."
-        className="min-h-56 bg-muted/30"
-      />
-    );
-  }
-
-  return (
-    <div className="grid gap-3">
-      {variants.map((variant) => {
-        const image = variant.pictures[0];
+    <div className="space-y-4">
+      <p className="text-xs leading-5 text-muted-foreground">
+        Variants are created from the option dimensions below.
+      </p>
+      {product.options.map((option) => {
+        const values = [
+          ...new Set(
+            product.variants.flatMap((variant) =>
+              variant.options
+                .filter((entry) => entry.attributeId === option.attributeId)
+                .map((entry) => entry.value),
+            ),
+          ),
+        ];
 
         return (
-          <article
-            key={variant.pid}
-            className="grid gap-4 border bg-background p-4 transition-colors hover:border-foreground/20 sm:grid-cols-[4.5rem_minmax(0,1fr)_auto] sm:items-center"
-          >
-            <div className="flex aspect-square items-center justify-center overflow-hidden bg-muted">
-              {image ? (
-                <img src={image.imageLink} alt="" className="h-full w-full object-cover" />
+          <div key={option.pid}>
+            <div className="mb-2 flex items-center justify-between gap-3">
+              <p className="text-sm font-medium">{titleCase(option.attributeName)}</p>
+              <span className="text-xs text-muted-foreground">{values.length} values</span>
+            </div>
+            <div className="flex flex-wrap gap-1.5">
+              {values.length ? (
+                values.map((value) => (
+                  <Badge key={value} variant="outline" className="h-7 px-2.5 font-normal">
+                    {value}
+                  </Badge>
+                ))
               ) : (
-                <PackageIcon className="size-5 text-muted-foreground" />
+                <span className="text-xs text-muted-foreground">No values assigned</span>
               )}
             </div>
-
-            <div className="min-w-0">
-              <div className="flex flex-wrap items-center gap-2">
-                <h3 className="truncate font-mono text-sm font-semibold">{variant.sku}</h3>
-                {variant.isDefault && <Badge variant="secondary">Default</Badge>}
-                {variant.deletedAt && <Badge variant="destructive">Deleted</Badge>}
-              </div>
-              <div className="mt-2.5">
-                <VariantOptions variant={variant} />
-              </div>
-              <p className="mt-2 text-xs text-muted-foreground">
-                Updated {dateTime(variant.updatedAt)}
-              </p>
-            </div>
-
-            <div className="flex items-center justify-between gap-6 border-t pt-4 sm:block sm:border-t-0 sm:border-l sm:py-1 sm:pl-6 sm:text-right">
-              <div>
-                <p className="text-xs text-muted-foreground">Price</p>
-                <p className="mt-1 text-base font-bold">{money(variant.price)}</p>
-              </div>
-              <div className="sm:mt-3">
-                <p className="text-xs text-muted-foreground">Inventory</p>
-                <p
-                  className={cn(
-                    "mt-1 text-sm font-semibold",
-                    variant.stockQuantity === 0 && "text-amber-600 dark:text-amber-400",
-                  )}
-                >
-                  {number(variant.stockQuantity)} units
-                </p>
-              </div>
-            </div>
-          </article>
+          </div>
         );
       })}
     </div>
   );
 }
 
-function OptionsList({ options }: { options: ProductOption[] }) {
-  if (!options.length) {
-    return <p className="text-sm text-muted-foreground">No product options configured.</p>;
-  }
-
+function SummaryRow({
+  label,
+  value,
+  valueClassName,
+}: {
+  label: string;
+  value: string;
+  valueClassName?: string;
+}) {
   return (
-    <div className="grid gap-3">
-      {options.map((option) => (
-        <div key={option.pid} className="flex items-center justify-between gap-4 bg-muted/50 p-3">
-          <div className="flex min-w-0 items-center gap-3">
-            <div className="flex size-9 shrink-0 items-center justify-center bg-background text-muted-foreground shadow-sm">
-              <StackIcon className="size-4" />
-            </div>
-            <div className="min-w-0">
-              <p className="truncate text-sm font-semibold">{titleCase(option.attributeName)}</p>
-              <p className="mt-0.5 text-xs text-muted-foreground">
-                {option.attributeDescription || "Variant dimension"}
-              </p>
-            </div>
-          </div>
-          <span className="shrink-0 text-xs text-muted-foreground">
-            Order {option.displayOrder ?? "—"}
-          </span>
-        </div>
-      ))}
+    <div className="flex items-center justify-between gap-4 py-2.5 text-sm not-last:border-b">
+      <span className="text-muted-foreground">{label}</span>
+      <span className={cn("font-medium", valueClassName)}>{value}</span>
     </div>
   );
 }
 
-function ProductSidebar({ product }: { product: ProductDetail }) {
+function InventorySummary({ product }: { product: ProductDetail }) {
+  const stock = totalStock(product);
+  const lowStock = product.variants.filter(
+    (variant) => variant.stockQuantity > 0 && variant.stockQuantity < 10,
+  ).length;
+  const outOfStock = product.variants.filter((variant) => variant.stockQuantity === 0).length;
+
   return (
-    <aside className="grid content-start gap-5">
-      <Panel
-        title="Product options"
-        description="Dimensions used to build this product's variants."
-      >
-        <OptionsList options={product.options} />
-      </Panel>
-    </aside>
+    <div>
+      <SummaryRow label="Total variants" value={number(product.variants.length)} />
+      <SummaryRow
+        label="Total stock"
+        value={`${number(stock)} units`}
+        valueClassName="text-emerald-600"
+      />
+      <SummaryRow
+        label="Available stock"
+        value={`${number(stock)} units`}
+        valueClassName="text-emerald-600"
+      />
+      <SummaryRow
+        label="Low stock variants"
+        value={number(lowStock)}
+        valueClassName={lowStock ? "text-amber-600" : undefined}
+      />
+      <SummaryRow
+        label="Out of stock variants"
+        value={number(outOfStock)}
+        valueClassName={outOfStock ? "text-red-600" : undefined}
+      />
+    </div>
+  );
+}
+
+function PricingSummary({ product }: { product: ProductDetail }) {
+  const prices = product.variants.map((variant) => Number(variant.price)).filter(Number.isFinite);
+  const lowest = prices.length ? Math.min(...prices) : undefined;
+  const highest = prices.length ? Math.max(...prices) : undefined;
+  const average = prices.length
+    ? prices.reduce((sum, price) => sum + price, 0) / prices.length
+    : undefined;
+
+  const format = (value: number | undefined) =>
+    value === undefined ? "Not set" : money(String(value));
+
+  return (
+    <div>
+      <SummaryRow label="Price range" value={`${format(lowest)} – ${format(highest)}`} />
+      <SummaryRow label="Average price" value={format(average)} />
+      <SummaryRow label="Lowest price" value={format(lowest)} />
+      <SummaryRow label="Highest price" value={format(highest)} />
+      <SummaryRow label="Default SKU" value={defaultVariant(product)?.sku ?? "Not set"} />
+    </div>
+  );
+}
+
+function VariantTable({ variants }: { variants: ProductVariantDetail[] }) {
+  if (!variants.length) {
+    return (
+      <EmptyState
+        icon={<BarcodeIcon className="size-8" />}
+        title="No variants"
+        description="Create at least one SKU to sell this product."
+        className="min-h-56 bg-muted/20"
+      />
+    );
+  }
+
+  return (
+    <div className="overflow-x-auto">
+      <table className="w-full min-w-[48rem] text-left text-sm">
+        <thead className="border-y bg-muted/30 text-xs text-muted-foreground">
+          <tr>
+            <th className="px-3 py-3 font-medium">Variant</th>
+            <th className="px-3 py-3 font-medium">Options</th>
+            <th className="px-3 py-3 font-medium">SKU</th>
+            <th className="px-3 py-3 text-right font-medium">Price</th>
+            <th className="px-3 py-3 text-right font-medium">Stock</th>
+            <th className="px-3 py-3 font-medium">Status</th>
+          </tr>
+        </thead>
+        <tbody>
+          {variants.map((variant) => {
+            const image = variant.pictures[0];
+            const status = variant.deletedAt ? "Deleted" : stockStatus(variant);
+
+            return (
+              <tr key={variant.pid} className="border-b last:border-b-0 hover:bg-muted/20">
+                <td className="px-3 py-2.5">
+                  <div className="flex size-9 items-center justify-center overflow-hidden bg-muted">
+                    {image ? (
+                      <img src={image.imageLink} alt="" className="size-full object-cover" />
+                    ) : (
+                      <PackageIcon className="size-4 text-muted-foreground" />
+                    )}
+                  </div>
+                </td>
+                <td className="px-3 py-2.5">
+                  <div className="flex flex-wrap gap-1">
+                    {variant.options.length ? (
+                      variant.options.map((option) => (
+                        <span key={option.pid} className="text-xs text-muted-foreground">
+                          {option.value}
+                        </span>
+                      ))
+                    ) : (
+                      <span className="text-xs text-muted-foreground">—</span>
+                    )}
+                  </div>
+                </td>
+                <td className="px-3 py-2.5 font-mono text-xs font-medium">{variant.sku}</td>
+                <td className="px-3 py-2.5 text-right font-medium">{money(variant.price)}</td>
+                <td className="px-3 py-2.5 text-right">{number(variant.stockQuantity)} units</td>
+                <td className="px-3 py-2.5">
+                  <Badge
+                    variant="outline"
+                    className={cn("h-5 px-1.5 text-[11px]", statusClass(status))}
+                  >
+                    {status}
+                  </Badge>
+                </td>
+              </tr>
+            );
+          })}
+        </tbody>
+      </table>
+    </div>
   );
 }
 
@@ -433,41 +438,49 @@ function ProductDetailSkeleton() {
   return (
     <div className="grid gap-6 pb-10">
       <div className="flex items-center justify-between">
-        <Skeleton className="h-9 w-28" />
-        <Skeleton className="h-9 w-56" />
+        <Skeleton className="h-9 w-72" />
+        <Skeleton className="h-9 w-36" />
       </div>
-      <div className="grid gap-8 border p-6 lg:grid-cols-2">
-        <Skeleton className="aspect-[4/3] w-full" />
+      <div className="grid gap-8 border p-5 lg:grid-cols-2">
+        <Skeleton className="aspect-square w-full" />
         <div className="grid content-center gap-5">
-          <Skeleton className="h-5 w-48" />
-          <Skeleton className="h-12 w-4/5" />
+          <Skeleton className="h-5 w-3/5" />
           <Skeleton className="h-20 w-full" />
-          <div className="grid gap-3 sm:grid-cols-3">
-            <Skeleton className="h-24" />
-            <Skeleton className="h-24" />
-            <Skeleton className="h-24" />
-          </div>
+          <Skeleton className="h-20 w-full" />
         </div>
       </div>
-      <div className="grid gap-5 xl:grid-cols-[minmax(0,1.65fr)_minmax(20rem,0.75fr)]">
-        <Skeleton className="h-96" />
-        <Skeleton className="h-96" />
+      <div className="grid gap-5 lg:grid-cols-3">
+        <Skeleton className="h-64" />
+        <Skeleton className="h-64" />
+        <Skeleton className="h-64" />
       </div>
+      <Skeleton className="h-96" />
     </div>
   );
 }
 
 export default function ProductDetailPage({ pid }: { pid: string }) {
+  const navigate = useNavigate();
+  const queryClient = useQueryClient();
   const productQuery = useQuery({
     queryKey: [...productsQueryKey, pid],
     queryFn: () => getProduct(pid),
   });
+  const deleteMutation = useMutation({
+    mutationFn: () => deleteProduct(pid),
+    onSuccess: async () => {
+      await queryClient.invalidateQueries({ queryKey: productsQueryKey });
+      toast.success("Product deleted", { id: "delete-product-success" });
+      await navigate({ to: "/products" });
+    },
+    onError: (error) => {
+      toast.error(error.message, { id: "delete-product-error" });
+    },
+  });
 
   const product = productQuery.data;
 
-  if (productQuery.isLoading) {
-    return <ProductDetailSkeleton />;
-  }
+  if (productQuery.isLoading) return <ProductDetailSkeleton />;
 
   if (productQuery.isError) {
     return (
@@ -493,48 +506,122 @@ export default function ProductDetailPage({ pid }: { pid: string }) {
     );
   }
 
+  const images = productImages(product);
+
   return (
     <div className="w-full pb-10">
       <PageHeader
-        title={product.name}
-        subtitle={product.description || "No description has been added for this product."}
+        title={
+          <>
+            <span>{product.name}</span>
+            <Badge
+              variant="outline"
+              className={cn(
+                "h-6 px-2 text-xs",
+                product.deletedAt
+                  ? "border-red-200 bg-red-50 text-red-700 dark:border-red-900 dark:bg-red-950/40 dark:text-red-300"
+                  : "border-emerald-200 bg-emerald-50 text-emerald-700 dark:border-emerald-900 dark:bg-emerald-950/40 dark:text-emerald-300",
+              )}
+            >
+              {product.deletedAt ? (
+                <WarningCircleIcon weight="fill" />
+              ) : (
+                <CheckCircleIcon weight="fill" />
+              )}
+              {product.deletedAt ? "Deleted" : "Active"}
+            </Badge>
+          </>
+        }
         actions={
           <>
-            <Button variant="ghost" render={<Link to="/products" />}>
+            <Button variant="outline" render={<Link to="/products" />}>
               <ArrowLeftIcon className="size-4" />
-              Products
+              Back
             </Button>
-            <Button variant="outline" render={<Link to="/products/$pid/edit" params={{ pid }} />}>
+            <AlertDialog>
+              <AlertDialogTrigger
+                render={
+                  <Button
+                    variant="outline"
+                    disabled={deleteMutation.isPending || Boolean(product.deletedAt)}
+                  />
+                }
+              >
+                <TrashIcon className="size-4" />
+                Delete
+              </AlertDialogTrigger>
+              <AlertDialogContent>
+                <AlertDialogHeader>
+                  <AlertDialogTitle>Delete product?</AlertDialogTitle>
+                  <AlertDialogDescription>
+                    {product.name} will be removed from the active catalogue.
+                  </AlertDialogDescription>
+                </AlertDialogHeader>
+                <AlertDialogFooter>
+                  <AlertDialogCancel disabled={deleteMutation.isPending}>Cancel</AlertDialogCancel>
+                  <AlertDialogAction
+                    variant="destructive"
+                    disabled={deleteMutation.isPending}
+                    onClick={() => deleteMutation.mutate()}
+                  >
+                    Delete product
+                  </AlertDialogAction>
+                </AlertDialogFooter>
+              </AlertDialogContent>
+            </AlertDialog>
+            <Button render={<Link to="/products/$pid/edit" params={{ pid }} />}>
               <PencilSimpleIcon className="size-4" />
               Edit product
-            </Button>
-            <Button render={<Link to="/products/create" />}>
-              <PlusIcon className="size-4" />
-              Add product
             </Button>
           </>
         }
       />
 
-      <div className="mt-8">
-        <ProductHero product={product} />
+      <ProductHero product={product} />
+
+      <div className="mt-6 grid gap-5 lg:grid-cols-3">
+        <Panel title="Product options" icon={<StackIcon className="size-4" />}>
+          <OptionSummary product={product} />
+        </Panel>
+        <Panel title="Inventory summary" icon={<CubeIcon className="size-4" />}>
+          <InventorySummary product={product} />
+        </Panel>
+        <Panel title="Pricing summary" icon={<TagIcon className="size-4" />}>
+          <PricingSummary product={product} />
+        </Panel>
       </div>
 
-      <div className="mt-6 grid gap-5 xl:grid-cols-[minmax(0,1.65fr)_minmax(20rem,0.75fr)] xl:items-start">
-        <Panel
-          title="Variants and inventory"
-          description="Pricing, option combinations, and stock for every sellable SKU."
-          action={
-            <div className="flex items-center gap-2 text-xs font-medium text-muted-foreground">
-              <ImagesIcon className="size-4" />
-              {number(productImages(product).length)} images
-            </div>
-          }
-        >
-          <VariantList variants={product.variants} />
-        </Panel>
+      <section className="mt-6 border bg-card shadow-sm">
+        <div className="flex flex-col gap-3 border-b px-4 py-4 sm:flex-row sm:items-center sm:justify-between">
+          <div>
+            <h2 className="text-base font-semibold">
+              Variants ({number(product.variants.length)})
+            </h2>
+            <p className="mt-1 text-sm text-muted-foreground">
+              Each option combination creates a unique sellable SKU.
+            </p>
+          </div>
+          <div className="flex items-center gap-2 text-xs font-medium text-muted-foreground">
+            <ImagesIcon className="size-4" />
+            {number(images.length)} images
+          </div>
+        </div>
+        <VariantTable variants={product.variants} />
+      </section>
 
-        <ProductSidebar product={product} />
+      <div className="mt-6 grid gap-5 lg:grid-cols-[minmax(0,1.25fr)_minmax(18rem,.75fr)]">
+        <Panel title="Product description" icon={<PackageIcon className="size-4" />}>
+          <p className="text-sm leading-6 text-muted-foreground">
+            {product.description || "No product description has been added yet."}
+          </p>
+        </Panel>
+        <Panel title="Catalogue details" icon={<TagIcon className="size-4" />}>
+          <dl className="grid gap-4">
+            <DetailField label="Category">{titleCase(product.category.name)}</DetailField>
+            <DetailField label="Category slug">{product.category.slug}</DetailField>
+            <DetailField label="Media">{number(images.length)} images</DetailField>
+          </dl>
+        </Panel>
       </div>
     </div>
   );

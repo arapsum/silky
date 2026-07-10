@@ -11,6 +11,7 @@ export type Category = {
   mediaAssetPid?: string;
   description: string | null;
   parentId: number | null;
+  parentName?: string | null;
   productCount?: number;
   createdAt: string;
   updatedAt: string;
@@ -24,6 +25,34 @@ export type CategoryInput = {
   mediaAssetPid?: string;
   parentId?: number;
   description?: string;
+};
+
+export type CategoryChild = Pick<Category, "id" | "pid" | "name" | "slug" | "imageLink"> & {
+  productCount: number;
+};
+
+export type CategoryAttribute = {
+  id: number;
+  pid: string;
+  name: string;
+  description: string | null;
+};
+
+export type CategoryTopProduct = {
+  pid: string;
+  name: string;
+  imageLink: string | null;
+  sku: string | null;
+  stockQuantity: number;
+};
+
+export type CategoryDetail = {
+  category: Category;
+  children: CategoryChild[];
+  attributes: CategoryAttribute[];
+  topProducts: CategoryTopProduct[];
+  totalVariants: number;
+  totalStock: number;
 };
 
 export type Pagination = {
@@ -75,6 +104,20 @@ export function createCategory(input: CategoryInput) {
     method: "POST",
     body: JSON.stringify(input),
     fallback: "Unable to create category",
+  });
+}
+
+export function getCategoryDetail(pid: string) {
+  return apiRequest<CategoryDetail>(`/categories/${pid}/detail`, {
+    fallback: "Unable to load category details",
+  });
+}
+
+export function updateCategoryAttributes(pid: string, attributePids: string[]) {
+  return apiRequest<CategoryDetail>(`/categories/${pid}/attributes`, {
+    method: "PUT",
+    body: JSON.stringify({ attributePids }),
+    fallback: "Unable to update category attributes",
   });
 }
 

@@ -20,6 +20,7 @@ import { Route as MainProductsPidIndexRouteImport } from './routes/_main/product
 import { Route as MainPeopleStaffIndexRouteImport } from './routes/_main/people/staff/index'
 import { Route as MainPeopleCustomersIndexRouteImport } from './routes/_main/people/customers/index'
 import { Route as MainCategoriesCreateIndexRouteImport } from './routes/_main/categories/create/index'
+import { Route as MainCategoriesPidIndexRouteImport } from './routes/_main/categories/$pid/index'
 import { Route as MainAccessControlRolesIndexRouteImport } from './routes/_main/access-control/roles/index'
 import { Route as MainAccessControlPermissionsIndexRouteImport } from './routes/_main/access-control/permissions/index'
 import { Route as MainProductsPidEditIndexRouteImport } from './routes/_main/products/$pid/edit/index'
@@ -80,6 +81,11 @@ const MainCategoriesCreateIndexRoute =
     path: '/categories/create/',
     getParentRoute: () => MainRouteRoute,
   } as any)
+const MainCategoriesPidIndexRoute = MainCategoriesPidIndexRouteImport.update({
+  id: '/categories/$pid/',
+  path: '/categories/$pid/',
+  getParentRoute: () => MainRouteRoute,
+} as any)
 const MainAccessControlRolesIndexRoute =
   MainAccessControlRolesIndexRouteImport.update({
     id: '/access-control/roles/',
@@ -107,6 +113,7 @@ export interface FileRoutesByFullPath {
   '/settings/': typeof MainSettingsIndexRoute
   '/access-control/permissions/': typeof MainAccessControlPermissionsIndexRoute
   '/access-control/roles/': typeof MainAccessControlRolesIndexRoute
+  '/categories/$pid/': typeof MainCategoriesPidIndexRoute
   '/categories/create/': typeof MainCategoriesCreateIndexRoute
   '/people/customers/': typeof MainPeopleCustomersIndexRoute
   '/people/staff/': typeof MainPeopleStaffIndexRoute
@@ -122,6 +129,7 @@ export interface FileRoutesByTo {
   '/settings': typeof MainSettingsIndexRoute
   '/access-control/permissions': typeof MainAccessControlPermissionsIndexRoute
   '/access-control/roles': typeof MainAccessControlRolesIndexRoute
+  '/categories/$pid': typeof MainCategoriesPidIndexRoute
   '/categories/create': typeof MainCategoriesCreateIndexRoute
   '/people/customers': typeof MainPeopleCustomersIndexRoute
   '/people/staff': typeof MainPeopleStaffIndexRoute
@@ -139,6 +147,7 @@ export interface FileRoutesById {
   '/_main/settings/': typeof MainSettingsIndexRoute
   '/_main/access-control/permissions/': typeof MainAccessControlPermissionsIndexRoute
   '/_main/access-control/roles/': typeof MainAccessControlRolesIndexRoute
+  '/_main/categories/$pid/': typeof MainCategoriesPidIndexRoute
   '/_main/categories/create/': typeof MainCategoriesCreateIndexRoute
   '/_main/people/customers/': typeof MainPeopleCustomersIndexRoute
   '/_main/people/staff/': typeof MainPeopleStaffIndexRoute
@@ -156,6 +165,7 @@ export interface FileRouteTypes {
     | '/settings/'
     | '/access-control/permissions/'
     | '/access-control/roles/'
+    | '/categories/$pid/'
     | '/categories/create/'
     | '/people/customers/'
     | '/people/staff/'
@@ -171,6 +181,7 @@ export interface FileRouteTypes {
     | '/settings'
     | '/access-control/permissions'
     | '/access-control/roles'
+    | '/categories/$pid'
     | '/categories/create'
     | '/people/customers'
     | '/people/staff'
@@ -187,6 +198,7 @@ export interface FileRouteTypes {
     | '/_main/settings/'
     | '/_main/access-control/permissions/'
     | '/_main/access-control/roles/'
+    | '/_main/categories/$pid/'
     | '/_main/categories/create/'
     | '/_main/people/customers/'
     | '/_main/people/staff/'
@@ -279,6 +291,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof MainCategoriesCreateIndexRouteImport
       parentRoute: typeof MainRouteRoute
     }
+    '/_main/categories/$pid/': {
+      id: '/_main/categories/$pid/'
+      path: '/categories/$pid'
+      fullPath: '/categories/$pid/'
+      preLoaderRoute: typeof MainCategoriesPidIndexRouteImport
+      parentRoute: typeof MainRouteRoute
+    }
     '/_main/access-control/roles/': {
       id: '/_main/access-control/roles/'
       path: '/access-control/roles'
@@ -310,6 +329,7 @@ interface MainRouteRouteChildren {
   MainSettingsIndexRoute: typeof MainSettingsIndexRoute
   MainAccessControlPermissionsIndexRoute: typeof MainAccessControlPermissionsIndexRoute
   MainAccessControlRolesIndexRoute: typeof MainAccessControlRolesIndexRoute
+  MainCategoriesPidIndexRoute: typeof MainCategoriesPidIndexRoute
   MainCategoriesCreateIndexRoute: typeof MainCategoriesCreateIndexRoute
   MainPeopleCustomersIndexRoute: typeof MainPeopleCustomersIndexRoute
   MainPeopleStaffIndexRoute: typeof MainPeopleStaffIndexRoute
@@ -326,6 +346,7 @@ const MainRouteRouteChildren: MainRouteRouteChildren = {
   MainAccessControlPermissionsIndexRoute:
     MainAccessControlPermissionsIndexRoute,
   MainAccessControlRolesIndexRoute: MainAccessControlRolesIndexRoute,
+  MainCategoriesPidIndexRoute: MainCategoriesPidIndexRoute,
   MainCategoriesCreateIndexRoute: MainCategoriesCreateIndexRoute,
   MainPeopleCustomersIndexRoute: MainPeopleCustomersIndexRoute,
   MainPeopleStaffIndexRoute: MainPeopleStaffIndexRoute,

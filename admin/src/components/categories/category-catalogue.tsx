@@ -6,6 +6,7 @@ import {
   CaretDoubleRightIcon,
   CaretLeftIcon,
   CaretRightIcon,
+  EyeIcon,
   GridFourIcon,
   MagnifyingGlassIcon,
   PencilSimpleIcon,
@@ -168,6 +169,15 @@ function categoryColumns({
 
         return (
           <div className="flex justify-end gap-2">
+            <Button
+              type="button"
+              variant="outline"
+              size="icon-sm"
+              aria-label={`View ${category.name}`}
+              render={<Link to="/categories/$pid" params={{ pid: category.pid }} />}
+            >
+              <EyeIcon className="size-4" />
+            </Button>
             <Button
               type="button"
               variant="outline"

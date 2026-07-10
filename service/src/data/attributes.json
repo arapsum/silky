@@ -3,6 +3,7 @@
     "id": 201,
     "pid": "3516b141-5ffc-402a-8f7c-557d277b3101",
     "name": "colour",
+    "description": "The colour or finish used to distinguish product variants.",
     "createdAt": "2026-07-02T15:13:00+03:00",
     "updatedAt": "2026-07-02T15:13:00+03:00"
   },
@@ -10,6 +11,7 @@
     "id": 202,
     "pid": "23d5df44-6acf-41a7-96fc-bf0160653102",
     "name": "size",
+    "description": "The labelled size used to distinguish product variants.",
     "createdAt": "2026-07-02T15:14:00+03:00",
     "updatedAt": "2026-07-02T15:14:00+03:00"
   },
@@ -17,6 +19,7 @@
     "id": 203,
     "pid": "757aeb5b-0a44-4ef7-9d7f-eb4f8ea23103",
     "name": "material",
+    "description": "The primary material or composition of the product.",
     "createdAt": "2026-07-02T15:15:00+03:00",
     "updatedAt": "2026-07-02T15:15:00+03:00"
   }

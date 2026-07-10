@@ -152,6 +152,7 @@ struct ProductOptionRow {
     attribute_id: i32,
     attribute_pid: Uuid,
     attribute_name: String,
+    attribute_description: Option<String>,
     display_order: Option<i32>,
     created_at: DateTime<FixedOffset>,
 }
@@ -164,6 +165,7 @@ impl ProductOptionRow {
             attribute_id: self.attribute_id,
             attribute_pid: self.attribute_pid,
             attribute_name: self.attribute_name,
+            attribute_description: self.attribute_description,
             display_order: self.display_order,
             created_at: self.created_at,
         }
@@ -191,6 +193,7 @@ struct ProductVariantOptionRow {
     attribute_id: i32,
     attribute_pid: Uuid,
     attribute_name: String,
+    attribute_description: Option<String>,
     attribute_value_id: i32,
     attribute_value_pid: Uuid,
     value: String,
@@ -205,6 +208,7 @@ impl ProductVariantOptionRow {
             attribute_id: self.attribute_id,
             attribute_pid: self.attribute_pid,
             attribute_name: self.attribute_name,
+            attribute_description: self.attribute_description,
             attribute_value_id: self.attribute_value_id,
             attribute_value_pid: self.attribute_value_pid,
             value: self.value,
@@ -902,6 +906,7 @@ impl Product {
                 po.attribute_id,
                 a.pid AS attribute_pid,
                 a.name AS attribute_name,
+                a.description AS attribute_description,
                 po.display_order,
                 po.created_at
             FROM product_options po
@@ -952,6 +957,7 @@ impl Product {
                 vav.attribute_id,
                 a.pid AS attribute_pid,
                 a.name AS attribute_name,
+                a.description AS attribute_description,
                 vav.attribute_value_id,
                 av.pid AS attribute_value_pid,
                 av.value,

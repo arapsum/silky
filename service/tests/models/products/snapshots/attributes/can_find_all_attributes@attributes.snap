@@ -8,6 +8,9 @@ Ok(
             id: ID,
             pid: PID,
             name: "colour",
+            description: Some(
+                "The colour or finish used to distinguish product variants.",
+            ),
             created_at: DATE,
             updated_at: DATE,
         },
@@ -15,6 +18,9 @@ Ok(
             id: ID,
             pid: PID,
             name: "material",
+            description: Some(
+                "The primary material or composition of the product.",
+            ),
             created_at: DATE,
             updated_at: DATE,
         },
@@ -22,6 +28,9 @@ Ok(
             id: ID,
             pid: PID,
             name: "size",
+            description: Some(
+                "The labelled size used to distinguish product variants.",
+            ),
             created_at: DATE,
             updated_at: DATE,
         },

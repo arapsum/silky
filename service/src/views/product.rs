@@ -88,6 +88,7 @@ pub struct ProductOptionResponse {
     pub attribute_id: i32,
     pub attribute_pid: Uuid,
     pub attribute_name: String,
+    pub attribute_description: Option<String>,
     pub display_order: Option<i32>,
     pub created_at: DateTime<FixedOffset>,
 }
@@ -100,6 +101,7 @@ pub struct ProductVariantOptionResponse {
     pub attribute_id: i32,
     pub attribute_pid: Uuid,
     pub attribute_name: String,
+    pub attribute_description: Option<String>,
     pub attribute_value_id: i32,
     pub attribute_value_pid: Uuid,
     pub value: String,

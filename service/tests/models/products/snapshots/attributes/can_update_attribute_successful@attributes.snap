@@ -8,6 +8,9 @@ Ok(
         id: ID,
         pid: PID,
         name: "texture",
+        description: Some(
+            "The surface texture of the product.",
+        ),
         created_at: DATE,
         updated_at: DATE,
     },

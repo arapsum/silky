@@ -25,6 +25,7 @@ CREATE TABLE attributes (
     pid UUID NOT NULL UNIQUE DEFAULT gen_random_uuid(),
 
     name VARCHAR(255) NOT NULL UNIQUE CHECK (char_length(name) > 0), -- i.e,  'colour', 'size', 'material'
+    description TEXT,
 
     created_at TIMESTAMPTZ NOT NULL DEFAULT now(),
     updated_at TIMESTAMPTZ NOT NULL DEFAULT now()

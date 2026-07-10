@@ -11,6 +11,7 @@ pub struct Attribute {
     id: i32,
     pid: Uuid,
     name: String,
+    description: Option<String>,
     created_at: DateTime<FixedOffset>,
     updated_at: DateTime<FixedOffset>,
 }
@@ -32,37 +33,46 @@ impl Attribute {
     ///
     /// - `db`: Database executor used for the insert.
     /// - `name`: Attribute name to normalize and persist.
+    /// - `description`: Optional explanatory copy for the attribute.
     ///
     /// # Errors
     ///
     /// Returns [`ModelError::EntityAlreadyExists`] when another attribute
     /// already uses the normalized name. Returns a database error if the insert
     /// fails for another reason.
-    pub async fn create<'e, E>(db: &E, name: &str) -> ModelResult<Self>
+    pub async fn create<'e, E>(db: &E, name: &str, description: Option<&str>) -> ModelResult<Self>
     where
         for<'a> &'a E: Executor<'e, Database = Postgres>,
     {
         let attr = sqlx::query_as::<_, Self>(
             r"
-            INSERT INTO attributes (name) VALUES ($1) RETURNING *
+            INSERT INTO attributes (name, description) VALUES ($1, $2) RETURNING *
         ",
         )
         .bind(name.to_lowercase().trim())
+        .bind(
+            description
+                .map(str::trim)
+                .filter(|description| !description.is_empty()),
+        )
         .fetch_one(db)
         .await?;
 
         Ok(attr)
     }
 
-    /// Updates an attribute name by public ID.
+    /// Updates an attribute by public ID.
     ///
-    /// The supplied name is trimmed and stored in lowercase.
+    /// The supplied name is trimmed and stored in lowercase. When supplied,
+    /// the description is trimmed before it is stored.
     ///
     /// # Parameters
     ///
     /// - `db`: Database executor used for the update.
     /// - `pid`: Public ID of the attribute to update.
     /// - `name`: Replacement attribute name.
+    /// - `description`: Optional replacement description. `None` preserves the
+    ///   existing description.
     ///
     /// # Errors
     ///
@@ -70,19 +80,31 @@ impl Attribute {
     /// already uses the normalized name. Returns [`ModelError::EntityNotFound`]
     /// when no attribute has the public ID. Returns a database error if the
     /// update fails for another reason.
-    pub async fn update<'e, E>(db: &E, pid: Uuid, name: &str) -> ModelResult<Self>
+    pub async fn update<'e, E>(
+        db: &E,
+        pid: Uuid,
+        name: &str,
+        description: Option<&str>,
+    ) -> ModelResult<Self>
     where
         for<'a> &'a E: Executor<'e, Database = Postgres>,
     {
         let attr = sqlx::query_as::<_, Self>(
             r"
             UPDATE attributes
-            SET name = COALESCE($1, name)
-            WHERE pid = $2
+            SET
+                name = COALESCE($1, name),
+                description = COALESCE($2, description)
+            WHERE pid = $3
             RETURNING *
         ",
         )
         .bind(name.to_lowercase().trim())
+        .bind(
+            description
+                .map(str::trim)
+                .filter(|description| !description.is_empty()),
+        )
         .bind(pid)
         .fetch_one(db)
         .await?;
@@ -250,6 +272,12 @@ impl Attribute {
         &self.name
     }
 
+    /// Returns the optional attribute description.
+    #[must_use]
+    pub fn description(&self) -> Option<&str> {
+        self.description.as_deref()
+    }
+
     /// Returns when the attribute was created.
     #[must_use]
     pub const fn created_at(&self) -> DateTime<FixedOffset> {
@@ -286,6 +314,7 @@ impl Seedable for Attribute {
                     id,
                     pid,
                     name,
+                    description,
                     created_at,
                     updated_at
                 ) VALUES (
@@ -293,10 +322,12 @@ impl Seedable for Attribute {
                     $2,
                     $3,
                     $4,
-                    $5
+                    $5,
+                    $6
                 ) ON CONFLICT (id) DO UPDATE SET
                     pid = EXCLUDED.pid,
                     name = EXCLUDED.name,
+                    description = EXCLUDED.description,
                     created_at = EXCLUDED.created_at,
                     updated_at = EXCLUDED.updated_at
                 ",
@@ -304,6 +335,7 @@ impl Seedable for Attribute {
             .bind(attribute.id())
             .bind(attribute.pid())
             .bind(attribute.name())
+            .bind(attribute.description())
             .bind(attribute.created_at())
             .bind(attribute.updated_at())
             .execute(db)

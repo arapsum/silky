@@ -32,7 +32,12 @@ async fn can_create_attribute(#[case] test_name: &str, #[case] name: &str) {
 
     seed_data(ctx.db()).await.expect("Failed to seed data");
 
-    let result = Attribute::create(ctx.db(), name).await;
+    let result = Attribute::create(
+        ctx.db(),
+        name,
+        Some("  The surface texture of the product.  "),
+    )
+    .await;
 
     with_settings!({
         filters => {
@@ -73,7 +78,13 @@ async fn can_update_attribute(#[case] test_name: &str, #[case] pid: &str, #[case
 
     let pid = Uuid::parse_str(pid).expect("Failed to parse str to UUID");
 
-    let result = Attribute::update(ctx.db(), pid, name).await;
+    let result = Attribute::update(
+        ctx.db(),
+        pid,
+        name,
+        Some("  The surface texture of the product.  "),
+    )
+    .await;
 
     with_settings!({
         filters => {

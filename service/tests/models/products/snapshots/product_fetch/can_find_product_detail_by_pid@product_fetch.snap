@@ -24,6 +24,9 @@ Ok(
                 attribute_id: ID,
                 attribute_pid: PID,
                 attribute_name: "colour",
+                attribute_description: Some(
+                    "The colour or finish used to distinguish product variants.",
+                ),
                 display_order: Some(
                     1,
                 ),
@@ -35,6 +38,9 @@ Ok(
                 attribute_id: ID,
                 attribute_pid: PID,
                 attribute_name: "size",
+                attribute_description: Some(
+                    "The labelled size used to distinguish product variants.",
+                ),
                 display_order: Some(
                     2,
                 ),
@@ -56,6 +62,9 @@ Ok(
                         attribute_id: ID,
                         attribute_pid: PID,
                         attribute_name: "colour",
+                        attribute_description: Some(
+                            "The colour or finish used to distinguish product variants.",
+                        ),
                         attribute_value_id: ID,
                         attribute_value_pid: PID,
                         value: "Black",
@@ -67,6 +76,9 @@ Ok(
                         attribute_id: ID,
                         attribute_pid: PID,
                         attribute_name: "size",
+                        attribute_description: Some(
+                            "The labelled size used to distinguish product variants.",
+                        ),
                         attribute_value_id: ID,
                         attribute_value_pid: PID,
                         value: "M",
@@ -103,6 +115,9 @@ Ok(
                         attribute_id: ID,
                         attribute_pid: PID,
                         attribute_name: "colour",
+                        attribute_description: Some(
+                            "The colour or finish used to distinguish product variants.",
+                        ),
                         attribute_value_id: ID,
                         attribute_value_pid: PID,
                         value: "Marine Blue",
@@ -114,6 +129,9 @@ Ok(
                         attribute_id: ID,
                         attribute_pid: PID,
                         attribute_name: "size",
+                        attribute_description: Some(
+                            "The labelled size used to distinguish product variants.",
+                        ),
                         attribute_value_id: ID,
                         attribute_value_pid: PID,
                         value: "L",

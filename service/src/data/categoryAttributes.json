@@ -1,0 +1,26 @@
+[
+  {
+    "categoryId": 101,
+    "attributeId": 201
+  },
+  {
+    "categoryId": 101,
+    "attributeId": 202
+  },
+  {
+    "categoryId": 102,
+    "attributeId": 201
+  },
+  {
+    "categoryId": 102,
+    "attributeId": 202
+  },
+  {
+    "categoryId": 103,
+    "attributeId": 201
+  },
+  {
+    "categoryId": 103,
+    "attributeId": 202
+  }
+]

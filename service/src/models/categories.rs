@@ -5,8 +5,11 @@ use sqlx::{Encode, Executor, PgConnection, PgPool, Postgres, prelude::FromRow};
 use uuid::Uuid;
 
 use crate::{
-    schemas::{CategoryListQuery, NewCategory, UpdateCategory},
-    views::CategoryResponse,
+    schemas::{CategoryAttributesInput, CategoryListQuery, NewCategory, UpdateCategory},
+    views::{
+        CategoryAttributeResponse, CategoryChildResponse, CategoryDetailResponse, CategoryResponse,
+        CategoryTopProductResponse,
+    },
 };
 
 use super::{ModelError, ModelResult, PaginatedModel, Pagination, Seedable};
@@ -24,6 +27,40 @@ pub struct Category {
     created_at: DateTime<FixedOffset>,
     updated_at: DateTime<FixedOffset>,
     deleted_at: Option<DateTime<FixedOffset>>,
+}
+
+#[derive(Debug, Deserialize, Clone)]
+#[serde(rename_all = "camelCase")]
+pub struct CategoryAttributeLink {
+    category_id: i32,
+    attribute_id: i32,
+}
+
+#[derive(Debug, FromRow)]
+struct CategoryChildRow {
+    id: i32,
+    pid: Uuid,
+    name: String,
+    slug: String,
+    image_link: String,
+    product_count: i32,
+}
+
+#[derive(Debug, FromRow)]
+struct CategoryAttributeRow {
+    id: i32,
+    pid: Uuid,
+    name: String,
+    description: Option<String>,
+}
+
+#[derive(Debug, FromRow)]
+struct CategoryTopProductRow {
+    pid: Uuid,
+    name: String,
+    image_link: Option<String>,
+    sku: Option<String>,
+    stock_quantity: i32,
 }
 
 impl Category {
@@ -409,6 +446,181 @@ impl Category {
         .ok_or_else(|| ModelError::EntityNotFound)
     }
 
+    /// Loads a category with its children, linked attributes, and top products.
+    ///
+    /// # Errors
+    ///
+    /// Returns [`ModelError::EntityNotFound`] when the category does not exist,
+    /// or a database error when any related data cannot be queried.
+    #[expect(
+        clippy::too_many_lines,
+        reason = "The category detail read model keeps its related queries transactional"
+    )]
+    pub async fn find_detail_by_pid(db: &PgPool, pid: Uuid) -> ModelResult<CategoryDetailResponse> {
+        let mut txn = db.begin().await?;
+        let category = Self::find_by_pid(&mut *txn, pid).await?;
+        let parent_name = if let Some(parent_id) = category.parent_id() {
+            sqlx::query_scalar::<_, String>("SELECT name FROM categories WHERE id = $1")
+                .bind(parent_id)
+                .fetch_optional(&mut *txn)
+                .await?
+        } else {
+            None
+        };
+        let product_count = sqlx::query_scalar::<_, i32>(
+            "SELECT COUNT(*)::int4 FROM products WHERE category_id = $1 AND deleted_at IS NULL",
+        )
+        .bind(category.id())
+        .fetch_one(&mut *txn)
+        .await?;
+        let (total_variants, total_stock) = sqlx::query_as::<_, (i64, i64)>(
+            r"
+            SELECT COUNT(v.id)::bigint, COALESCE(SUM(v.stock_quantity), 0)::bigint
+            FROM products p
+            LEFT JOIN product_variants v ON v.product_id = p.id AND v.deleted_at IS NULL
+            WHERE p.category_id = $1 AND p.deleted_at IS NULL
+            ",
+        )
+        .bind(category.id())
+        .fetch_one(&mut *txn)
+        .await?;
+        let children = sqlx::query_as::<_, CategoryChildRow>(
+            r"
+            SELECT c.id, c.pid, c.name, c.slug, c.image_link,
+                   COUNT(p.id)::int4 AS product_count
+            FROM categories c
+            LEFT JOIN products p ON p.category_id = c.id AND p.deleted_at IS NULL
+            WHERE c.parent_id = $1 AND c.deleted_at IS NULL
+            GROUP BY c.id
+            ORDER BY c.name
+            ",
+        )
+        .bind(category.id())
+        .fetch_all(&mut *txn)
+        .await?;
+        let attributes = sqlx::query_as::<_, CategoryAttributeRow>(
+            r"
+            SELECT a.id, a.pid, a.name, a.description
+            FROM category_attributes ca
+            INNER JOIN attributes a ON a.id = ca.attribute_id
+            WHERE ca.category_id = $1
+            ORDER BY a.name
+            ",
+        )
+        .bind(category.id())
+        .fetch_all(&mut *txn)
+        .await?;
+        let top_products = sqlx::query_as::<_, CategoryTopProductRow>(
+            r"
+            SELECT p.pid, p.name, primary_picture.image_link,
+                   default_variant.sku, COALESCE(stock.total_stock, 0)::int4 AS stock_quantity
+            FROM products p
+            LEFT JOIN LATERAL (
+                SELECT pic.image_link
+                FROM pictures pic
+                WHERE pic.product_id = p.id AND pic.variant_id IS NULL
+                ORDER BY pic.display_order NULLS LAST, pic.id
+                LIMIT 1
+            ) primary_picture ON TRUE
+            LEFT JOIN LATERAL (
+                SELECT v.sku
+                FROM product_variants v
+                WHERE v.product_id = p.id AND v.is_default = TRUE AND v.deleted_at IS NULL
+                ORDER BY v.id
+                LIMIT 1
+            ) default_variant ON TRUE
+            LEFT JOIN LATERAL (
+                SELECT SUM(v.stock_quantity) AS total_stock
+                FROM product_variants v
+                WHERE v.product_id = p.id AND v.deleted_at IS NULL
+            ) stock ON TRUE
+            WHERE p.category_id = $1 AND p.deleted_at IS NULL
+            ORDER BY stock.total_stock DESC NULLS LAST, p.created_at DESC
+            LIMIT 5
+            ",
+        )
+        .bind(category.id())
+        .fetch_all(&mut *txn)
+        .await?;
+        txn.commit().await?;
+
+        Ok(CategoryDetailResponse {
+            category: CategoryResponse::new(&category, product_count, parent_name.as_deref()),
+            children: children
+                .into_iter()
+                .map(|child| CategoryChildResponse {
+                    id: child.id,
+                    pid: child.pid,
+                    name: child.name,
+                    slug: child.slug,
+                    image_link: child.image_link,
+                    product_count: child.product_count,
+                })
+                .collect(),
+            attributes: attributes
+                .into_iter()
+                .map(|attribute| CategoryAttributeResponse {
+                    id: attribute.id,
+                    pid: attribute.pid,
+                    name: attribute.name,
+                    description: attribute.description,
+                })
+                .collect(),
+            top_products: top_products
+                .into_iter()
+                .map(|product| CategoryTopProductResponse {
+                    pid: product.pid,
+                    name: product.name,
+                    image_link: product.image_link,
+                    sku: product.sku,
+                    stock_quantity: product.stock_quantity,
+                })
+                .collect(),
+            total_variants,
+            total_stock,
+        })
+    }
+
+    /// Replaces the many-to-many attribute links for a category.
+    ///
+    /// # Errors
+    ///
+    /// Returns [`ModelError::EntityNotFound`] when the category does not exist,
+    /// or a database error when links cannot be updated.
+    pub async fn set_attributes(
+        db: &PgPool,
+        pid: Uuid,
+        params: &CategoryAttributesInput,
+    ) -> ModelResult<CategoryDetailResponse> {
+        let mut txn = db.begin().await?;
+        let category_id = sqlx::query_scalar::<_, i32>("SELECT id FROM categories WHERE pid = $1")
+            .bind(pid)
+            .fetch_optional(&mut *txn)
+            .await?
+            .ok_or(ModelError::EntityNotFound)?;
+
+        sqlx::query("DELETE FROM category_attributes WHERE category_id = $1")
+            .bind(category_id)
+            .execute(&mut *txn)
+            .await?;
+        sqlx::query(
+            r"
+            INSERT INTO category_attributes (category_id, attribute_id)
+            SELECT $1, a.id
+            FROM attributes a
+            WHERE a.pid = ANY($2::uuid[])
+            ON CONFLICT DO NOTHING
+            ",
+        )
+        .bind(category_id)
+        .bind(params.attribute_pids())
+        .execute(&mut *txn)
+        .await?;
+        txn.commit().await?;
+
+        Self::find_detail_by_pid(db, pid).await
+    }
+
     /// Finds a category by normalized name.
     ///
     /// # Errors
@@ -518,6 +730,40 @@ impl Category {
     #[must_use]
     pub const fn parent_id(&self) -> Option<i32> {
         self.parent_id
+    }
+}
+
+impl CategoryAttributeLink {
+    /// Seeds category-to-attribute assignments from a file in `src/data`.
+    ///
+    /// # Errors
+    ///
+    /// Returns a file, deserialisation, or database error if loading or
+    /// inserting the loaded assignments fails.
+    pub async fn seed_data(db: &PgPool, file: &str) -> ModelResult<()> {
+        let data = Self::load(file).await?;
+
+        Self::seed(db, &data).await
+    }
+}
+
+impl Seedable for CategoryAttributeLink {
+    async fn seed(db: &PgPool, data: &[Self]) -> ModelResult<()> {
+        for link in data {
+            sqlx::query(
+                r"
+                INSERT INTO category_attributes (category_id, attribute_id)
+                VALUES ($1, $2)
+                ON CONFLICT (category_id, attribute_id) DO NOTHING
+                ",
+            )
+            .bind(link.category_id)
+            .bind(link.attribute_id)
+            .execute(db)
+            .await?;
+        }
+
+        Ok(())
     }
 }
 

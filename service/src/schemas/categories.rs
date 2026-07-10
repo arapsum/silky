@@ -8,6 +8,19 @@ use validator::{Validate, ValidationError};
 pub static RE_NAME: LazyLock<Regex> =
     LazyLock::new(|| Regex::new(r"^[a-zA-Z0-9- ]+$").expect("Regex initialisation failed"));
 
+#[derive(Debug, Deserialize, Serialize, Clone)]
+#[serde(rename_all = "camelCase")]
+pub struct CategoryAttributesInput {
+    attribute_pids: Vec<Uuid>,
+}
+
+impl CategoryAttributesInput {
+    #[must_use]
+    pub fn attribute_pids(&self) -> &[Uuid] {
+        &self.attribute_pids
+    }
+}
+
 #[derive(Debug, Deserialize, Serialize, Clone, Validate)]
 #[serde(rename_all = "camelCase")]
 pub struct NewCategory<'a> {

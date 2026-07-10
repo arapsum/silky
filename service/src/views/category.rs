@@ -22,6 +22,47 @@ pub struct CategoryResponse {
     pub deleted_at: Option<DateTime<FixedOffset>>,
 }
 
+#[derive(Debug, Deserialize, Serialize, Clone)]
+#[serde(rename_all = "camelCase")]
+pub struct CategoryChildResponse {
+    pub id: i32,
+    pub pid: Uuid,
+    pub name: String,
+    pub slug: String,
+    pub image_link: String,
+    pub product_count: i32,
+}
+
+#[derive(Debug, Deserialize, Serialize, Clone)]
+#[serde(rename_all = "camelCase")]
+pub struct CategoryAttributeResponse {
+    pub id: i32,
+    pub pid: Uuid,
+    pub name: String,
+    pub description: Option<String>,
+}
+
+#[derive(Debug, Deserialize, Serialize, Clone)]
+#[serde(rename_all = "camelCase")]
+pub struct CategoryTopProductResponse {
+    pub pid: Uuid,
+    pub name: String,
+    pub image_link: Option<String>,
+    pub sku: Option<String>,
+    pub stock_quantity: i32,
+}
+
+#[derive(Debug, Deserialize, Serialize, Clone)]
+#[serde(rename_all = "camelCase")]
+pub struct CategoryDetailResponse {
+    pub category: CategoryResponse,
+    pub children: Vec<CategoryChildResponse>,
+    pub attributes: Vec<CategoryAttributeResponse>,
+    pub top_products: Vec<CategoryTopProductResponse>,
+    pub total_variants: i64,
+    pub total_stock: i64,
+}
+
 impl CategoryResponse {
     #[must_use]
     pub fn new(category: &Category, product_count: i32, parent_name: Option<&str>) -> Self {

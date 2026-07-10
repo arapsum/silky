@@ -12,7 +12,7 @@ use crate::{
     access_control::permissions,
     middlewares::{AuthLayer, RbacLayer},
     models::Category,
-    schemas::{CategoryListQuery, NewCategory, UpdateCategory, Validator},
+    schemas::{CategoryAttributesInput, CategoryListQuery, NewCategory, UpdateCategory, Validator},
     utils::{AppJson, AppPath, AppQuery},
 };
 
@@ -54,6 +54,26 @@ async fn one(State(ctx): State<AppState>, AppPath(pid): AppPath<Uuid>) -> Result
 
 #[tracing::instrument(skip(ctx))]
 #[debug_handler]
+async fn detail(State(ctx): State<AppState>, AppPath(pid): AppPath<Uuid>) -> Result<Response> {
+    let category = Category::find_detail_by_pid(ctx.db(), pid).await?;
+
+    Ok((StatusCode::OK, Json(category)).into_response())
+}
+
+#[tracing::instrument(skip(ctx, params))]
+#[debug_handler]
+async fn set_attributes(
+    State(ctx): State<AppState>,
+    AppPath(pid): AppPath<Uuid>,
+    AppJson(params): AppJson<CategoryAttributesInput>,
+) -> Result<Response> {
+    let category = Category::set_attributes(ctx.db(), pid, &params).await?;
+
+    Ok((StatusCode::OK, Json(category)).into_response())
+}
+
+#[tracing::instrument(skip(ctx))]
+#[debug_handler]
 async fn update(
     State(ctx): State<AppState>,
     AppPath(pid): AppPath<Uuid>,
@@ -86,6 +106,11 @@ fn protected(ctx: &AppState) -> Router {
             patch(update).layer(RbacLayer::new(ctx.clone(), permissions::categories::UPDATE)),
         )
         .route(
+            "/{pid}/attributes",
+            axum::routing::put(set_attributes)
+                .layer(RbacLayer::new(ctx.clone(), permissions::categories::UPDATE)),
+        )
+        .route(
             "/{pid}",
             delete(remove).layer(RbacLayer::new(ctx.clone(), permissions::categories::DELETE)),
         )
@@ -95,6 +120,7 @@ fn protected(ctx: &AppState) -> Router {
 fn general(ctx: &AppState) -> Router {
     Router::new()
         .route("/", get(list))
+        .route("/{pid}/detail", get(detail))
         .route("/{pid}", get(one))
         .with_state(ctx.clone())
 }

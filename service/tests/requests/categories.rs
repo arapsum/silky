@@ -1,4 +1,4 @@
-use axum::http::HeaderValue;
+use axum::http::{HeaderValue, StatusCode};
 use axum_test::TestServer;
 use insta::{Settings, assert_debug_snapshot, with_settings};
 use rstest::rstest;
@@ -230,6 +230,55 @@ async fn can_get_category(#[case] test_name: &str, #[case] pid: &str) {
         }, {
             assert_debug_snapshot!(test_name, (response.status_code(), response.text()))
         })
+    })
+    .await;
+}
+
+#[tokio::test]
+#[serial]
+async fn can_get_category_detail_with_children_products_and_attributes() {
+    crate::request(|server, ctx| async move {
+        crate::seed_data(ctx.db())
+            .await
+            .expect("Failed to seed data");
+
+        let response = server
+            .get("/categories/6f042674-322f-4933-afc8-1d3fd75599f6/detail")
+            .await;
+
+        assert_eq!(response.status_code(), StatusCode::OK);
+        let body: serde_json::Value = response.json();
+        assert_eq!(body["category"]["name"], "shoes");
+        assert!(
+            body["attributes"]
+                .as_array()
+                .is_some_and(|items| items.len() == 2)
+        );
+        assert!(
+            body["topProducts"]
+                .as_array()
+                .is_some_and(|items| !items.is_empty())
+        );
+        assert!(
+            body["totalVariants"]
+                .as_i64()
+                .is_some_and(|count| count > 0)
+        );
+
+        allow_category_writes(ctx.db()).await;
+        let token = access_token(&server).await;
+        let (auth_header, auth_value) = utils::auth_header(token);
+        let response = server
+            .put("/categories/6f042674-322f-4933-afc8-1d3fd75599f6/attributes")
+            .add_header(auth_header, auth_value)
+            .json(&serde_json::json!({
+                "attributePids": ["757aeb5b-0a44-4ef7-9d7f-eb4f8ea23103"]
+            }))
+            .await;
+
+        assert_eq!(response.status_code(), StatusCode::OK);
+        let updated: serde_json::Value = response.json();
+        assert_eq!(updated["attributes"].as_array().map(Vec::len), Some(1));
     })
     .await;
 }

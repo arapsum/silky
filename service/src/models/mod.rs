@@ -14,7 +14,7 @@ use std::fmt::Debug;
 use serde::{Deserialize, Serialize};
 
 pub use self::{
-    categories::Category,
+    categories::{Category, CategoryAttributeLink},
     error::{ModelError, ModelResult},
     media_assets::{FinalizeMediaAsset, MediaAsset},
     permissions::Permission,

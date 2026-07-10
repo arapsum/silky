@@ -281,7 +281,7 @@ export default function CategoryDetailPage({ pid }: { pid: string }) {
         />
       </div>
 
-      <div className="mt-5 grid items-start gap-5 xl:grid-cols-[minmax(0,1.35fr)_minmax(20rem,.65fr)]">
+      <div className="mt-5 grid items-stretch gap-5 xl:grid-cols-[minmax(0,1.35fr)_minmax(20rem,.65fr)]">
         <section className="border bg-card">
           <SectionHeader
             title="Top products in this category"

@@ -503,6 +503,9 @@ export default function EditProductForm({ pid }: { pid: string }) {
           {product.options.map((option) => (
             <div key={option.pid} className="border bg-background p-4">
               <p className="font-semibold">{titleCase(option.attributeName)}</p>
+              {option.attributeDescription && (
+                <p className="mt-1 text-sm text-muted-foreground">{option.attributeDescription}</p>
+              )}
               <p className="mt-1 text-sm text-muted-foreground">
                 Display order {option.displayOrder ?? "N/A"}
               </p>
@@ -674,6 +677,9 @@ export default function EditProductForm({ pid }: { pid: string }) {
               {product.options.map((option) => (
                 <div key={option.pid} className="space-y-2">
                   <Label>{titleCase(option.attributeName)}</Label>
+                  {option.attributeDescription && (
+                    <p className="text-xs text-muted-foreground">{option.attributeDescription}</p>
+                  )}
                   <Select
                     value={newVariant.optionValues[String(option.attributeId)] ?? ""}
                     onValueChange={(value) =>

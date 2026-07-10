@@ -410,7 +410,9 @@ function OptionsList({ options }: { options: ProductOption[] }) {
             </div>
             <div className="min-w-0">
               <p className="truncate text-sm font-semibold">{titleCase(option.attributeName)}</p>
-              <p className="mt-0.5 text-xs text-muted-foreground">Variant dimension</p>
+              <p className="mt-0.5 text-xs text-muted-foreground">
+                {option.attributeDescription || "Variant dimension"}
+              </p>
             </div>
           </div>
           <span className="shrink-0 text-xs text-muted-foreground">

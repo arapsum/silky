@@ -532,7 +532,14 @@ export default function CreateProductForm() {
                               value={String(entry.attribute.id)}
                               disabled={selectedAttributeIds.has(String(entry.attribute.id))}
                             >
-                              {titleCase(entry.attribute.name)}
+                              <span className="flex flex-col py-0.5">
+                                <span>{titleCase(entry.attribute.name)}</span>
+                                {entry.attribute.description && (
+                                  <span className="text-xs font-normal text-muted-foreground">
+                                    {entry.attribute.description}
+                                  </span>
+                                )}
+                              </span>
                             </SelectItem>
                           ))}
                         </SelectContent>

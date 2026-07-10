@@ -41,6 +41,7 @@ export type ProductOption = {
   attributeId: number;
   attributePid: string;
   attributeName: string;
+  attributeDescription: string | null;
   displayOrder: number | null;
   createdAt: string;
 };
@@ -51,6 +52,7 @@ export type ProductVariantOption = {
   attributeId: number;
   attributePid: string;
   attributeName: string;
+  attributeDescription: string | null;
   attributeValueId: number;
   attributeValuePid: string;
   value: string;
@@ -167,6 +169,7 @@ export type ProductAttribute = {
   id: number;
   pid: string;
   name: string;
+  description: string | null;
   createdAt: string;
   updatedAt: string;
 };

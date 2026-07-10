@@ -9,6 +9,7 @@ use axum::{
 };
 use clap::Parser;
 use color_eyre::config::{HookBuilder, Theme};
+use dotenvy::dotenv;
 use tokio::{net::TcpListener, signal};
 use tower_http::{cors::CorsLayer, trace::TraceLayer};
 
@@ -100,6 +101,8 @@ impl App {
         } else {
             Theme::new()
         });
+
+        dotenv()?;
 
         let config = Config::from_env(&self.env)?;
 

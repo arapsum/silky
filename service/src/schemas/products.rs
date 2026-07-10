@@ -2,6 +2,7 @@ use std::borrow::Cow;
 
 use rust_decimal::Decimal;
 use serde::{Deserialize, Deserializer, Serialize};
+use uuid::Uuid;
 use validator::{Validate, ValidationError};
 
 #[derive(Debug, Deserialize, Serialize, Clone, Copy, PartialEq, Eq)]
@@ -196,6 +197,8 @@ pub struct CreateProductPicture<'a> {
     #[validate(url(message = "Invalid image URL"))]
     image_link: Cow<'a, str>,
     display_order: Option<i32>,
+    #[serde(default)]
+    media_asset_pid: Option<Uuid>,
 }
 
 #[derive(Debug, Deserialize, Serialize, Clone, Validate)]
@@ -217,6 +220,7 @@ impl<'a> CreateProductPicture<'a> {
         Self {
             image_link,
             display_order,
+            media_asset_pid: None,
         }
     }
 
@@ -228,6 +232,11 @@ impl<'a> CreateProductPicture<'a> {
     #[must_use]
     pub const fn display_order(&self) -> Option<i32> {
         self.display_order
+    }
+
+    #[must_use]
+    pub const fn media_asset_pid(&self) -> Option<Uuid> {
+        self.media_asset_pid
     }
 }
 

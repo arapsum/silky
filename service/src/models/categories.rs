@@ -58,13 +58,15 @@ impl Category {
                 slug,
                 image_link,
                 parent_id,
-                description
+                description,
+                media_asset_id
             ) VALUES (
                 $1,
                 $2,
                 $3,
                 $4,
-                $5
+                $5,
+                (SELECT id FROM media_assets WHERE pid = $6)
             ) RETURNING *
         ",
         )
@@ -73,6 +75,7 @@ impl Category {
         .bind(params.image_link().trim())
         .bind(params.parent_id())
         .bind(params.description().map(|s| s.trim()))
+        .bind(params.media_asset_pid())
         .fetch_one(&mut *txn)
         .await?;
 
@@ -121,8 +124,9 @@ impl Category {
                     slug = COALESCE($2, slug),
                     image_link = COALESCE($3, image_link),
                     parent_id = COALESCE($4, parent_id),
-                    description = COALESCE($5, description)
-                WHERE pid = $6
+                    description = COALESCE($5, description),
+                    media_asset_id = COALESCE((SELECT id FROM media_assets WHERE pid = $6), media_asset_id)
+                WHERE pid = $7
                 RETURNING *
         ",
         )
@@ -131,6 +135,7 @@ impl Category {
         .bind(params.image_link().map(|s| s.trim()))
         .bind(params.parent_id())
         .bind(params.description().map(|s| s.trim()))
+        .bind(params.media_asset_pid())
         .bind(exists.pid())
         .fetch_one(&mut *txn)
         .await?;

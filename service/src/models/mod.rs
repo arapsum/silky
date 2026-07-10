@@ -1,5 +1,6 @@
 pub mod categories;
 pub mod error;
+pub mod media_assets;
 pub mod permissions;
 pub mod products;
 pub mod roles;
@@ -15,6 +16,7 @@ use serde::{Deserialize, Serialize};
 pub use self::{
     categories::Category,
     error::{ModelError, ModelResult},
+    media_assets::{FinalizeMediaAsset, MediaAsset},
     permissions::Permission,
     products::{
         Attribute, AttributeValue, NewPicture, NewProductOption, NewVariant,

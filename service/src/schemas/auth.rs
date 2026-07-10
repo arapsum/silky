@@ -2,6 +2,7 @@ use std::{borrow::Cow, sync::LazyLock};
 
 use regex::{Captures, Regex};
 use serde::{Deserialize, Serialize};
+use uuid::Uuid;
 use validator::{Validate, ValidationError};
 
 pub static RE_NAME: LazyLock<Regex> =
@@ -204,12 +205,19 @@ pub struct UpdateProfile<'a> {
     email: Cow<'a, str>,
     #[validate(url(message = "Invalid image URL"))]
     image: Option<Cow<'a, str>>,
+    #[serde(default)]
+    media_asset_pid: Option<Uuid>,
 }
 
 impl<'a> UpdateProfile<'a> {
     #[must_use]
     pub const fn new(name: Cow<'a, str>, email: Cow<'a, str>, image: Option<Cow<'a, str>>) -> Self {
-        Self { name, email, image }
+        Self {
+            name,
+            email,
+            image,
+            media_asset_pid: None,
+        }
     }
 
     #[must_use]
@@ -225,6 +233,11 @@ impl<'a> UpdateProfile<'a> {
     #[must_use]
     pub const fn image(&self) -> Option<&Cow<'a, str>> {
         self.image.as_ref()
+    }
+
+    #[must_use]
+    pub const fn media_asset_pid(&self) -> Option<Uuid> {
+        self.media_asset_pid
     }
 }
 

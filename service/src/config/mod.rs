@@ -25,6 +25,8 @@ pub struct Config {
     database: DatabaseConfig,
     logger: Logger,
     auth: AuthConfig,
+    #[serde(default)]
+    cloudinary: Option<CloudinaryConfig>,
     mailer: MailerConfig,
     redis: RedisConfig,
     cors: CorsConfig,
@@ -62,7 +64,15 @@ impl Config {
             )
             .build()?;
 
-        config.try_deserialize::<Self>().map_err(Into::into)
+        let mut config = config.try_deserialize::<Self>()?;
+        if let Some(cloudinary) = config.cloudinary.as_mut() {
+            cloudinary.apply_environment();
+            if !cloudinary.is_configured() {
+                config.cloudinary = None;
+            }
+        }
+
+        Ok(config)
     }
 
     #[must_use]
@@ -98,6 +108,73 @@ impl Config {
     #[must_use]
     pub const fn cors(&self) -> &CorsConfig {
         &self.cors
+    }
+
+    #[must_use]
+    pub const fn cloudinary(&self) -> Option<&CloudinaryConfig> {
+        self.cloudinary.as_ref()
+    }
+}
+
+#[derive(Debug, Clone, Deserialize)]
+pub struct CloudinaryConfig {
+    #[serde(default)]
+    cloud_name: String,
+    #[serde(default)]
+    api_key: String,
+    #[serde(default)]
+    api_secret: String,
+}
+
+impl CloudinaryConfig {
+    fn apply_environment(&mut self) {
+        if let Ok(value) = std::env::var("APP_CLOUDINARY_CLOUD_NAME") {
+            self.cloud_name = value;
+        }
+        if let Ok(value) = std::env::var("APP_CLOUDINARY_API_KEY") {
+            self.api_key = value;
+        }
+        if let Ok(value) = std::env::var("APP_CLOUDINARY_API_SECRET") {
+            self.api_secret = value;
+        }
+
+        if !self.api_key.is_empty() {
+            return;
+        }
+
+        let url = std::env::var("APP_CLOUDINARY_URL").ok();
+        let Some(credentials) = url
+            .as_deref()
+            .and_then(|value| value.strip_prefix("cloudinary://"))
+            .and_then(|value| value.split_once('@'))
+            .and_then(|(credentials, _)| credentials.split_once(':'))
+        else {
+            return;
+        };
+
+        self.api_key = credentials.0.to_string();
+        if self.api_secret.is_empty() {
+            self.api_secret = credentials.1.to_string();
+        }
+    }
+
+    const fn is_configured(&self) -> bool {
+        !self.cloud_name.is_empty() && !self.api_key.is_empty() && !self.api_secret.is_empty()
+    }
+
+    #[must_use]
+    pub fn cloud_name(&self) -> &str {
+        &self.cloud_name
+    }
+
+    #[must_use]
+    pub fn api_key(&self) -> &str {
+        &self.api_key
+    }
+
+    #[must_use]
+    pub fn api_secret(&self) -> &str {
+        &self.api_secret
     }
 }
 

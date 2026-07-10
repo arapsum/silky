@@ -158,5 +158,37 @@
     "description": "Delete products",
     "createdAt": "2026-06-21T09:14:00+00:00",
     "updatedAt": "2026-06-21T09:15:00+00:00"
+  },
+  {
+    "id": 121,
+    "pid": "4c9f5278-6e0c-48a0-a8d3-e7a5f4b3a2c1",
+    "name": "media:read",
+    "description": "View media assets",
+    "createdAt": "2026-07-10T09:00:00+00:00",
+    "updatedAt": "2026-07-10T09:00:00+00:00"
+  },
+  {
+    "id": 122,
+    "pid": "6b0c9a41-7f23-4d5e-b8c9-a1e2f3d4c5b6",
+    "name": "media:create",
+    "description": "Upload media assets",
+    "createdAt": "2026-07-10T09:00:00+00:00",
+    "updatedAt": "2026-07-10T09:00:00+00:00"
+  },
+  {
+    "id": 123,
+    "pid": "8d1e2f34-5a67-489b-c0d1-e2f3a4b5c6d7",
+    "name": "media:update",
+    "description": "Update media references",
+    "createdAt": "2026-07-10T09:00:00+00:00",
+    "updatedAt": "2026-07-10T09:00:00+00:00"
+  },
+  {
+    "id": 124,
+    "pid": "9e2f3a45-6b78-490c-d1e2-f3a4b5c6d7e8",
+    "name": "media:delete",
+    "description": "Delete media assets",
+    "createdAt": "2026-07-10T09:00:00+00:00",
+    "updatedAt": "2026-07-10T09:00:00+00:00"
   }
 ]

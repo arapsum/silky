@@ -47,6 +47,7 @@ rust_decimal = { version = "1.42.1", features = [
 serde = { version = "1.0.228", features = ["derive"] }
 serde-saphyr = "0.0.27"
 serde_json = "1.0.150"
+sha1 = "0.10.6"
 serial_test = "3.5.0"
 sha2 = "0.11.0"
 sqlx = { version = "0.9.0", features = [
@@ -72,6 +73,7 @@ tracing-subscriber = { version = "0.3.23", features = [
 ] }
 uuid = { version = "1.23.3", features = ["serde", "v4"] }
 validator = { version = "0.20.0", features = ["derive"] }
+dotenvy = "0.15.7"
 
 [dev-dependencies]
 axum-test = { version = "20.1.0", features = ["typed-routing"] }

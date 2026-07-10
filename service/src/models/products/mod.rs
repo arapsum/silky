@@ -265,12 +265,7 @@ impl Product {
         let mut options = Vec::new();
         let mut pictures = Vec::with_capacity(params.pictures().len());
         let mut variants = Vec::with_capacity(params.variants().len());
-        let variant_attribute_capacity = params
-            .variants()
-            .iter()
-            .map(|variant| variant.options().len())
-            .sum();
-        let mut variant_attribute_values = Vec::with_capacity(variant_attribute_capacity);
+        let mut variant_attribute_values = Vec::new();
         let mut option_orders = Vec::<(i32, Option<i32>)>::new();
 
         for picture in params.pictures() {
@@ -279,7 +274,8 @@ impl Product {
                 picture.image_link().trim().to_string(),
                 None,
                 picture.display_order(),
-            );
+            )
+            .with_media_asset_pid(picture.media_asset_pid());
             let picture = Picture::create(&mut *txn, &params).await?;
             pictures.push(picture);
         }
@@ -331,7 +327,8 @@ impl Product {
                     picture.image_link().trim().to_string(),
                     Some(created_variant.id()),
                     picture.display_order(),
-                );
+                )
+                .with_media_asset_pid(picture.media_asset_pid());
                 let picture = Picture::create(&mut *txn, &params).await?;
                 pictures.push(picture);
             }
@@ -446,7 +443,8 @@ impl Product {
                 picture.image_link().trim().to_string(),
                 Some(variant.id()),
                 picture.display_order(),
-            );
+            )
+            .with_media_asset_pid(picture.media_asset_pid());
             Picture::create(&mut *txn, &picture_params).await?;
         }
 
@@ -523,7 +521,8 @@ impl Product {
             params.image_link().trim().to_string(),
             None,
             params.display_order(),
-        );
+        )
+        .with_media_asset_pid(params.media_asset_pid());
 
         Picture::create(db, &params).await
     }
@@ -547,7 +546,8 @@ impl Product {
             params.image_link().trim().to_string(),
             Some(variant_row_id),
             params.display_order(),
-        );
+        )
+        .with_media_asset_pid(params.media_asset_pid());
 
         Picture::create(db, &params).await
     }

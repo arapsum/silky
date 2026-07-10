@@ -14,6 +14,7 @@ pub struct NewPicture {
     variant: Option<i32>,
     image_link: String,
     display_order: Option<i32>,
+    media_asset_pid: Option<Uuid>,
 }
 
 impl NewPicture {
@@ -38,6 +39,7 @@ impl NewPicture {
             variant,
             image_link,
             display_order,
+            media_asset_pid: None,
         }
     }
 
@@ -60,6 +62,12 @@ impl NewPicture {
     pub const fn display_order(&self) -> Option<i32> {
         self.display_order
     }
+
+    #[must_use]
+    pub const fn with_media_asset_pid(mut self, pid: Option<Uuid>) -> Self {
+        self.media_asset_pid = pid;
+        self
+    }
 }
 
 #[derive(Debug, Deserialize, Serialize, Clone, FromRow, Encode)]
@@ -71,6 +79,7 @@ pub struct Picture {
     variant_id: Option<i32>,
     image_link: String,
     display_order: Option<i32>,
+    media_asset_id: Option<i32>,
     created_at: DateTime<FixedOffset>,
     updated_at: DateTime<FixedOffset>,
 }
@@ -97,13 +106,15 @@ impl Picture {
                 INSERT INTO pictures (
                     product_id,
                     variant_id,
-                    image_link,
-                    display_order
+                image_link,
+                    display_order,
+                    media_asset_id
                 ) VALUES (
                     $1,
                     $2,
                     $3,
-                    $4
+                    $4,
+                    (SELECT id FROM media_assets WHERE pid = $5)
                 )
                 RETURNING *
         ",
@@ -112,6 +123,7 @@ impl Picture {
         .bind(params.variant())
         .bind(params.image_link())
         .bind(params.display_order())
+        .bind(params.media_asset_pid)
         .fetch_one(db)
         .await?;
 

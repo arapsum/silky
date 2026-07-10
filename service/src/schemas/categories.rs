@@ -2,6 +2,7 @@ use std::{borrow::Cow, sync::LazyLock};
 
 use regex::{Captures, Regex};
 use serde::{Deserialize, Serialize};
+use uuid::Uuid;
 use validator::{Validate, ValidationError};
 
 pub static RE_NAME: LazyLock<Regex> =
@@ -20,6 +21,8 @@ pub struct NewCategory<'a> {
     parent_id: Option<i32>,
     #[validate(length(max = 1000, message = "Description must be under 1000 characters"))]
     description: Option<Cow<'a, str>>,
+    #[serde(default)]
+    media_asset_pid: Option<Uuid>,
 }
 
 impl<'a> NewCategory<'a> {
@@ -37,6 +40,7 @@ impl<'a> NewCategory<'a> {
             image_link,
             parent_id,
             description,
+            media_asset_pid: None,
         }
     }
 
@@ -64,6 +68,11 @@ impl<'a> NewCategory<'a> {
     pub const fn description(&self) -> Option<&Cow<'a, str>> {
         self.description.as_ref()
     }
+
+    #[must_use]
+    pub const fn media_asset_pid(&self) -> Option<Uuid> {
+        self.media_asset_pid
+    }
 }
 
 #[derive(Debug, Deserialize, Serialize, Clone, Validate)]
@@ -79,6 +88,8 @@ pub struct UpdateCategory<'a> {
     parent_id: Option<i32>,
     #[validate(length(max = 1000, message = "Description must be under 1000 characters"))]
     description: Option<Cow<'a, str>>,
+    #[serde(default)]
+    media_asset_pid: Option<Uuid>,
 }
 
 impl<'a> UpdateCategory<'a> {
@@ -96,6 +107,7 @@ impl<'a> UpdateCategory<'a> {
             image_link,
             parent_id,
             description,
+            media_asset_pid: None,
         }
     }
     #[must_use]
@@ -121,6 +133,11 @@ impl<'a> UpdateCategory<'a> {
     #[must_use]
     pub const fn description(&self) -> Option<&Cow<'a, str>> {
         self.description.as_ref()
+    }
+
+    #[must_use]
+    pub const fn media_asset_pid(&self) -> Option<Uuid> {
+        self.media_asset_pid
     }
 }
 

@@ -1,0 +1,5 @@
+---
+source: tests/schemas/orders.rs
+expression: error
+---
+"Validation error: {\"country_code\":\"Field error\"}"

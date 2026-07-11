@@ -1,0 +1,72 @@
+---
+source: tests/models/orders.rs
+expression: found
+---
+Order {
+    id: ID,
+    pid: PID,
+    order_number: 3,
+    customer_id: ID,
+    billing_address_id: Some(
+        303,
+    ),
+    shipping_address_id: Some(
+        304,
+    ),
+    customer_name: "John Doe",
+    customer_email: "john.doe@acme.com",
+    billing_address_snapshot: Json(
+        Object {
+            "pid": String("PID"),
+            "city": String("Nairobi"),
+            "email": Null,
+            "label": Null,
+            "phone": Null,
+            "region": Null,
+            "company": Null,
+            "lineOne": String("10 Market Street"),
+            "lineTwo": Null,
+            "postalCode": Null,
+            "addressType": String("billing"),
+            "countryCode": String("KE"),
+            "recipientName": String("John Doe"),
+        },
+    ),
+    shipping_address_snapshot: Json(
+        Object {
+            "pid": String("PID"),
+            "city": String("Nairobi"),
+            "email": Null,
+            "label": Null,
+            "phone": Null,
+            "region": Null,
+            "company": Null,
+            "lineOne": String("10 Market Street"),
+            "lineTwo": Null,
+            "postalCode": Null,
+            "addressType": String("shipping"),
+            "countryCode": String("KE"),
+            "recipientName": String("John Doe"),
+        },
+    ),
+    status: "pending",
+    payment_status: "pending",
+    fulfillment_status: "unfulfilled",
+    currency: "USD",
+    subtotal: 24.99,
+    discount_total: 0,
+    shipping_total: 5.00,
+    tax_total: 0,
+    grand_total: 29.99,
+    customer_note: Some(
+        "Leave at the front desk",
+    ),
+    staff_note: None,
+    placed_at: Some(
+        DATE,
+    ),
+    cancelled_at: None,
+    completed_at: None,
+    created_at: DATE,
+    updated_at: DATE,
+}

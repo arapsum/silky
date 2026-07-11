@@ -1,5 +1,6 @@
 pub mod auth;
 pub mod categories;
+pub mod orders;
 pub mod products;
 pub mod request;
 pub mod roles;
@@ -8,6 +9,7 @@ pub mod validator;
 pub use self::{
     auth::{ChangePassword, ForgotPassword, LoginUser, RegisterUser, ResetPassword, UpdateProfile},
     categories::{CategoryAttributesInput, NewCategory, UpdateCategory},
+    orders::{NewAddress, NewOrder, NewOrderDetail},
     products::{
         CreateProduct, CreateProductPicture, CreateProductTag, CreateProductVariant,
         CreateVariantOption, ProductListQuery, StockStatus, UpdateProduct, UpdateProductPicture,

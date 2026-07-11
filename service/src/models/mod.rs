@@ -1,6 +1,9 @@
+pub mod addresses;
 pub mod categories;
 pub mod error;
 pub mod media_assets;
+pub mod order_details;
+pub mod orders;
 pub mod permissions;
 pub mod products;
 pub mod roles;
@@ -14,9 +17,12 @@ use std::fmt::Debug;
 use serde::{Deserialize, Serialize};
 
 pub use self::{
+    addresses::Address,
     categories::{Category, CategoryAttributeLink},
     error::{ModelError, ModelResult},
     media_assets::{FinalizeMediaAsset, MediaAsset},
+    order_details::OrderDetail,
+    orders::Order,
     permissions::Permission,
     products::{
         Attribute, AttributeValue, NewPicture, NewProductOption, NewVariant,

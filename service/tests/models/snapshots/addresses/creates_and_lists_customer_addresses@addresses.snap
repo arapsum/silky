@@ -1,0 +1,36 @@
+---
+source: tests/models/addresses.rs
+expression: "(found, addresses.map(|values| values.len()))"
+---
+(
+    Ok(
+        Address {
+            id: ID,
+            pid: PID,
+            customer_id: ID,
+            address_type: "shipping",
+            label: Some(
+                "Home",
+            ),
+            recipient_name: "John Doe",
+            company: None,
+            line_one: "10 Market Street",
+            line_two: None,
+            city: "Nairobi",
+            region: None,
+            postal_code: None,
+            country_code: "KE",
+            email: Some(
+                "john.doe@acme.com",
+            ),
+            phone: None,
+            is_default: true,
+            created_at: DATE,
+            updated_at: DATE,
+            deleted_at: None,
+        },
+    ),
+    Ok(
+        3,
+    ),
+)

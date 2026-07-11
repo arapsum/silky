@@ -1,0 +1,35 @@
+---
+source: tests/models/order_details.rs
+expression: "(detail, details.len())"
+---
+(
+    OrderDetail {
+        id: ID,
+        pid: PID,
+        order_id: ID,
+        product_id: Some(
+            201,
+        ),
+        variant_id: Some(
+            201,
+        ),
+        product_pid: PID,
+        variant_pid: PID,
+        product_name: "Classic Cotton T-shirt",
+        sku: "TSHIRT-BLK-M",
+        selected_options: Json(
+            Object {
+                "size": String("M"),
+                "colour": String("Black"),
+            },
+        ),
+        quantity: 1,
+        unit_price: 24.99,
+        discount_total: 0,
+        tax_total: 0,
+        line_total: 24.99,
+        created_at: DATE,
+        updated_at: DATE,
+    },
+    1,
+)

@@ -48,10 +48,12 @@ pub struct Order {
 }
 
 impl Order {
-    /// Creates a pending order for an existing customer and optional addresses.
+    /// Creates a pending order for an existing customer.
     ///
-    /// Address references must belong to the customer and are copied into order
-    /// snapshots so later address edits do not change the order history.
+    /// Optional billing and shipping address references must belong to the
+    /// customer. Their values are copied into JSON snapshots so later address
+    /// edits do not change the order history. The amount breakdown is checked
+    /// before insertion and the order is timestamped as placed.
     ///
     /// # Errors
     /// Returns an invalid-reference error for missing customers or addresses,
@@ -61,7 +63,10 @@ impl Order {
         let mut txn = db.begin().await?;
         let (customer_id, customer_name, customer_email) =
             sqlx::query_as::<_, (i32, String, String)>(
-                "SELECT id,name,email::text FROM users WHERE pid = $1 AND deleted_at IS NULL",
+                r"SELECT id, name, email::text
+                  FROM users
+                  WHERE pid = $1
+                    AND deleted_at IS NULL",
             )
             .bind(params.customer_pid())
             .fetch_optional(&mut *txn)
@@ -74,18 +79,35 @@ impl Order {
             load_customer_address(&mut txn, customer_id, params.shipping_address_pid()).await?;
         let order = sqlx::query_as::<_, Self>(
             r"INSERT INTO orders (
-                customer_id,billing_address_id,shipping_address_id,billing_address_snapshot,
-                shipping_address_snapshot,customer_name,customer_email,currency,subtotal,
-                discount_total,shipping_total,tax_total,grand_total,customer_note,staff_note,placed_at
-              ) VALUES (
-                $1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12,$13,$14,$15,now()
-              ) RETURNING *",
+                customer_id,
+                billing_address_id,
+                shipping_address_id,
+                billing_address_snapshot,
+                shipping_address_snapshot,
+                customer_name,
+                customer_email,
+                currency,
+                subtotal,
+                discount_total,
+                shipping_total,
+                tax_total,
+                grand_total,
+                customer_note,
+                staff_note,
+                placed_at
+              )
+              VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14, $15, now())
+              RETURNING *",
         )
         .bind(customer_id)
         .bind(billing.as_ref().map(|value| value.0))
         .bind(shipping.as_ref().map(|value| value.0))
-        .bind(Json(billing.map_or_else(|| serde_json::json!({}), |value| value.1)))
-        .bind(Json(shipping.map_or_else(|| serde_json::json!({}), |value| value.1)))
+        .bind(Json(
+            billing.map_or_else(|| serde_json::json!({}), |value| value.1),
+        ))
+        .bind(Json(
+            shipping.map_or_else(|| serde_json::json!({}), |value| value.1),
+        ))
         .bind(customer_name)
         .bind(customer_email)
         .bind(params.currency().to_uppercase())
@@ -102,16 +124,20 @@ impl Order {
         Ok(order)
     }
 
-    /// Finds an order by its public ID.
+    /// Finds an order by its public ID, including its persisted snapshots.
     ///
     /// # Errors
     /// Returns [`ModelError::EntityNotFound`] when no order exists for `pid`.
     pub async fn find_by_pid(db: &PgPool, pid: Uuid) -> ModelResult<Self> {
-        sqlx::query_as::<_, Self>("SELECT * FROM orders WHERE pid = $1")
-            .bind(pid)
-            .fetch_optional(db)
-            .await?
-            .ok_or(ModelError::EntityNotFound)
+        sqlx::query_as::<_, Self>(
+            r"SELECT *
+              FROM orders
+              WHERE pid = $1",
+        )
+        .bind(pid)
+        .fetch_optional(db)
+        .await?
+        .ok_or(ModelError::EntityNotFound)
     }
 
     #[must_use]
@@ -164,12 +190,26 @@ async fn load_customer_address(
         return Ok(None);
     };
     sqlx::query_as::<_, (i32, JsonValue)>(
-        r"SELECT id, jsonb_build_object(
-            'pid', pid, 'addressType', address_type, 'label', label,
-            'recipientName', recipient_name, 'company', company, 'lineOne', line_one,
-            'lineTwo', line_two, 'city', city, 'region', region, 'postalCode', postal_code,
-            'countryCode', country_code, 'email', email, 'phone', phone
-          ) FROM addresses WHERE pid=$1 AND customer_id=$2 AND deleted_at IS NULL",
+        r"SELECT id,
+                jsonb_build_object(
+                    'pid', pid,
+                    'addressType', address_type,
+                    'label', label,
+                    'recipientName', recipient_name,
+                    'company', company,
+                    'lineOne', line_one,
+                    'lineTwo', line_two,
+                    'city', city,
+                    'region', region,
+                    'postalCode', postal_code,
+                    'countryCode', country_code,
+                    'email', email,
+                    'phone', phone
+                )
+              FROM addresses
+              WHERE pid = $1
+                AND customer_id = $2
+                AND deleted_at IS NULL",
     )
     .bind(pid)
     .bind(customer_id)

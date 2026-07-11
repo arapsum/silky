@@ -39,15 +39,21 @@ pub struct Address {
 }
 
 impl Address {
-    /// Creates a customer address and resolves the customer by public ID.
+    /// Creates a customer-owned address from a public customer ID.
+    ///
+    /// When `is_default` is true, the existing default for the same customer
+    /// and address type is cleared in the same transaction.
     ///
     /// # Errors
-    /// Returns an invalid-reference error when the customer is absent, or a
-    /// database error when the address cannot be inserted.
+    /// Returns [`ModelError::InvalidReference`] when the customer is absent,
+    /// or [`ModelError::Sqlx`] when the address cannot be persisted.
     pub async fn create(db: &PgPool, params: &NewAddress) -> ModelResult<Self> {
         let mut txn = db.begin().await?;
         let customer_id = sqlx::query_scalar::<_, i32>(
-            "SELECT id FROM users WHERE pid = $1 AND deleted_at IS NULL",
+            r"SELECT id
+              FROM users
+              WHERE pid = $1
+                AND deleted_at IS NULL",
         )
         .bind(params.customer_pid())
         .fetch_optional(&mut *txn)
@@ -56,7 +62,11 @@ impl Address {
 
         if params.is_default() {
             sqlx::query(
-                "UPDATE addresses SET is_default = FALSE WHERE customer_id = $1 AND address_type = $2 AND deleted_at IS NULL",
+                r"UPDATE addresses
+                  SET is_default = FALSE
+                  WHERE customer_id = $1
+                    AND address_type = $2
+                    AND deleted_at IS NULL",
             )
             .bind(customer_id)
             .bind(params.address_type())
@@ -66,9 +76,23 @@ impl Address {
 
         let address = sqlx::query_as::<_, Self>(
             r"INSERT INTO addresses (
-                customer_id,address_type,label,recipient_name,company,line_one,line_two,city,
-                region,postal_code,country_code,email,phone,is_default
-              ) VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12,$13,$14) RETURNING *",
+                customer_id,
+                address_type,
+                label,
+                recipient_name,
+                company,
+                line_one,
+                line_two,
+                city,
+                region,
+                postal_code,
+                country_code,
+                email,
+                phone,
+                is_default
+              )
+              VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14)
+              RETURNING *",
         )
         .bind(customer_id)
         .bind(params.address_type())
@@ -90,27 +114,34 @@ impl Address {
         Ok(address)
     }
 
-    /// Finds an active address by public ID.
+    /// Finds one non-deleted address by its public ID.
     ///
     /// # Errors
     /// Returns [`ModelError::EntityNotFound`] when the address is missing or deleted.
     pub async fn find_by_pid(db: &PgPool, pid: Uuid) -> ModelResult<Self> {
-        sqlx::query_as::<_, Self>("SELECT * FROM addresses WHERE pid = $1 AND deleted_at IS NULL")
-            .bind(pid)
-            .fetch_optional(db)
-            .await?
-            .ok_or(ModelError::EntityNotFound)
+        sqlx::query_as::<_, Self>(
+            r"SELECT *
+              FROM addresses
+              WHERE pid = $1
+                AND deleted_at IS NULL",
+        )
+        .bind(pid)
+        .fetch_optional(db)
+        .await?
+        .ok_or(ModelError::EntityNotFound)
     }
 
-    /// Lists active addresses belonging to a customer public ID.
+    /// Lists a customer's non-deleted addresses, with defaults first.
     ///
     /// # Errors
     /// Returns a database error when the customer address list cannot be queried.
     pub async fn find_by_customer(db: &PgPool, customer_pid: Uuid) -> ModelResult<Vec<Self>> {
         Ok(sqlx::query_as::<_, Self>(
-            r"SELECT a.* FROM addresses a
+            r"SELECT a.*
+              FROM addresses a
               JOIN users u ON u.id = a.customer_id
-              WHERE u.pid = $1 AND a.deleted_at IS NULL
+              WHERE u.pid = $1
+                AND a.deleted_at IS NULL
               ORDER BY a.is_default DESC, a.created_at DESC, a.id DESC",
         )
         .bind(customer_pid)

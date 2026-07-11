@@ -40,7 +40,10 @@ pub struct OrderDetail {
 }
 
 impl OrderDetail {
-    /// Creates an order line from the current product variant snapshot.
+    /// Creates an immutable order line from the current variant snapshot.
+    ///
+    /// The product name, SKU, selected options, and unit price are copied at
+    /// insertion time; later catalogue edits do not change this line.
     ///
     /// # Errors
     /// Returns an invalid-reference error when the order or variant is missing,
@@ -52,24 +55,45 @@ impl OrderDetail {
             ));
         }
         let mut txn = db.begin().await?;
-        let order_id = sqlx::query_scalar::<_, i32>("SELECT id FROM orders WHERE pid=$1")
-            .bind(params.order_pid())
-            .fetch_optional(&mut *txn)
-            .await?
-            .ok_or_else(|| ModelError::InvalidReference("Order does not exist.".to_string()))?;
+        let order_id = sqlx::query_scalar::<_, i32>(
+            r"SELECT id
+              FROM orders
+              WHERE pid = $1",
+        )
+        .bind(params.order_pid())
+        .fetch_optional(&mut *txn)
+        .await?
+        .ok_or_else(|| ModelError::InvalidReference("Order does not exist.".to_string()))?;
         let variant = sqlx::query_as::<_, VariantSnapshot>(
-            r"SELECT v.id AS variant_id,v.pid AS variant_pid,p.id AS product_id,p.pid AS product_pid,
-                p.name AS product_name,v.sku,v.price,
-                COALESCE((SELECT jsonb_object_agg(a.name,av.value) FROM variant_attribute_values vav
-                  JOIN attributes a ON a.id=vav.attribute_id JOIN attribute_values av ON av.id=vav.attribute_value_id
-                  WHERE vav.variant_id=v.id),'{}'::jsonb) AS selected_options
-              FROM product_variants v JOIN products p ON p.id=v.product_id
-              WHERE v.pid=$1 AND v.deleted_at IS NULL AND p.deleted_at IS NULL",
+            r"SELECT v.id AS variant_id,
+                    v.pid AS variant_pid,
+                    p.id AS product_id,
+                    p.pid AS product_pid,
+                    p.name AS product_name,
+                    v.sku,
+                    v.price,
+                    COALESCE(
+                        (
+                            SELECT jsonb_object_agg(a.name, av.value)
+                            FROM variant_attribute_values vav
+                            JOIN attributes a ON a.id = vav.attribute_id
+                            JOIN attribute_values av ON av.id = vav.attribute_value_id
+                            WHERE vav.variant_id = v.id
+                        ),
+                        '{}'::jsonb
+                    ) AS selected_options
+              FROM product_variants v
+              JOIN products p ON p.id = v.product_id
+              WHERE v.pid = $1
+                AND v.deleted_at IS NULL
+                AND p.deleted_at IS NULL",
         )
         .bind(params.variant_pid())
         .fetch_optional(&mut *txn)
         .await?
-        .ok_or_else(|| ModelError::InvalidReference("Product variant does not exist.".to_string()))?;
+        .ok_or_else(|| {
+            ModelError::InvalidReference("Product variant does not exist.".to_string())
+        })?;
         let line_total = variant.price * Decimal::from(params.quantity()) - params.discount_total()
             + params.tax_total();
         if line_total.is_sign_negative() {
@@ -79,9 +103,22 @@ impl OrderDetail {
         }
         let detail = sqlx::query_as::<_, Self>(
             r"INSERT INTO order_details (
-                order_id,product_id,variant_id,product_pid,variant_pid,product_name,sku,
-                selected_options,quantity,unit_price,discount_total,tax_total,line_total
-              ) VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12,$13) RETURNING *",
+                order_id,
+                product_id,
+                variant_id,
+                product_pid,
+                variant_pid,
+                product_name,
+                sku,
+                selected_options,
+                quantity,
+                unit_price,
+                discount_total,
+                tax_total,
+                line_total
+              )
+              VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13)
+              RETURNING *",
         )
         .bind(order_id)
         .bind(variant.product_id)
@@ -102,21 +139,30 @@ impl OrderDetail {
         Ok(detail)
     }
 
-    /// Lists order details by order public ID.
+    /// Lists order lines by order public ID in insertion order.
     ///
     /// # Errors
     /// Returns an invalid-reference error when the order does not exist or a database error.
     pub async fn find_by_order(db: &PgPool, order_pid: Uuid) -> ModelResult<Vec<Self>> {
-        let order_exists =
-            sqlx::query_scalar::<_, bool>("SELECT EXISTS (SELECT 1 FROM orders WHERE pid=$1)")
-                .bind(order_pid)
-                .fetch_one(db)
-                .await?;
+        let order_exists = sqlx::query_scalar::<_, bool>(
+            r"SELECT EXISTS (
+                        SELECT 1
+                        FROM orders
+                        WHERE pid = $1
+                    )",
+        )
+        .bind(order_pid)
+        .fetch_one(db)
+        .await?;
         if !order_exists {
             return Err(ModelError::EntityNotFound);
         }
         Ok(sqlx::query_as::<_, Self>(
-            "SELECT od.* FROM order_details od JOIN orders o ON o.id=od.order_id WHERE o.pid=$1 ORDER BY od.id",
+            r"SELECT od.*
+              FROM order_details od
+              JOIN orders o ON o.id = od.order_id
+              WHERE o.pid = $1
+              ORDER BY od.id",
         )
         .bind(order_pid)
         .fetch_all(db)

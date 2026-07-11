@@ -267,12 +267,12 @@ function Panel({
   className?: string;
 }) {
   return (
-    <section className={cn("border bg-card", className)}>
+    <section className={cn("flex h-full flex-col border bg-card", className)}>
       <div className="flex items-center gap-2 border-b px-4 py-3.5">
         <span className="text-muted-foreground">{icon}</span>
         <h2 className="text-sm font-semibold">{title}</h2>
       </div>
-      <div className="p-4">{children}</div>
+      <div className="flex-1 p-4">{children}</div>
     </section>
   );
 }
@@ -568,7 +568,7 @@ export default function ProductDetailPage({ pid }: { pid: string }) {
         <VariantTable variants={product.variants} />
       </section>
 
-      <div className="mt-5 grid items-start gap-5 lg:grid-cols-3">
+      <div className="mt-5 grid items-stretch gap-5 lg:grid-cols-3">
         <Panel title="Product information" icon={<StackIcon className="size-4" />}>
           {information.length || product.tags.length ? (
             <div className="space-y-6">
@@ -582,7 +582,7 @@ export default function ProductDetailPage({ pid }: { pid: string }) {
                 </dl>
               )}
               {product.tags.length > 0 && (
-                <div>
+                <div className={cn(information.length > 0 && "border-t pt-5")}>
                   <p className="text-xs font-medium text-muted-foreground">Tags</p>
                   <div className="mt-2 flex flex-wrap gap-1.5">
                     {product.tags.map((tag) => (

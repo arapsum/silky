@@ -45,6 +45,7 @@ type TextareaInputProps = Omit<
 type ComboboxMultipleInputProps = {
   type: "combobox-multiple";
   options: SelectOption[];
+  onCreateOption?: (label: string) => Promise<SelectOption>;
   placeholder?: string;
   className?: string;
   disabled?: boolean;
@@ -132,6 +133,8 @@ function RenderInput<TField extends FieldValues>({
   input,
 }: RenderInputProps<TField>) {
   const [visible, setVisible] = useState(false);
+  const [comboboxInput, setComboboxInput] = useState("");
+  const [isCreatingOption, setIsCreatingOption] = useState(false);
   const comboboxAnchor = useComboboxAnchor();
   const type = input.type ?? "text";
 
@@ -279,9 +282,30 @@ function RenderInput<TField extends FieldValues>({
     }
 
     case "combobox-multiple": {
-      const { options, placeholder, className, disabled, required } =
+      const { options, onCreateOption, placeholder, className, disabled, required } =
         input as ComboboxMultipleInputProps;
       const values = Array.isArray(field.value) ? field.value : [];
+      const newOptionLabel = comboboxInput.trim();
+      const canCreateOption =
+        !!onCreateOption &&
+        !!newOptionLabel &&
+        !options.some((option) => option.label.toLowerCase() === newOptionLabel.toLowerCase());
+
+      async function createOption() {
+        if (!onCreateOption || !canCreateOption || isCreatingOption) return;
+
+        setIsCreatingOption(true);
+        try {
+          const option = await onCreateOption(newOptionLabel);
+          field.onChange([...values, option.value]);
+          field.onBlur();
+          setComboboxInput("");
+        } catch {
+          // The caller owns error reporting so failed creation does not submit a stale value.
+        } finally {
+          setIsCreatingOption(false);
+        }
+      }
 
       return (
         <Combobox
@@ -292,7 +316,8 @@ function RenderInput<TField extends FieldValues>({
             field.onChange(value);
             field.onBlur();
           }}
-          disabled={disabled}
+          onInputValueChange={setComboboxInput}
+          disabled={disabled || isCreatingOption}
         >
           <ComboboxChips ref={comboboxAnchor} className={cn("w-full", className)}>
             <ComboboxValue>
@@ -308,16 +333,35 @@ function RenderInput<TField extends FieldValues>({
                     ref={field.ref}
                     placeholder={selectedValues.length ? "" : placeholder}
                     onBlur={field.onBlur}
-                    disabled={disabled}
+                    disabled={disabled || isCreatingOption}
                     required={required}
                     aria-invalid={fieldState.invalid}
+                    onKeyDown={(event) => {
+                      if (event.key === "Enter" && canCreateOption) {
+                        event.preventDefault();
+                        void createOption();
+                      }
+                    }}
                   />
                 </>
               )}
             </ComboboxValue>
           </ComboboxChips>
           <ComboboxContent anchor={comboboxAnchor}>
-            <ComboboxEmpty>No matching options.</ComboboxEmpty>
+            <ComboboxEmpty>
+              {canCreateOption ? (
+                <button
+                  type="button"
+                  className="w-full px-2 py-1.5 text-left text-sm hover:bg-accent"
+                  disabled={isCreatingOption}
+                  onClick={() => void createOption()}
+                >
+                  {isCreatingOption ? "Creating tag..." : `Create “${newOptionLabel}”`}
+                </button>
+              ) : (
+                "No matching options."
+              )}
+            </ComboboxEmpty>
             <ComboboxList>
               {(option: SelectOption) => (
                 <ComboboxItem key={option.value} value={option.value}>

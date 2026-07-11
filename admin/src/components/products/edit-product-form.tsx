@@ -19,6 +19,7 @@ import { categoriesQueryKey, listCategories } from "#/api/categories.ts";
 import {
   addProductPicture,
   addVariantPicture,
+  createProductTag,
   createProductVariant,
   deleteProductPicture,
   deleteProductVariant,
@@ -36,6 +37,7 @@ import {
   updateVariantPicture,
   type ProductAttributeWithValues,
   type ProductPicture,
+  type ProductTag,
   type ProductVariantDetail,
 } from "#/api/products.ts";
 import {
@@ -329,6 +331,17 @@ export default function EditProductForm({ pid }: { pid: string }) {
     onError: (error) => toast.error(error.message),
   });
 
+  const createTagMutation = useMutation({
+    mutationFn: createProductTag,
+    onSuccess: (tag) => {
+      queryClient.setQueryData<ProductTag[]>(productTagsQueryKey, (current = []) => [
+        ...current,
+        tag,
+      ]);
+    },
+    onError: (error) => toast.error(error.message),
+  });
+
   const addProductImageMutation = useMutation({
     mutationFn: async (file: File) => {
       const upload = await uploadProductImage(file);
@@ -518,6 +531,10 @@ export default function EditProductForm({ pid }: { pid: string }) {
             description="Assign reusable labels for catalogue filtering and merchandising."
             placeholder={tagsQuery.isLoading ? "Loading tags..." : "Search or select tags"}
             options={tagOptions}
+            onCreateOption={async (name) => {
+              const tag = await createTagMutation.mutateAsync(name);
+              return { label: tag.name, value: tag.pid };
+            }}
             disabled={tagsQuery.isLoading}
           />
         </div>
@@ -795,6 +812,7 @@ export default function EditProductForm({ pid }: { pid: string }) {
               name: product.name,
               categoryId: String(product.category.id),
               description: product.description ?? "",
+              tagPids: product.tags.map((tag) => tag.pid),
             });
           }
         }}

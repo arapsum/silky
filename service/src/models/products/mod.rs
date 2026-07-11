@@ -388,6 +388,11 @@ impl Product {
             ));
         }
 
+        sqlx::query("DELETE FROM product_tags WHERE product_id = $1")
+            .bind(product_id)
+            .execute(&mut **txn)
+            .await?;
+
         if !tags.is_empty() {
             let internal_tag_ids = tags.iter().map(Tag::id).collect::<Vec<_>>();
             sqlx::query(

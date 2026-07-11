@@ -601,6 +601,9 @@ async fn can_update_product_base_details() {
         let tag = Tag::create(ctx.db(), "API update tag")
             .await
             .expect("Failed to create update tag");
+        let second_tag = Tag::create(ctx.db(), "Second API update tag")
+            .await
+            .expect("Failed to create second update tag");
 
         let response = server
             .patch("/products/6d7b16c3-efbf-4e7e-9b70-4f43e1cc3001")
@@ -620,6 +623,16 @@ async fn can_update_product_base_details() {
         assert!(response.text().contains("Organic cotton"));
         assert!(response.text().contains("API update tag"));
 
+        let append_response = server
+            .patch("/products/6d7b16c3-efbf-4e7e-9b70-4f43e1cc3001")
+            .add_header(auth_header.clone(), auth_value.clone())
+            .json(&serde_json::json!({ "tagPids": [tag.pid(), second_tag.pid()] }))
+            .await;
+        assert_eq!(append_response.status_code(), StatusCode::OK);
+        let append_body = append_response.text();
+        assert!(append_body.contains("API update tag"));
+        assert!(append_body.contains("Second API update tag"));
+
         let clear_response = server
             .patch("/products/6d7b16c3-efbf-4e7e-9b70-4f43e1cc3001")
             .add_header(auth_header, auth_value)
@@ -629,6 +642,9 @@ async fn can_update_product_base_details() {
         Tag::delete(ctx.db(), tag.pid())
             .await
             .expect("Failed to clean update tag");
+        Tag::delete(ctx.db(), second_tag.pid())
+            .await
+            .expect("Failed to clean second update tag");
     })
     .await;
 }

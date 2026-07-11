@@ -9,6 +9,8 @@ import { AppSidebar } from "#/components/sidebar/app-sidebar";
 import { SidebarInset, SidebarProvider } from "#/components/ui/sidebar";
 
 export const Route = createFileRoute("/_main")({
+  // Authenticate in the browser so cookies are available during hard reloads.
+  ssr: false,
   beforeLoad: async ({ context, location }) => {
     try {
       await context.queryClient.ensureQueryData({

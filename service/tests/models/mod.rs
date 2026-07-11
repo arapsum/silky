@@ -1,5 +1,8 @@
+mod addresses;
 mod categories;
 mod media_assets;
+mod order_details;
+mod orders;
 mod permissions;
 mod products;
 mod roles;

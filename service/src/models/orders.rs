@@ -7,26 +7,20 @@ use uuid::Uuid;
 
 use crate::schemas::NewOrder;
 
-use super::{ModelError, ModelResult};
+use super::{ModelError, ModelResult, Seedable};
 
 #[derive(Debug, Clone, Deserialize, Serialize, FromRow)]
 #[serde(rename_all = "camelCase")]
-#[expect(
-    dead_code,
-    reason = "internal database keys are retained for repository operations"
-)]
 #[allow(clippy::struct_field_names)]
 pub struct Order {
-    #[serde(skip)]
     id: i32,
     pid: Uuid,
     order_number: i64,
-    #[serde(skip)]
     customer_id: i32,
-    #[serde(skip)]
     billing_address_id: Option<i32>,
-    #[serde(skip)]
     shipping_address_id: Option<i32>,
+    customer_name: String,
+    customer_email: String,
     billing_address_snapshot: Json<JsonValue>,
     shipping_address_snapshot: Json<JsonValue>,
     status: String,
@@ -140,6 +134,20 @@ impl Order {
         .ok_or(ModelError::EntityNotFound)
     }
 
+    /// Loads orders from a data file and seeds them into the database.
+    ///
+    /// The file path is resolved relative to `src/data` and must contain a
+    /// JSON or YAML array matching [`Order`]. Existing rows are updated by
+    /// their internal ID so the operation can be repeated safely.
+    ///
+    /// # Errors
+    /// Returns a file, deserialization, or database error when the seed cannot
+    /// be loaded or persisted.
+    pub async fn seed_data(db: &PgPool, file: &str) -> ModelResult<()> {
+        let data = Self::load(file).await?;
+        Self::seed(db, &data).await
+    }
+
     #[must_use]
     pub const fn pid(&self) -> Uuid {
         self.pid
@@ -155,6 +163,123 @@ impl Order {
     #[must_use]
     pub fn status(&self) -> &str {
         &self.status
+    }
+}
+
+impl Seedable for Order {
+    #[allow(clippy::too_many_lines)]
+    async fn seed(db: &PgPool, data: &[Self]) -> ModelResult<()> {
+        for order in data {
+            sqlx::query(
+                r"
+                INSERT INTO orders (
+                    id,
+                    pid,
+                    order_number,
+                    customer_id,
+                    customer_name,
+                    customer_email,
+                    billing_address_id,
+                    shipping_address_id,
+                    billing_address_snapshot,
+                    shipping_address_snapshot,
+                    status,
+                    payment_status,
+                    fulfillment_status,
+                    currency,
+                    subtotal,
+                    discount_total,
+                    shipping_total,
+                    tax_total,
+                    grand_total,
+                    customer_note,
+                    staff_note,
+                    placed_at,
+                    cancelled_at,
+                    completed_at,
+                    created_at,
+                    updated_at
+                )
+                VALUES (
+                    $1, $2, $3, $4, $5, $6, $7, $8, $9, $10,
+                    $11, $12, $13, $14, $15, $16, $17, $18, $19, $20,
+                    $21, $22, $23, $24, $25, $26
+                )
+                ON CONFLICT (id) DO UPDATE SET
+                    pid = EXCLUDED.pid,
+                    order_number = EXCLUDED.order_number,
+                    customer_id = EXCLUDED.customer_id,
+                    customer_name = EXCLUDED.customer_name,
+                    customer_email = EXCLUDED.customer_email,
+                    billing_address_id = EXCLUDED.billing_address_id,
+                    shipping_address_id = EXCLUDED.shipping_address_id,
+                    billing_address_snapshot = EXCLUDED.billing_address_snapshot,
+                    shipping_address_snapshot = EXCLUDED.shipping_address_snapshot,
+                    status = EXCLUDED.status,
+                    payment_status = EXCLUDED.payment_status,
+                    fulfillment_status = EXCLUDED.fulfillment_status,
+                    currency = EXCLUDED.currency,
+                    subtotal = EXCLUDED.subtotal,
+                    discount_total = EXCLUDED.discount_total,
+                    shipping_total = EXCLUDED.shipping_total,
+                    tax_total = EXCLUDED.tax_total,
+                    grand_total = EXCLUDED.grand_total,
+                    customer_note = EXCLUDED.customer_note,
+                    staff_note = EXCLUDED.staff_note,
+                    placed_at = EXCLUDED.placed_at,
+                    cancelled_at = EXCLUDED.cancelled_at,
+                    completed_at = EXCLUDED.completed_at,
+                    created_at = EXCLUDED.created_at,
+                    updated_at = EXCLUDED.updated_at
+                ",
+            )
+            .bind(order.id)
+            .bind(order.pid)
+            .bind(order.order_number)
+            .bind(order.customer_id)
+            .bind(&order.customer_name)
+            .bind(&order.customer_email)
+            .bind(order.billing_address_id)
+            .bind(order.shipping_address_id)
+            .bind(&order.billing_address_snapshot)
+            .bind(&order.shipping_address_snapshot)
+            .bind(&order.status)
+            .bind(&order.payment_status)
+            .bind(&order.fulfillment_status)
+            .bind(&order.currency)
+            .bind(order.subtotal)
+            .bind(order.discount_total)
+            .bind(order.shipping_total)
+            .bind(order.tax_total)
+            .bind(order.grand_total)
+            .bind(order.customer_note.as_deref())
+            .bind(order.staff_note.as_deref())
+            .bind(order.placed_at)
+            .bind(order.cancelled_at)
+            .bind(order.completed_at)
+            .bind(order.created_at)
+            .bind(order.updated_at)
+            .execute(db)
+            .await?;
+        }
+
+        sqlx::query(
+            r"SELECT
+                    setval(
+                        pg_get_serial_sequence('orders', 'id'),
+                        COALESCE((SELECT MAX(id) FROM orders), 1),
+                        (SELECT COUNT(*) > 0 FROM orders)
+                    ),
+                    setval(
+                        pg_get_serial_sequence('orders', 'order_number'),
+                        COALESCE((SELECT MAX(order_number) FROM orders), 1),
+                        (SELECT COUNT(*) > 0 FROM orders)
+                    )",
+        )
+        .execute(db)
+        .await?;
+
+        Ok(())
     }
 }
 

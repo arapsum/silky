@@ -5,20 +5,14 @@ use uuid::Uuid;
 
 use crate::schemas::NewAddress;
 
-use super::{ModelError, ModelResult};
+use super::{ModelError, ModelResult, Seedable};
 
 #[derive(Debug, Clone, Deserialize, Serialize, FromRow)]
 #[serde(rename_all = "camelCase")]
-#[expect(
-    dead_code,
-    reason = "internal database keys are retained for repository operations"
-)]
 #[allow(clippy::struct_field_names)]
 pub struct Address {
-    #[serde(skip)]
     id: i32,
     pid: Uuid,
-    #[serde(skip)]
     customer_id: i32,
     address_type: String,
     label: Option<String>,
@@ -149,6 +143,20 @@ impl Address {
         .await?)
     }
 
+    /// Loads addresses from a data file and seeds them into the database.
+    ///
+    /// The file path is resolved relative to `src/data` and must contain a
+    /// JSON or YAML array matching [`Address`]. Existing rows are updated by
+    /// their internal ID so the operation can be repeated safely.
+    ///
+    /// # Errors
+    /// Returns a file, deserialization, or database error when the seed cannot
+    /// be loaded or persisted.
+    pub async fn seed_data(db: &PgPool, file: &str) -> ModelResult<()> {
+        let data = Self::load(file).await?;
+        Self::seed(db, &data).await
+    }
+
     #[must_use]
     pub const fn pid(&self) -> Uuid {
         self.pid
@@ -160,5 +168,93 @@ impl Address {
     #[must_use]
     pub fn city(&self) -> &str {
         &self.city
+    }
+}
+
+impl Seedable for Address {
+    async fn seed(db: &PgPool, data: &[Self]) -> ModelResult<()> {
+        for address in data {
+            sqlx::query(
+                r"
+                INSERT INTO addresses (
+                    id,
+                    pid,
+                    customer_id,
+                    address_type,
+                    label,
+                    recipient_name,
+                    company,
+                    line_one,
+                    line_two,
+                    city,
+                    region,
+                    postal_code,
+                    country_code,
+                    email,
+                    phone,
+                    is_default,
+                    created_at,
+                    updated_at,
+                    deleted_at
+                )
+                VALUES (
+                    $1, $2, $3, $4, $5, $6, $7, $8, $9, $10,
+                    $11, $12, $13, $14, $15, $16, $17, $18, $19
+                )
+                ON CONFLICT (id) DO UPDATE SET
+                    pid = EXCLUDED.pid,
+                    customer_id = EXCLUDED.customer_id,
+                    address_type = EXCLUDED.address_type,
+                    label = EXCLUDED.label,
+                    recipient_name = EXCLUDED.recipient_name,
+                    company = EXCLUDED.company,
+                    line_one = EXCLUDED.line_one,
+                    line_two = EXCLUDED.line_two,
+                    city = EXCLUDED.city,
+                    region = EXCLUDED.region,
+                    postal_code = EXCLUDED.postal_code,
+                    country_code = EXCLUDED.country_code,
+                    email = EXCLUDED.email,
+                    phone = EXCLUDED.phone,
+                    is_default = EXCLUDED.is_default,
+                    created_at = EXCLUDED.created_at,
+                    updated_at = EXCLUDED.updated_at,
+                    deleted_at = EXCLUDED.deleted_at
+                ",
+            )
+            .bind(address.id)
+            .bind(address.pid)
+            .bind(address.customer_id)
+            .bind(&address.address_type)
+            .bind(address.label.as_deref())
+            .bind(&address.recipient_name)
+            .bind(address.company.as_deref())
+            .bind(&address.line_one)
+            .bind(address.line_two.as_deref())
+            .bind(&address.city)
+            .bind(address.region.as_deref())
+            .bind(address.postal_code.as_deref())
+            .bind(&address.country_code)
+            .bind(address.email.as_deref())
+            .bind(address.phone.as_deref())
+            .bind(address.is_default)
+            .bind(address.created_at)
+            .bind(address.updated_at)
+            .bind(address.deleted_at)
+            .execute(db)
+            .await?;
+        }
+
+        sqlx::query(
+            r"SELECT setval(
+                    pg_get_serial_sequence('addresses', 'id'),
+                    COALESCE((SELECT MAX(id) FROM addresses), 1),
+                    (SELECT COUNT(*) > 0 FROM addresses)
+                )",
+        )
+        .execute(db)
+        .await?;
+
+        Ok(())
     }
 }

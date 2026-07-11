@@ -1,0 +1,46 @@
+[
+  {
+    "id": 501,
+    "pid": "d4cfe48d-b5ef-4caf-9f0c-96f4f4f95001",
+    "orderId": 401,
+    "productId": 201,
+    "variantId": 201,
+    "productPid": "6d7b16c3-efbf-4e7e-9b70-4f43e1cc3001",
+    "variantPid": "db365773-2ac1-49aa-a4b9-03dcf8ac3401",
+    "productName": "Classic Cotton T-shirt",
+    "sku": "TSHIRT-BLK-M",
+    "selectedOptions": {
+      "Colour": "Black",
+      "Size": "M"
+    },
+    "quantity": 1,
+    "unitPrice": 24.99,
+    "discountTotal": 0,
+    "taxTotal": 0,
+    "lineTotal": 24.99,
+    "createdAt": "2026-07-03T10:15:00+03:00",
+    "updatedAt": "2026-07-03T10:15:00+03:00"
+  },
+  {
+    "id": 502,
+    "pid": "d2d9bf1f-7294-4c50-9db5-96f4f4f95002",
+    "orderId": 402,
+    "productId": 203,
+    "variantId": 205,
+    "productPid": "e7d4a0c2-e831-4c42-bc5c-7a7ac6863003",
+    "variantPid": "5a3c53d0-35a7-4928-926b-e776f00b3405",
+    "productName": "Court Leather Sneakers",
+    "sku": "SNEAKER-WHT-42",
+    "selectedOptions": {
+      "Colour": "White",
+      "Size": "42"
+    },
+    "quantity": 1,
+    "unitPrice": 89.99,
+    "discountTotal": 10,
+    "taxTotal": 8,
+    "lineTotal": 87.99,
+    "createdAt": "2026-07-05T14:20:00+03:00",
+    "updatedAt": "2026-07-05T14:20:00+03:00"
+  }
+]

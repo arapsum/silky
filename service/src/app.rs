@@ -19,8 +19,9 @@ use crate::{
     controllers,
     middlewares::trace,
     models::{
-        Attribute, AttributeValue, Category, CategoryAttributeLink, Permission, Picture, Product,
-        ProductOption, ProductVariant, Role, RolePermission, User, UserRole, VariantAttributeValue,
+        Address, Attribute, AttributeValue, Category, CategoryAttributeLink, Order, OrderDetail,
+        Permission, Picture, Product, ProductOption, ProductVariant, Role, RolePermission, User,
+        UserRole, VariantAttributeValue,
     },
     workers::{AppWorker, ForgotPasswordMailWorker, Processor, WelcomeMailWorker, Workers},
 };
@@ -200,6 +201,9 @@ impl App {
         VariantAttributeValue::seed_data(db, "variantAttributeValues.json").await?;
         Picture::seed_data(db, "pictures.json").await?;
         UserRole::seed_data(db, "userRoles.json").await?;
+        Address::seed_data(db, "addresses.json").await?;
+        Order::seed_data(db, "orders.json").await?;
+        OrderDetail::seed_data(db, "orderDetails.json").await?;
 
         Ok(())
     }

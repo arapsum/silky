@@ -7,23 +7,15 @@ use uuid::Uuid;
 
 use crate::schemas::NewOrderDetail;
 
-use super::{ModelError, ModelResult};
+use super::{ModelError, ModelResult, Seedable};
 
 #[derive(Debug, Clone, Deserialize, Serialize, FromRow)]
 #[serde(rename_all = "camelCase")]
-#[expect(
-    dead_code,
-    reason = "internal database keys are retained for repository operations"
-)]
 pub struct OrderDetail {
-    #[serde(skip)]
     id: i32,
     pid: Uuid,
-    #[serde(skip)]
     order_id: i32,
-    #[serde(skip)]
     product_id: Option<i32>,
-    #[serde(skip)]
     variant_id: Option<i32>,
     product_pid: Uuid,
     variant_pid: Uuid,
@@ -169,6 +161,20 @@ impl OrderDetail {
         .await?)
     }
 
+    /// Loads order details from a data file and seeds them into the database.
+    ///
+    /// The file path is resolved relative to `src/data` and must contain a
+    /// JSON or YAML array matching [`OrderDetail`]. Existing rows are updated
+    /// by their internal ID so the operation can be repeated safely.
+    ///
+    /// # Errors
+    /// Returns a file, deserialization, or database error when the seed cannot
+    /// be loaded or persisted.
+    pub async fn seed_data(db: &PgPool, file: &str) -> ModelResult<()> {
+        let data = Self::load(file).await?;
+        Self::seed(db, &data).await
+    }
+
     #[must_use]
     pub const fn pid(&self) -> Uuid {
         self.pid
@@ -180,6 +186,88 @@ impl OrderDetail {
     #[must_use]
     pub const fn quantity(&self) -> i32 {
         self.quantity
+    }
+}
+
+impl Seedable for OrderDetail {
+    async fn seed(db: &PgPool, data: &[Self]) -> ModelResult<()> {
+        for detail in data {
+            sqlx::query(
+                r"
+                INSERT INTO order_details (
+                    id,
+                    pid,
+                    order_id,
+                    product_id,
+                    variant_id,
+                    product_pid,
+                    variant_pid,
+                    product_name,
+                    sku,
+                    selected_options,
+                    quantity,
+                    unit_price,
+                    discount_total,
+                    tax_total,
+                    line_total,
+                    created_at,
+                    updated_at
+                )
+                VALUES (
+                    $1, $2, $3, $4, $5, $6, $7, $8, $9,
+                    $10, $11, $12, $13, $14, $15, $16, $17
+                )
+                ON CONFLICT (id) DO UPDATE SET
+                    pid = EXCLUDED.pid,
+                    order_id = EXCLUDED.order_id,
+                    product_id = EXCLUDED.product_id,
+                    variant_id = EXCLUDED.variant_id,
+                    product_pid = EXCLUDED.product_pid,
+                    variant_pid = EXCLUDED.variant_pid,
+                    product_name = EXCLUDED.product_name,
+                    sku = EXCLUDED.sku,
+                    selected_options = EXCLUDED.selected_options,
+                    quantity = EXCLUDED.quantity,
+                    unit_price = EXCLUDED.unit_price,
+                    discount_total = EXCLUDED.discount_total,
+                    tax_total = EXCLUDED.tax_total,
+                    line_total = EXCLUDED.line_total,
+                    created_at = EXCLUDED.created_at,
+                    updated_at = EXCLUDED.updated_at
+                ",
+            )
+            .bind(detail.id)
+            .bind(detail.pid)
+            .bind(detail.order_id)
+            .bind(detail.product_id)
+            .bind(detail.variant_id)
+            .bind(detail.product_pid)
+            .bind(detail.variant_pid)
+            .bind(&detail.product_name)
+            .bind(&detail.sku)
+            .bind(&detail.selected_options)
+            .bind(detail.quantity)
+            .bind(detail.unit_price)
+            .bind(detail.discount_total)
+            .bind(detail.tax_total)
+            .bind(detail.line_total)
+            .bind(detail.created_at)
+            .bind(detail.updated_at)
+            .execute(db)
+            .await?;
+        }
+
+        sqlx::query(
+            r"SELECT setval(
+                    pg_get_serial_sequence('order_details', 'id'),
+                    COALESCE((SELECT MAX(id) FROM order_details), 1),
+                    (SELECT COUNT(*) > 0 FROM order_details)
+                )",
+        )
+        .execute(db)
+        .await?;
+
+        Ok(())
     }
 }
 

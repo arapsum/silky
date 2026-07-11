@@ -41,6 +41,8 @@ CREATE TABLE orders (
     order_number BIGSERIAL NOT NULL UNIQUE,
 
     customer_id INTEGER NOT NULL REFERENCES users (id) ON DELETE RESTRICT,
+    customer_name VARCHAR(255) NOT NULL CHECK (char_length(btrim(customer_name)) > 0),
+    customer_email CITEXT NOT NULL,
     billing_address_id INTEGER REFERENCES addresses (id) ON DELETE SET NULL,
     shipping_address_id INTEGER REFERENCES addresses (id) ON DELETE SET NULL,
 

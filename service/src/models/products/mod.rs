@@ -408,7 +408,7 @@ impl Product {
     /// Updates mutable base product fields and returns the refreshed aggregate.
     ///
     /// Product options and variants are intentionally not updated by this
-    /// method.
+    /// method. When supplied, `tagPids` replaces the product's tag links.
     ///
     /// # Errors
     ///
@@ -433,7 +433,8 @@ impl Product {
             ));
         }
 
-        sqlx::query_as::<_, Self>(
+        let mut txn = db.begin().await?;
+        let product = sqlx::query_as::<_, Self>(
             r"
             UPDATE products
             SET
@@ -452,9 +453,15 @@ impl Product {
         .bind(description_was_provided)
         .bind(description)
         .bind(params.information().cloned().map(Json))
-        .fetch_optional(db)
+        .fetch_optional(&mut *txn)
         .await?
         .ok_or_else(|| ModelError::EntityNotFound)?;
+
+        if let Some(tag_pids) = params.tag_pids() {
+            Self::assign_tags(&mut txn, product.id(), tag_pids).await?;
+        }
+
+        txn.commit().await?;
 
         Self::find_detail_by_pid(db, pid).await
     }

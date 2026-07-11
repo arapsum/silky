@@ -598,22 +598,37 @@ async fn can_update_product_base_details() {
 
         let token = access_token(&server).await;
         let (auth_header, auth_value) = utils::auth_header(token);
+        let tag = Tag::create(ctx.db(), "API update tag")
+            .await
+            .expect("Failed to create update tag");
 
         let response = server
             .patch("/products/6d7b16c3-efbf-4e7e-9b70-4f43e1cc3001")
-            .add_header(auth_header, auth_value)
+            .add_header(auth_header.clone(), auth_value.clone())
             .json(&serde_json::json!({
                 "name": "Updated API Product",
                 "description": null,
                 "information": {
                     "Material": "Organic cotton"
-                }
+                },
+                "tagPids": [tag.pid()]
             }))
             .await;
 
         assert_eq!(response.status_code(), StatusCode::OK);
         assert!(response.text().contains("Updated API Product"));
         assert!(response.text().contains("Organic cotton"));
+        assert!(response.text().contains("API update tag"));
+
+        let clear_response = server
+            .patch("/products/6d7b16c3-efbf-4e7e-9b70-4f43e1cc3001")
+            .add_header(auth_header, auth_value)
+            .json(&serde_json::json!({ "tagPids": [] }))
+            .await;
+        assert_eq!(clear_response.status_code(), StatusCode::OK);
+        Tag::delete(ctx.db(), tag.pid())
+            .await
+            .expect("Failed to clean update tag");
     })
     .await;
 }

@@ -152,6 +152,8 @@ pub struct UpdateProduct {
     description: Option<Option<String>>,
     #[serde(default)]
     information: Option<BTreeMap<String, String>>,
+    #[serde(default)]
+    tag_pids: Option<Vec<Uuid>>,
 }
 
 impl UpdateProduct {
@@ -173,6 +175,11 @@ impl UpdateProduct {
     #[must_use]
     pub const fn information(&self) -> Option<&BTreeMap<String, String>> {
         self.information.as_ref()
+    }
+
+    #[must_use]
+    pub fn tag_pids(&self) -> Option<&[Uuid]> {
+        self.tag_pids.as_deref()
     }
 }
 

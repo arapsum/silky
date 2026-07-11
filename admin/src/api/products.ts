@@ -161,6 +161,7 @@ export type ProductUpdateInput = {
   name?: string;
   description?: string | null;
   information?: Record<string, string>;
+  tagPids?: string[];
 };
 
 export type ProductVariantUpdateInput = {

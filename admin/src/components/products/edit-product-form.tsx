@@ -25,8 +25,10 @@ import {
   deleteVariantPicture,
   getProduct,
   listProductAttributes,
+  listProductTags,
   productsQueryKey,
   productAttributesQueryKey,
+  productTagsQueryKey,
   setDefaultProductVariant,
   updateProduct,
   updateProductPicture,
@@ -63,6 +65,7 @@ const baseSchema = z.object({
   name: z.string().trim().min(2, "Product name requires 2 letters"),
   categoryId: z.string().min(1, "Choose a category"),
   description: z.string().trim().max(2000, "Description must be under 2000 characters").optional(),
+  tagPids: z.array(z.string()),
 });
 
 type BaseValues = z.infer<typeof baseSchema>;
@@ -240,6 +243,7 @@ export default function EditProductForm({ pid }: { pid: string }) {
       name: "",
       categoryId: "",
       description: "",
+      tagPids: [],
     },
   });
 
@@ -258,8 +262,18 @@ export default function EditProductForm({ pid }: { pid: string }) {
     queryFn: listProductAttributes,
   });
 
+  const tagsQuery = useQuery({
+    queryKey: productTagsQueryKey,
+    queryFn: listProductTags,
+  });
+
   const product = productQuery.data;
   const attributes = attributesQuery.data ?? [];
+  const tags = tagsQuery.data ?? [];
+  const tagOptions = useMemo(
+    () => tags.map((tag) => ({ label: tag.name, value: tag.pid })),
+    [tags],
+  );
 
   const categoryOptions = useMemo(
     () =>
@@ -281,6 +295,7 @@ export default function EditProductForm({ pid }: { pid: string }) {
       name: product.name,
       categoryId: String(product.category.id),
       description: product.description ?? "",
+      tagPids: product.tags.map((tag) => tag.pid),
     });
     setInformation(informationEntries(product.information));
 
@@ -305,6 +320,7 @@ export default function EditProductForm({ pid }: { pid: string }) {
         categoryId: Number(values.categoryId),
         description: values.description?.trim() ? values.description.trim() : null,
         information: productInformation(information),
+        tagPids: values.tagPids,
       }),
     onSuccess: () => {
       toast.success("Product updated");
@@ -433,6 +449,16 @@ export default function EditProductForm({ pid }: { pid: string }) {
     );
   }
 
+  if (tagsQuery.isError) {
+    return (
+      <ErrorState
+        title="Product tags could not be loaded"
+        description={tagsQuery.error.message}
+        onRetry={() => void tagsQuery.refetch()}
+      />
+    );
+  }
+
   return (
     <form
       className="flex min-h-[calc(100dvh-8rem)] flex-col"
@@ -482,6 +508,18 @@ export default function EditProductForm({ pid }: { pid: string }) {
         </div>
         <div className="lg:col-span-2">
           <ProductInformationFields entries={information} onChange={setInformation} />
+        </div>
+        <div className="lg:col-span-2">
+          <FormField
+            control={form.control}
+            name="tagPids"
+            type="combobox-multiple"
+            label="Tags"
+            description="Assign reusable labels for catalogue filtering and merchandising."
+            placeholder={tagsQuery.isLoading ? "Loading tags..." : "Search or select tags"}
+            options={tagOptions}
+            disabled={tagsQuery.isLoading}
+          />
         </div>
       </CatalogueFormSection>
 

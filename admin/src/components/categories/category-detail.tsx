@@ -98,25 +98,25 @@ function CategoryDetailSkeleton() {
   return (
     <div className="grid gap-5 pb-10">
       <div className="flex items-center justify-between gap-4">
-        <Skeleton className="h-9 w-56 rounded-none" />
-        <Skeleton className="h-9 w-56 rounded-none" />
+        <Skeleton className="h-9 w-56 rounded-lg" />
+        <Skeleton className="h-9 w-56 rounded-lg" />
       </div>
       <div className="grid border lg:grid-cols-[minmax(18rem,.72fr)_minmax(0,1.28fr)]">
-        <Skeleton className="aspect-[4/3] w-full rounded-none lg:aspect-auto" />
+        <Skeleton className="aspect-[4/3] w-full rounded-lg lg:aspect-auto" />
         <div className="grid gap-5 p-5 sm:grid-cols-2">
           {Array.from({ length: 6 }).map((_, index) => (
-            <Skeleton key={index} className="h-12 rounded-none" />
+            <Skeleton key={index} className="h-12 rounded-lg" />
           ))}
         </div>
       </div>
       <div className="grid gap-3 sm:grid-cols-2 xl:grid-cols-4">
         {Array.from({ length: 4 }).map((_, index) => (
-          <Skeleton key={index} className="h-24 rounded-none" />
+          <Skeleton key={index} className="h-24 rounded-lg" />
         ))}
       </div>
       <div className="grid gap-5 xl:grid-cols-[minmax(0,1.35fr)_minmax(20rem,.65fr)]">
-        <Skeleton className="h-80 rounded-none" />
-        <Skeleton className="h-80 rounded-none" />
+        <Skeleton className="h-80 rounded-lg" />
+        <Skeleton className="h-80 rounded-lg" />
       </div>
     </div>
   );
@@ -148,7 +148,7 @@ export default function CategoryDetailPage({ pid }: { pid: string }) {
         title="Category not found"
         description="The requested category no longer exists or is unavailable."
         action={
-          <Button className="rounded-none" render={<Link to="/categories" />}>
+          <Button className="rounded-lg" render={<Link to="/categories" />}>
             Back to Categories
           </Button>
         }
@@ -175,11 +175,11 @@ export default function CategoryDetailPage({ pid }: { pid: string }) {
         }
         actions={
           <>
-            <Button className="rounded-none" variant="outline" render={<Link to="/categories" />}>
+            <Button className="rounded-lg" variant="outline" render={<Link to="/categories" />}>
               <ArrowLeftIcon className="size-4" />
               Back
             </Button>
-            <Button className="rounded-none" render={<Link to="/categories/create" />}>
+            <Button className="rounded-lg" render={<Link to="/categories/create" />}>
               <PlusIcon className="size-4" />
               Add category
             </Button>
@@ -331,7 +331,7 @@ export default function CategoryDetailPage({ pid }: { pid: string }) {
             title={`Child categories (${detail.children.length})`}
             icon={<StackIcon className="size-4" />}
             action={
-              <Button className="rounded-none" size="xs" variant="outline" disabled>
+              <Button className="rounded-lg" size="xs" variant="outline" disabled>
                 <PlusIcon /> Add subcategory
               </Button>
             }

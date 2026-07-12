@@ -111,7 +111,7 @@ export function Navbar() {
     <>
       <header className="sticky top-0 z-20 border-b bg-background/95 backdrop-blur">
         <div className="mx-auto flex h-16 w-full max-w-360 items-center gap-3 px-4 md:px-8">
-          <SidebarTrigger className="size-8 rounded-none" />
+          <SidebarTrigger className="size-8 rounded-lg" />
           <Separator orientation="vertical" className="my-auto h-7" />
           <span className="hidden min-w-28 text-sm font-semibold md:block">
             {sectionLabel(pathname)}
@@ -159,7 +159,7 @@ function CommandSearchDialog({
       onOpenChange={onOpenChange}
       title="Command search"
       description="Search for a page or command"
-      className="max-w-[calc(100%-2rem)] rounded-none! [&_[data-slot=command]]:rounded-none! [&_[data-slot=input-group]]:rounded-none! sm:max-w-md"
+      className="max-w-[calc(100%-2rem)] rounded-lg! [&_[data-slot=command]]:rounded-lg! [&_[data-slot=input-group]]:rounded-lg! sm:max-w-md"
     >
       <Command>
         <CommandInput placeholder="Type a command or search..." autoFocus />
@@ -169,7 +169,7 @@ function CommandSearchDialog({
             {commandSuggestions.map((suggestion) => (
               <CommandItem
                 key={suggestion.id}
-                className="rounded-none!"
+                className="rounded-lg!"
                 onSelect={() => {
                   onOpenChange(false);
                   void navigate({ to: suggestion.to });
@@ -198,7 +198,7 @@ function NotificationsButton() {
             type="button"
             variant="ghost"
             size="icon-sm"
-            className="relative rounded-none"
+            className="relative rounded-lg"
             aria-label="Notifications"
           />
         }
@@ -209,7 +209,7 @@ function NotificationsButton() {
       <PopoverContent
         align="end"
         sideOffset={10}
-        className="w-[min(calc(100vw-2rem),22rem)] gap-0 rounded-none p-0"
+        className="w-[min(calc(100vw-2rem),22rem)] gap-0 rounded-lg p-0"
       >
         <div className="border-b px-4 py-3">
           <p className="text-sm font-semibold">Notifications</p>
@@ -248,7 +248,7 @@ function ThemeToggle() {
       type="button"
       variant="ghost"
       size="icon-sm"
-      className="rounded-none"
+      className="rounded-lg"
       aria-label={isDark ? "Switch to light theme" : "Switch to dark theme"}
       onClick={toggleTheme}
     >

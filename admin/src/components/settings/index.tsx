@@ -33,7 +33,7 @@ const PASSWORD_RULES: { id: string; label: string; test: (v: string) => boolean 
 ];
 
 const tabTriggerClass =
-  "relative rounded-none border-b-2 border-transparent bg-transparent px-0.5 pb-3 pt-0 font-medium text-muted-foreground shadow-none transition-colors hover:text-foreground data-[state=active]:border-foreground data-[state=active]:bg-transparent data-[state=active]:text-foreground data-[state=active]:shadow-none";
+  "relative rounded-lg border-b-2 border-transparent bg-transparent px-0.5 pb-3 pt-0 font-medium text-muted-foreground shadow-none transition-colors hover:text-foreground data-[state=active]:border-foreground data-[state=active]:bg-transparent data-[state=active]:text-foreground data-[state=active]:shadow-none";
 
 const AVATAR_MAX_BYTES = 1024 * 1024;
 const AVATAR_TYPES = new Set(["image/jpeg", "image/png", "image/webp"]);
@@ -503,7 +503,7 @@ export default function AccountSettingsPage() {
       />
 
       <Tabs defaultValue="general" className="w-full">
-        <TabsList className="h-auto w-full justify-start gap-6 rounded-none border-b bg-transparent p-0">
+        <TabsList className="h-auto w-full justify-start gap-6 rounded-lg border-b bg-transparent p-0">
           <TabsTrigger value="general" className={tabTriggerClass}>
             General
           </TabsTrigger>

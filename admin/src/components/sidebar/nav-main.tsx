@@ -32,8 +32,9 @@ export default function DashboardNavigation({ routes }: { routes: Route[] }) {
   const { state } = useSidebar();
   const isCollapsed = state === "collapsed";
   const pathname = useRouterState({ select: (routerState) => routerState.location.pathname });
+  const activeRouteLink = getActiveRouteLink(pathname, routes);
   const activeGroup = routes.find((route) =>
-    route.subs?.some((subRoute) => isRouteActive(pathname, subRoute.link)),
+    route.subs?.some((subRoute) => subRoute.link === activeRouteLink),
   );
   const [openCollapsible, setOpenCollapsible] = useState<string | null>(activeGroup?.id ?? null);
 
@@ -46,10 +47,8 @@ export default function DashboardNavigation({ routes }: { routes: Route[] }) {
       {routes.map((route) => {
         const isOpen = !isCollapsed && openCollapsible === route.id;
         const hasSubRoutes = !!route.subs?.length;
-        const isActive = isRouteActive(pathname, route.link);
-        const hasActiveChild = route.subs?.some((subRoute) =>
-          isRouteActive(pathname, subRoute.link),
-        );
+        const isActive = activeRouteLink === route.link;
+        const hasActiveChild = route.subs?.some((subRoute) => subRoute.link === activeRouteLink);
 
         return (
           <SidebarMenuItem key={route.id}>
@@ -64,7 +63,7 @@ export default function DashboardNavigation({ routes }: { routes: Route[] }) {
                     <SidebarMenuButton
                       isActive={hasActiveChild}
                       className={cn(
-                        "flex w-full items-center rounded-none border-l-2 border-transparent px-2 transition-colors data-active:border-primary data-active:bg-primary/10 data-active:text-primary",
+                        "flex w-full items-center rounded-lg border-l-2 border-transparent px-2 transition-colors data-active:border-primary data-active:bg-primary/10 data-active:text-primary",
                         isOpen
                           ? "bg-sidebar-accent text-foreground"
                           : "text-muted-foreground hover:bg-sidebar-accent hover:text-foreground",
@@ -104,8 +103,8 @@ export default function DashboardNavigation({ routes }: { routes: Route[] }) {
                             </span>
                           ) : (
                             <SidebarMenuSubButton
-                              isActive={isRouteActive(pathname, subRoute.link)}
-                              className="h-8 rounded-none border-l-2 border-transparent data-active:border-primary data-active:bg-primary/10 data-active:text-primary"
+                              isActive={subRoute.link === activeRouteLink}
+                              className="h-8 rounded-lg border-l-2 border-transparent data-active:border-primary data-active:bg-primary/10 data-active:text-primary"
                               render={<Link to={subRoute.link} preload="intent" />}
                             >
                               {subRoute.icon}
@@ -124,7 +123,7 @@ export default function DashboardNavigation({ routes }: { routes: Route[] }) {
                 isActive={isActive}
                 render={<Link to={route.link} preload="intent" />}
                 className={cn(
-                  "flex items-center rounded-none border-l-2 border-transparent px-2 text-muted-foreground transition-colors hover:bg-sidebar-accent hover:text-foreground data-active:border-primary data-active:bg-primary/10 data-active:text-primary",
+                  "flex items-center rounded-lg border-l-2 border-transparent px-2 text-muted-foreground transition-colors hover:bg-sidebar-accent hover:text-foreground data-active:border-primary data-active:bg-primary/10 data-active:text-primary",
                   isCollapsed && "justify-center",
                 )}
               >
@@ -143,4 +142,15 @@ function isRouteActive(pathname: string, link: string) {
   if (link === "#") return false;
   if (link === "/") return pathname === "/";
   return pathname === link || pathname.startsWith(`${link}/`);
+}
+
+function getActiveRouteLink(pathname: string, routes: Route[]) {
+  const links = routes.flatMap((route) => [
+    ...(route.link !== "#" ? [route.link] : []),
+    ...(route.subs?.map((subRoute) => subRoute.link).filter((link) => link !== "#") ?? []),
+  ]);
+
+  return links
+    .filter((link) => isRouteActive(pathname, link))
+    .sort((left, right) => right.length - left.length)[0];
 }

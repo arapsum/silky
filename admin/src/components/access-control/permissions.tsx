@@ -199,7 +199,7 @@ export default function PermissionsPage() {
           <Button
             type="button"
             variant="outline"
-            className="rounded-none"
+            className="rounded-lg"
             onClick={refresh}
             disabled={isRefreshing}
           >
@@ -263,7 +263,7 @@ export default function PermissionsPage() {
                 value={query}
                 onChange={(event) => setQuery(event.target.value)}
                 placeholder="Search by action, resource, or description"
-                className="rounded-none bg-background pl-9"
+                className="rounded-lg bg-background pl-9"
               />
             </div>
           </div>
@@ -274,7 +274,7 @@ export default function PermissionsPage() {
               value={selectedRole}
               onValueChange={(value) => setSelectedRole(value ?? ALL_ROLES)}
             >
-              <SelectTrigger className="w-full rounded-none bg-background">
+              <SelectTrigger className="w-full rounded-lg bg-background">
                 <SelectValue placeholder="Select a role" />
               </SelectTrigger>
               <SelectContent>
@@ -290,7 +290,7 @@ export default function PermissionsPage() {
 
           <Button
             type="button"
-            className="rounded-none"
+            className="rounded-lg"
             disabled={
               !isAssignmentMode || !pendingPermissionIds.length || assignmentMutation.isPending
             }
@@ -410,16 +410,16 @@ function PermissionsContent({
         {Array.from({ length: 4 }).map((_, index) => (
           <div key={index} className="border p-5">
             <div className="mb-5 flex items-center gap-3">
-              <Skeleton className="size-10 rounded-none" />
+              <Skeleton className="size-10 rounded-lg" />
               <div className="grid gap-2">
-                <Skeleton className="h-4 w-36 rounded-none" />
-                <Skeleton className="h-3 w-24 rounded-none" />
+                <Skeleton className="h-4 w-36 rounded-lg" />
+                <Skeleton className="h-3 w-24 rounded-lg" />
               </div>
             </div>
             <div className="grid gap-3">
-              <Skeleton className="h-16 w-full rounded-none" />
-              <Skeleton className="h-16 w-full rounded-none" />
-              <Skeleton className="h-16 w-full rounded-none" />
+              <Skeleton className="h-16 w-full rounded-lg" />
+              <Skeleton className="h-16 w-full rounded-lg" />
+              <Skeleton className="h-16 w-full rounded-lg" />
             </div>
           </div>
         ))}
@@ -570,7 +570,7 @@ function PermissionRow({
     <>
       {isAssignmentMode ? (
         <Checkbox
-          className="rounded-none"
+          className="rounded-lg"
           checked={selected}
           disabled={isAssigned}
           onCheckedChange={(checked) => onToggle(checked === true)}

@@ -4,5 +4,5 @@ expression: "(response.status_code(), response.text())"
 ---
 (
     200,
-    "{\"id\":101,\"pid\":\"PID\",\"name\":\"t-shirts\",\"slug\":\"t-shirts\",\"imageLink\":\"https://cdn.example.com/categories/tshirts.png\",\"description\":null,\"parentId\":null,\"createdAt\":\"DATE\",\"updatedAt\":\"DATE\",\"deletedAt\":null}",
+    "{\"id\":101,\"pid\":\"PID\",\"name\":\"t-shirts\",\"slug\":\"t-shirts\",\"imageLink\":\"https://images.unsplash.com/photo-1521572163474-6864f9cf17ab?auto=format&fit=crop&w=900&q=80\",\"description\":null,\"parentId\":null,\"createdAt\":\"DATE\",\"updatedAt\":\"DATE\",\"deletedAt\":null}",
 )

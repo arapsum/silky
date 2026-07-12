@@ -1,0 +1,8 @@
+---
+source: tests/requests/orders.rs
+expression: "(response.status_code(), response.text())"
+---
+(
+    200,
+    "{\"data\":[{\"id\":402,\"pid\":\"PID\",\"orderNumber\":2,\"customerId\":11,\"billingAddressId\":302,\"shippingAddressId\":301,\"customerName\":\"John Doe\",\"customerEmail\":\"john.doe@acme.com\",\"billingAddressSnapshot\":{\"pid\":\"PID\",\"city\":\"Nairobi\",\"email\":\"john.doe@acme.com\",\"label\":\"Billing\",\"phone\":\"+254700000011\",\"region\":\"Nairobi County\",\"company\":\"Acme Trading\",\"lineOne\":\"14 Riverside Drive\",\"lineTwo\":null,\"postalCode\":\"00100\",\"addressType\":\"billing\",\"countryCode\":\"KE\",\"recipientName\":\"John Doe\"},\"shippingAddressSnapshot\":{\"pid\":\"PID\",\"city\":\"Nairobi\",\"email\":\"john.doe@acme.com\",\"label\":\"Home\",\"phone\":\"+254700000011\",\"region\":\"Nairobi County\",\"company\":null,\"lineOne\":\"14 Riverside Drive\",\"lineTwo\":\"Apartment 4B\",\"postalCode\":\"00100\",\"addressType\":\"shipping\",\"countryCode\":\"KE\",\"recipientName\":\"John Doe\"},\"status\":\"completed\",\"paymentStatus\":\"paid\",\"fulfillmentStatus\":\"fulfilled\",\"currency\":\"USD\",\"subtotal\":\"89.99\",\"discountTotal\":\"10.00\",\"shippingTotal\":\"0\",\"taxTotal\":\"8.00\",\"grandTotal\":\"87.99\",\"customerNote\":null,\"staffNote\":\"Delivered by local courier.\",\"placedAt\":\"DATE\",\"cancelledAt\":null,\"completedAt\":\"DATE\",\"createdAt\":\"DATE\",\"updatedAt\":\"DATE\"}],\"pagination\":{\"page\":1,\"limit\":10,\"totalItems\":1,\"totalPages\":1,\"hasNext\":false,\"hasPrev\":false}}",
+)

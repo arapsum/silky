@@ -61,6 +61,25 @@ pub struct UserWithRoles {
 }
 
 impl User {
+    /// Returns whether the user is assigned the customer role.
+    ///
+    /// # Errors
+    /// Returns a database error when the role lookup fails.
+    pub async fn has_role(db: &PgPool, pid: Uuid, role: &str) -> ModelResult<bool> {
+        Ok(sqlx::query_scalar(
+            r"SELECT EXISTS (
+                SELECT 1
+                FROM users
+                JOIN users_roles ON users_roles.user_id = users.id
+                JOIN roles ON roles.id = users_roles.role_id
+                WHERE users.pid = $1 AND roles.name = LOWER(TRIM($2))
+            )",
+        )
+        .bind(pid)
+        .bind(role)
+        .fetch_one(db)
+        .await?)
+    }
     /// Creates a new [`User`] and stores it in the database.
     ///
     /// The provided password is hashed using Argon2 before being persisted.

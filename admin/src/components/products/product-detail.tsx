@@ -117,7 +117,7 @@ function ProductGallery({
   return (
     <div className="flex min-w-0 flex-col-reverse gap-3 sm:flex-row">
       {pictures.length > 0 && (
-        <div className="flex shrink-0 gap-2 overflow-x-auto pb-1 sm:max-h-[28rem] sm:flex-col sm:overflow-y-auto sm:pb-0">
+        <div className="flex shrink-0 gap-2 overflow-x-auto pb-1 sm:max-h-96 sm:flex-col sm:overflow-y-auto sm:pb-0">
           {pictures.map((picture, index) => {
             const isSelected = picture.pid === selectedPicture?.pid;
 
@@ -140,7 +140,7 @@ function ProductGallery({
         </div>
       )}
 
-      <div className="relative flex aspect-[4/3] min-w-0 flex-1 items-center justify-center overflow-hidden bg-muted/50 lg:aspect-square">
+      <div className="relative flex h-80 min-w-0 flex-1 items-center justify-center overflow-hidden rounded-lg bg-muted/50 lg:h-96">
         {selectedPicture ? (
           <img
             src={selectedPicture.imageLink}
@@ -199,7 +199,7 @@ function ProductHero({ product }: { product: ProductDetail }) {
         : `${money(String(lowestPrice))} to ${money(String(highestPrice))}`;
 
   return (
-    <section className="border bg-card p-4 sm:p-5">
+    <section className="rounded-lg border bg-card p-4 sm:p-5">
       <div className="grid gap-7 lg:grid-cols-[minmax(20rem,.92fr)_minmax(0,1.08fr)] lg:gap-10">
         <ProductGallery key={product.pid} product={product} pictures={images} />
 
@@ -267,7 +267,7 @@ function Panel({
   className?: string;
 }) {
   return (
-    <section className={cn("flex h-full flex-col border bg-card", className)}>
+    <section className={cn("flex h-full flex-col rounded-lg border bg-card", className)}>
       <div className="flex items-center gap-2 border-b px-4 py-3.5">
         <span className="text-muted-foreground">{icon}</span>
         <h2 className="text-sm font-semibold">{title}</h2>
@@ -400,23 +400,23 @@ function ProductDetailSkeleton() {
   return (
     <div className="grid gap-6 pb-10">
       <div className="flex items-center justify-between">
-        <Skeleton className="h-9 w-72 rounded-none" />
-        <Skeleton className="h-9 w-36 rounded-none" />
+        <Skeleton className="h-9 w-72 rounded-lg" />
+        <Skeleton className="h-9 w-36 rounded-lg" />
       </div>
-      <div className="grid gap-8 border p-5 lg:grid-cols-2">
-        <Skeleton className="aspect-square w-full rounded-none" />
+      <div className="grid gap-8 rounded-lg border p-5 lg:grid-cols-2">
+        <Skeleton className="h-80 w-full rounded-lg lg:h-96" />
         <div className="grid content-center gap-5">
-          <Skeleton className="h-5 w-3/5 rounded-none" />
-          <Skeleton className="h-20 w-full rounded-none" />
-          <Skeleton className="h-20 w-full rounded-none" />
+          <Skeleton className="h-5 w-3/5 rounded-lg" />
+          <Skeleton className="h-20 w-full rounded-lg" />
+          <Skeleton className="h-20 w-full rounded-lg" />
         </div>
       </div>
       <div className="grid gap-5 lg:grid-cols-3">
-        <Skeleton className="h-64 rounded-none" />
-        <Skeleton className="h-64 rounded-none" />
-        <Skeleton className="h-64 rounded-none" />
+        <Skeleton className="h-64 rounded-lg" />
+        <Skeleton className="h-64 rounded-lg" />
+        <Skeleton className="h-64 rounded-lg" />
       </div>
-      <Skeleton className="h-96 rounded-none" />
+      <Skeleton className="h-96 rounded-lg" />
     </div>
   );
 }
@@ -460,7 +460,7 @@ export default function ProductDetailPage({ pid }: { pid: string }) {
         title="Product not found"
         description="The requested product no longer exists or is unavailable."
         action={
-          <Button className="rounded-none" variant="outline" render={<Link to="/products" />}>
+          <Button className="rounded-lg" variant="outline" render={<Link to="/products" />}>
             Back to Products
           </Button>
         }
@@ -498,7 +498,7 @@ export default function ProductDetailPage({ pid }: { pid: string }) {
         subtitle="Manage catalogue information, media, variants, pricing, and inventory."
         actions={
           <>
-            <Button className="rounded-none" variant="outline" render={<Link to="/products" />}>
+            <Button className="rounded-lg" variant="outline" render={<Link to="/products" />}>
               <ArrowLeftIcon className="size-4" />
               Back
             </Button>
@@ -506,7 +506,7 @@ export default function ProductDetailPage({ pid }: { pid: string }) {
               <AlertDialogTrigger
                 render={
                   <Button
-                    className="rounded-none"
+                    className="rounded-lg"
                     variant="outline"
                     disabled={deleteMutation.isPending || Boolean(product.deletedAt)}
                   />
@@ -515,7 +515,7 @@ export default function ProductDetailPage({ pid }: { pid: string }) {
                 <TrashIcon className="size-4" />
                 Delete
               </AlertDialogTrigger>
-              <AlertDialogContent className="rounded-none">
+              <AlertDialogContent className="rounded-lg">
                 <AlertDialogHeader>
                   <AlertDialogTitle>Delete product?</AlertDialogTitle>
                   <AlertDialogDescription>
@@ -523,12 +523,12 @@ export default function ProductDetailPage({ pid }: { pid: string }) {
                   </AlertDialogDescription>
                 </AlertDialogHeader>
                 <AlertDialogFooter>
-                  <AlertDialogCancel className="rounded-none" disabled={deleteMutation.isPending}>
+                  <AlertDialogCancel className="rounded-lg" disabled={deleteMutation.isPending}>
                     Cancel
                   </AlertDialogCancel>
                   <AlertDialogAction
                     variant="destructive"
-                    className="rounded-none"
+                    className="rounded-lg"
                     disabled={deleteMutation.isPending}
                     onClick={() => deleteMutation.mutate()}
                   >
@@ -538,7 +538,7 @@ export default function ProductDetailPage({ pid }: { pid: string }) {
               </AlertDialogContent>
             </AlertDialog>
             <Button
-              className="rounded-none"
+              className="rounded-lg"
               render={<Link to="/products/$pid/edit" params={{ pid }} />}
             >
               <PencilSimpleIcon className="size-4" />
@@ -550,7 +550,7 @@ export default function ProductDetailPage({ pid }: { pid: string }) {
 
       <ProductHero product={product} />
 
-      <section className="mt-5 border bg-card">
+      <section className="mt-5 rounded-lg border bg-card">
         <div className="flex flex-col gap-3 border-b px-4 py-4 sm:flex-row sm:items-center sm:justify-between">
           <div>
             <h2 className="text-base font-semibold">

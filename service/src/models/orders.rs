@@ -1,3 +1,5 @@
+use std::collections::{HashMap, HashSet};
+
 use chrono::{DateTime, FixedOffset};
 use rust_decimal::Decimal;
 use serde::{Deserialize, Serialize};
@@ -5,9 +7,14 @@ use serde_json::Value as JsonValue;
 use sqlx::{FromRow, PgPool, types::Json};
 use uuid::Uuid;
 
-use crate::schemas::NewOrder;
+use crate::schemas::{NewOrder, OrderListQuery, UpdateOrder};
 
-use super::{ModelError, ModelResult, Seedable};
+use super::{
+    ModelError, ModelResult, PaginatedModel, Pagination, Seedable,
+    order_items::{CheckoutItem, OrderItem},
+};
+
+const ORDER_CURRENCY: &str = "USD";
 
 #[derive(Debug, Clone, Deserialize, Serialize, FromRow)]
 #[serde(rename_all = "camelCase")]
@@ -41,19 +48,29 @@ pub struct Order {
     updated_at: DateTime<FixedOffset>,
 }
 
+#[derive(Debug, Clone, Serialize)]
+#[serde(rename_all = "camelCase")]
+pub struct OrderWithItems {
+    pub order: Order,
+    pub items: Vec<OrderItem>,
+}
+
 impl Order {
-    /// Creates a pending order for an existing customer.
+    /// Checks out an order and reserves its inventory in one transaction.
     ///
     /// Optional billing and shipping address references must belong to the
     /// customer. Their values are copied into JSON snapshots so later address
-    /// edits do not change the order history. The amount breakdown is checked
-    /// before insertion and the order is timestamped as placed.
+    /// edits do not change the order history. Product prices and totals are
+    /// loaded and calculated on the server. Every item and its corresponding
+    /// stock deduction is committed together with the order.
     ///
     /// # Errors
-    /// Returns an invalid-reference error for missing customers or addresses,
-    /// an invalid-input error for inconsistent totals, or a database error.
+    /// Returns an invalid-reference error for missing customers, addresses, or
+    /// variants; an invalid-input error for empty, duplicate, or unavailable
+    /// items; or a database error when checkout cannot be committed.
+    #[allow(clippy::too_many_lines)]
     pub async fn create(db: &PgPool, params: &NewOrder) -> ModelResult<Self> {
-        validate_totals(params)?;
+        validate_checkout_items(params)?;
         let mut txn = db.begin().await?;
         let (customer_id, customer_name, customer_email) =
             sqlx::query_as::<_, (i32, String, String)>(
@@ -65,12 +82,25 @@ impl Order {
             .bind(params.customer_pid())
             .fetch_optional(&mut *txn)
             .await?
-            .ok_or_else(|| ModelError::InvalidReference("Customer does not exist.".to_string()))?;
+            .ok_or(ModelError::CustomerNotFound)?;
 
-        let billing =
-            load_customer_address(&mut txn, customer_id, params.billing_address_pid()).await?;
-        let shipping =
-            load_customer_address(&mut txn, customer_id, params.shipping_address_pid()).await?;
+        let billing = load_customer_address(
+            &mut txn,
+            customer_id,
+            params.billing_address_pid(),
+            "billingAddressPid",
+        )
+        .await?;
+        let shipping = load_customer_address(
+            &mut txn,
+            customer_id,
+            params.shipping_address_pid(),
+            "shippingAddressPid",
+        )
+        .await?;
+
+        let mut variants = load_checkout_variants(&mut txn, params).await?;
+        let subtotal = calculate_subtotal(&variants, params)?;
         let order = sqlx::query_as::<_, Self>(
             r"INSERT INTO orders (
                 customer_id,
@@ -104,16 +134,49 @@ impl Order {
         ))
         .bind(customer_name)
         .bind(customer_email)
-        .bind(params.currency().to_uppercase())
-        .bind(params.subtotal())
-        .bind(params.discount_total())
-        .bind(params.shipping_total())
-        .bind(params.tax_total())
-        .bind(params.grand_total())
+        .bind(ORDER_CURRENCY)
+        .bind(subtotal)
+        .bind(Decimal::ZERO)
+        .bind(Decimal::ZERO)
+        .bind(Decimal::ZERO)
+        .bind(subtotal)
         .bind(params.customer_note().map(str::trim))
         .bind(params.staff_note().map(str::trim))
         .fetch_one(&mut *txn)
         .await?;
+
+        for requested_item in params.items() {
+            let variant = variants
+                .remove(&requested_item.variant_pid())
+                .ok_or(ModelError::ProductVariantUnavailable)?;
+            reserve_inventory(
+                &mut txn,
+                variant.variant_id,
+                variant.variant_pid,
+                requested_item.quantity(),
+                variant.stock_quantity,
+            )
+            .await?;
+            let line_total = variant.price * Decimal::from(requested_item.quantity());
+            OrderItem::insert(
+                &mut txn,
+                CheckoutItem {
+                    order_id: order.id,
+                    product_id: variant.product_id,
+                    variant_id: variant.variant_id,
+                    product_pid: variant.product_pid,
+                    variant_pid: variant.variant_pid,
+                    product_name: variant.product_name,
+                    sku: variant.sku,
+                    selected_options: variant.selected_options,
+                    quantity: requested_item.quantity(),
+                    unit_price: variant.price,
+                    line_total,
+                },
+            )
+            .await?;
+        }
+
         txn.commit().await?;
         Ok(order)
     }
@@ -129,6 +192,139 @@ impl Order {
               WHERE pid = $1",
         )
         .bind(pid)
+        .fetch_optional(db)
+        .await?
+        .ok_or(ModelError::EntityNotFound)
+    }
+
+    /// Lists orders with pagination and optional lifecycle filters.
+    ///
+    /// Results are ordered newest first. The list contains order headers; use
+    /// [`Self::find_detail_by_pid`] when the line items are required.
+    ///
+    /// # Errors
+    /// Returns a database error when the count or page query fails.
+    pub async fn find_all(
+        db: &PgPool,
+        query: &OrderListQuery,
+    ) -> ModelResult<PaginatedModel<Self>> {
+        let limit = query.limit().unwrap_or(20).clamp(1, 40);
+        let page = query.page().unwrap_or(1).max(1);
+        let offset = (page - 1) * limit;
+        let customer_pid = query.customer_pid();
+        let search = query.search().map(|value| format!("%{value}%"));
+
+        let total_items = sqlx::query_scalar::<_, i64>(
+            r"SELECT COUNT(*)
+              FROM orders o
+              LEFT JOIN users u ON u.id = o.customer_id
+              WHERE ($1::TEXT IS NULL OR o.status = $1)
+                AND ($2::TEXT IS NULL OR o.payment_status = $2)
+                AND ($3::TEXT IS NULL OR o.fulfillment_status = $3)
+                AND ($4::UUID IS NULL OR u.pid = $4)
+                AND ($5::TEXT IS NULL OR o.order_number::TEXT ILIKE $5 OR o.customer_name ILIKE $5 OR o.customer_email ILIKE $5)
+                AND ($6::DATE IS NULL OR o.created_at >= $6::DATE)
+                AND ($7::DATE IS NULL OR o.created_at < ($7::DATE + INTERVAL '1 day'))",
+        )
+        .bind(query.status())
+        .bind(query.payment_status())
+        .bind(query.fulfillment_status())
+        .bind(customer_pid)
+        .bind(search.as_deref())
+        .bind(query.created_from())
+        .bind(query.created_to())
+        .fetch_one(db)
+        .await?;
+
+        let orders = sqlx::query_as::<_, Self>(
+            r"SELECT o.*
+              FROM orders o
+              LEFT JOIN users u ON u.id = o.customer_id
+              WHERE ($3::TEXT IS NULL OR o.status = $3)
+                AND ($4::TEXT IS NULL OR o.payment_status = $4)
+                AND ($5::TEXT IS NULL OR o.fulfillment_status = $5)
+                AND ($6::UUID IS NULL OR u.pid = $6)
+                AND ($7::TEXT IS NULL OR o.order_number::TEXT ILIKE $7 OR o.customer_name ILIKE $7 OR o.customer_email ILIKE $7)
+                AND ($8::DATE IS NULL OR o.created_at >= $8::DATE)
+                AND ($9::DATE IS NULL OR o.created_at < ($9::DATE + INTERVAL '1 day'))
+              ORDER BY o.created_at DESC, o.id DESC
+              LIMIT $1 OFFSET $2",
+        )
+        .bind(limit)
+        .bind(offset)
+        .bind(query.status())
+        .bind(query.payment_status())
+        .bind(query.fulfillment_status())
+        .bind(customer_pid)
+        .bind(search.as_deref())
+        .bind(query.created_from())
+        .bind(query.created_to())
+        .fetch_all(db)
+        .await?;
+
+        Ok(PaginatedModel::new(
+            orders,
+            Pagination::new(page, limit, total_items),
+        ))
+    }
+
+    /// Fetches an order header together with all of its immutable line snapshots.
+    ///
+    /// # Errors
+    /// Returns [`ModelError::EntityNotFound`] when no order exists for `pid`,
+    /// or a database error when its items cannot be loaded.
+    pub async fn find_detail_by_pid(db: &PgPool, pid: Uuid) -> ModelResult<OrderWithItems> {
+        let order = Self::find_by_pid(db, pid).await?;
+        let items = OrderItem::find_by_order(db, pid).await?;
+        Ok(OrderWithItems { order, items })
+    }
+
+    /// Fetches an order detail only when it belongs to the supplied customer.
+    ///
+    /// # Errors
+    /// Returns [`ModelError::EntityNotFound`] when the order does not belong to
+    /// the customer or when the order cannot be found.
+    pub async fn find_detail_for_customer(
+        db: &PgPool,
+        pid: Uuid,
+        customer_pid: Uuid,
+    ) -> ModelResult<OrderWithItems> {
+        let order = sqlx::query_as::<_, Self>(
+            r"SELECT o.*
+              FROM orders o
+              JOIN users u ON u.id = o.customer_id
+              WHERE o.pid = $1 AND u.pid = $2",
+        )
+        .bind(pid)
+        .bind(customer_pid)
+        .fetch_optional(db)
+        .await?
+        .ok_or(ModelError::EntityNotFound)?;
+        let items = OrderItem::find_by_order(db, pid).await?;
+        Ok(OrderWithItems { order, items })
+    }
+
+    /// Updates staff-managed order state and notes.
+    ///
+    /// # Errors
+    /// Returns [`ModelError::EntityNotFound`] when no order exists, or a
+    /// database error when a status constraint is violated.
+    pub async fn update(db: &PgPool, pid: Uuid, params: &UpdateOrder) -> ModelResult<Self> {
+        sqlx::query_as::<_, Self>(
+            r"UPDATE orders
+              SET status = COALESCE($2, status),
+                  payment_status = COALESCE($3, payment_status),
+                  fulfillment_status = COALESCE($4, fulfillment_status),
+                  staff_note = COALESCE($5, staff_note),
+                  updated_at = now()
+              WHERE pid = $1
+              RETURNING *",
+        )
+        .bind(pid)
+        .bind(params.status())
+        .bind(params.payment_status())
+        .bind(params.fulfillment_status())
+        .bind(params.staff_note())
         .fetch_optional(db)
         .await?
         .ok_or(ModelError::EntityNotFound)
@@ -283,25 +479,120 @@ impl Seedable for Order {
     }
 }
 
-fn validate_totals(params: &NewOrder) -> ModelResult<()> {
-    let amounts = [
-        params.subtotal(),
-        params.discount_total(),
-        params.shipping_total(),
-        params.tax_total(),
-        params.grand_total(),
-    ];
-    if amounts.iter().any(Decimal::is_sign_negative) {
-        return Err(ModelError::InvalidInput(
-            "Order amounts cannot be negative.".to_string(),
-        ));
+fn validate_checkout_items(params: &NewOrder) -> ModelResult<()> {
+    if params.items().is_empty() {
+        return Err(ModelError::OrderHasNoItems);
     }
-    let expected =
-        params.subtotal() - params.discount_total() + params.shipping_total() + params.tax_total();
-    if expected != params.grand_total() {
-        return Err(ModelError::InvalidInput(
-            "Order total does not match its breakdown.".to_string(),
-        ));
+
+    let mut variants = HashSet::with_capacity(params.items().len());
+    for item in params.items() {
+        if item.quantity() < 1 {
+            return Err(ModelError::InvalidOrderItemQuantity);
+        }
+        if !variants.insert(item.variant_pid()) {
+            return Err(ModelError::DuplicateOrderItem);
+        }
+    }
+
+    Ok(())
+}
+
+async fn load_checkout_variants(
+    txn: &mut sqlx::Transaction<'_, sqlx::Postgres>,
+    params: &NewOrder,
+) -> ModelResult<HashMap<Uuid, VariantSnapshot>> {
+    let variant_pids = params
+        .items()
+        .iter()
+        .map(crate::schemas::NewOrderItem::variant_pid)
+        .collect::<Vec<_>>();
+    let variants = sqlx::query_as::<_, VariantSnapshot>(
+        r"SELECT v.id AS variant_id,
+                v.pid AS variant_pid,
+                v.stock_quantity,
+                p.id AS product_id,
+                p.pid AS product_pid,
+                p.name AS product_name,
+                v.sku,
+                v.price,
+                COALESCE(
+                    (
+                        SELECT jsonb_object_agg(a.name, av.value)
+                        FROM variant_attribute_values vav
+                        JOIN attributes a ON a.id = vav.attribute_id
+                        JOIN attribute_values av ON av.id = vav.attribute_value_id
+                        WHERE vav.variant_id = v.id
+                    ),
+                    '{}'::jsonb
+                ) AS selected_options
+          FROM product_variants v
+          JOIN products p ON p.id = v.product_id
+          WHERE v.pid = ANY($1)
+            AND v.deleted_at IS NULL
+            AND p.deleted_at IS NULL
+          ORDER BY v.id
+          FOR UPDATE OF v",
+    )
+    .bind(&variant_pids)
+    .fetch_all(&mut **txn)
+    .await?;
+
+    if variants.len() != variant_pids.len() {
+        return Err(ModelError::ProductVariantUnavailable);
+    }
+
+    Ok(variants
+        .into_iter()
+        .map(|variant| (variant.variant_pid, variant))
+        .collect())
+}
+
+fn calculate_subtotal(
+    variants: &HashMap<Uuid, VariantSnapshot>,
+    params: &NewOrder,
+) -> ModelResult<Decimal> {
+    params
+        .items()
+        .iter()
+        .try_fold(Decimal::ZERO, |total, item| {
+            let variant = variants
+                .get(&item.variant_pid())
+                .ok_or(ModelError::ProductVariantUnavailable)?;
+            if variant.stock_quantity < item.quantity() {
+                return Err(ModelError::InsufficientStock {
+                    variant_pid: item.variant_pid(),
+                    requested: item.quantity(),
+                    available: variant.stock_quantity,
+                });
+            }
+            Ok(total + variant.price * Decimal::from(item.quantity()))
+        })
+}
+
+async fn reserve_inventory(
+    txn: &mut sqlx::Transaction<'_, sqlx::Postgres>,
+    variant_row_id: i32,
+    public_variant_id: Uuid,
+    quantity: i32,
+    available: i32,
+) -> ModelResult<()> {
+    let result = sqlx::query(
+        r"UPDATE product_variants
+          SET stock_quantity = stock_quantity - $1
+          WHERE id = $2
+            AND stock_quantity >= $1
+            AND deleted_at IS NULL",
+    )
+    .bind(quantity)
+    .bind(variant_row_id)
+    .execute(&mut **txn)
+    .await?;
+    if result.rows_affected() == 0 {
+        return Err(ModelError::InsufficientStock {
+            variant_pid: public_variant_id,
+            requested: quantity,
+            available,
+        });
     }
     Ok(())
 }
@@ -310,6 +601,7 @@ async fn load_customer_address(
     txn: &mut sqlx::Transaction<'_, sqlx::Postgres>,
     customer_id: i32,
     pid: Option<Uuid>,
+    field: &'static str,
 ) -> ModelResult<Option<(i32, JsonValue)>> {
     let Some(pid) = pid else {
         return Ok(None);
@@ -341,11 +633,20 @@ async fn load_customer_address(
     .fetch_optional(&mut **txn)
     .await?
     .map_or_else(
-        || {
-            Err(ModelError::InvalidReference(
-                "Customer address does not exist.".to_string(),
-            ))
-        },
+        || Err(ModelError::CustomerAddressNotFound { field }),
         |value| Ok(Some(value)),
     )
+}
+
+#[derive(Debug, FromRow)]
+struct VariantSnapshot {
+    variant_id: i32,
+    variant_pid: Uuid,
+    stock_quantity: i32,
+    product_id: i32,
+    product_pid: Uuid,
+    product_name: String,
+    sku: String,
+    price: Decimal,
+    selected_options: Json<JsonValue>,
 }

@@ -70,4 +70,11 @@ pub mod permissions {
         pub const UPDATE: PermissionName = PermissionName("media:update");
         pub const DELETE: PermissionName = PermissionName("media:delete");
     }
+
+    pub mod orders {
+        use super::PermissionName;
+
+        pub const READ: PermissionName = PermissionName("orders:read");
+        pub const UPDATE: PermissionName = PermissionName("orders:update");
+    }
 }

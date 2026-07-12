@@ -24,7 +24,7 @@ expression: "(without_deleted, with_deleted)"
                         slug: "shoes",
                     },
                     primary_image: Some(
-                        "https://cdn.example.com/products/court-leather-sneakers-white.png",
+                        "https://images.unsplash.com/photo-1608231387042-66d1773070a5?auto=format&fit=crop&w=900&q=80",
                     ),
                     default_variant: Some(
                         ProductVariantSummary {
@@ -59,7 +59,7 @@ expression: "(without_deleted, with_deleted)"
                         slug: "t-shirts",
                     },
                     primary_image: Some(
-                        "https://cdn.example.com/products/classic-cotton-tshirt-black.png",
+                        "https://images.unsplash.com/photo-1521572163474-6864f9cf17ab?auto=format&fit=crop&w=900&q=80",
                     ),
                     default_variant: Some(
                         ProductVariantSummary {
@@ -108,7 +108,7 @@ expression: "(without_deleted, with_deleted)"
                         slug: "shoes",
                     },
                     primary_image: Some(
-                        "https://cdn.example.com/products/court-leather-sneakers-white.png",
+                        "https://images.unsplash.com/photo-1608231387042-66d1773070a5?auto=format&fit=crop&w=900&q=80",
                     ),
                     default_variant: Some(
                         ProductVariantSummary {
@@ -143,7 +143,7 @@ expression: "(without_deleted, with_deleted)"
                         slug: "trousers",
                     },
                     primary_image: Some(
-                        "https://cdn.example.com/products/tailored-chino-trousers-black.png",
+                        "https://images.unsplash.com/photo-1594633312681-425c7b97ccd1?auto=format&fit=crop&w=900&q=80",
                     ),
                     default_variant: Some(
                         ProductVariantSummary {
@@ -180,7 +180,7 @@ expression: "(without_deleted, with_deleted)"
                         slug: "t-shirts",
                     },
                     primary_image: Some(
-                        "https://cdn.example.com/products/classic-cotton-tshirt-black.png",
+                        "https://images.unsplash.com/photo-1521572163474-6864f9cf17ab?auto=format&fit=crop&w=900&q=80",
                     ),
                     default_variant: Some(
                         ProductVariantSummary {

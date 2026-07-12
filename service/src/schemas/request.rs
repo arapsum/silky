@@ -1,4 +1,6 @@
+use chrono::NaiveDate;
 use serde::{Deserialize, Serialize};
+use uuid::Uuid;
 use validator::Validate;
 
 #[derive(Debug, Deserialize, Serialize, Clone, Validate)]
@@ -85,6 +87,86 @@ impl PaginationQuery {
     #[must_use]
     pub const fn page(&self) -> Option<i64> {
         self.page
+    }
+}
+
+#[derive(Debug, Deserialize, Serialize, Clone, Validate)]
+#[serde(rename_all = "camelCase")]
+pub struct OrderListQuery {
+    #[validate(range(min = 1, message = "Limit must be a positive integer"))]
+    limit: Option<i64>,
+    #[validate(range(min = 1, message = "Page must be a positive integer"))]
+    page: Option<i64>,
+    status: Option<String>,
+    payment_status: Option<String>,
+    fulfillment_status: Option<String>,
+    customer_pid: Option<Uuid>,
+    search: Option<String>,
+    created_from: Option<NaiveDate>,
+    created_to: Option<NaiveDate>,
+}
+
+impl OrderListQuery {
+    #[must_use]
+    pub const fn with_customer_pid(mut self, customer_pid: Uuid) -> Self {
+        self.customer_pid = Some(customer_pid);
+        self
+    }
+    #[must_use]
+    pub const fn limit(&self) -> Option<i64> {
+        self.limit
+    }
+
+    #[must_use]
+    pub const fn page(&self) -> Option<i64> {
+        self.page
+    }
+
+    #[must_use]
+    pub fn status(&self) -> Option<&str> {
+        self.status
+            .as_deref()
+            .map(str::trim)
+            .filter(|value| !value.is_empty())
+    }
+
+    #[must_use]
+    pub fn payment_status(&self) -> Option<&str> {
+        self.payment_status
+            .as_deref()
+            .map(str::trim)
+            .filter(|value| !value.is_empty())
+    }
+
+    #[must_use]
+    pub fn fulfillment_status(&self) -> Option<&str> {
+        self.fulfillment_status
+            .as_deref()
+            .map(str::trim)
+            .filter(|value| !value.is_empty())
+    }
+
+    #[must_use]
+    pub const fn customer_pid(&self) -> Option<Uuid> {
+        self.customer_pid
+    }
+
+    #[must_use]
+    pub fn search(&self) -> Option<&str> {
+        self.search
+            .as_deref()
+            .map(str::trim)
+            .filter(|value| !value.is_empty())
+    }
+
+    #[must_use]
+    pub const fn created_from(&self) -> Option<NaiveDate> {
+        self.created_from
+    }
+
+    #[must_use]
+    pub const fn created_to(&self) -> Option<NaiveDate> {
+        self.created_to
     }
 }
 

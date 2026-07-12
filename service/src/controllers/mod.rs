@@ -10,6 +10,7 @@ use crate::{AppState, middlewares::auth::AuthLayer};
 mod auth;
 mod categories;
 mod media;
+mod orders;
 mod permissions;
 mod products;
 mod roles;
@@ -50,6 +51,7 @@ pub fn router(ctx: &AppState) -> Router {
         )
         .nest("/categories", categories::router(ctx))
         .nest("/products", products::router(ctx))
+        .nest("/orders", orders::router(ctx))
         .nest("/media", media::router(ctx))
         .fallback(not_found)
 }

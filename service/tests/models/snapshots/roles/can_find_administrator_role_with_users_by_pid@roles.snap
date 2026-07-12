@@ -16,7 +16,7 @@ Ok(
                 name: "John Doe",
                 email: "john.doe@acme.com",
                 image: Some(
-                    "https://cdn.example.com/users/john_doe.png",
+                    "https://randomuser.me/api/portraits/men/32.jpg",
                 ),
             },
             RoleUser {
@@ -24,7 +24,7 @@ Ok(
                 name: "System Administrator",
                 email: "admin@silk.com",
                 image: Some(
-                    "https://cdn.example.com/users/system_admin.png",
+                    "https://randomuser.me/api/portraits/men/75.jpg",
                 ),
             },
         ],

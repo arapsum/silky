@@ -23,7 +23,7 @@ Ok(
                     slug: "t-shirts",
                 },
                 primary_image: Some(
-                    "https://cdn.example.com/products/classic-cotton-tshirt-black.png",
+                    "https://images.unsplash.com/photo-1521572163474-6864f9cf17ab?auto=format&fit=crop&w=900&q=80",
                 ),
                 default_variant: Some(
                     ProductVariantSummary {

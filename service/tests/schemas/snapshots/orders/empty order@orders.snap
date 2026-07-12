@@ -3,5 +3,5 @@ source: tests/schemas/orders.rs
 expression: result
 ---
 Err(
-    "Validation error: {\"quantity\":\"Field error\"}",
+    "Validation error: {\"items\":\"Field error\"}",
 )

@@ -137,7 +137,9 @@ async fn can_find_user_by_email() {
 
     with_settings!({
         filters => {
-            cleanup_verification_token().to_vec()
+            let mut filters = cleanup_verification_token().to_vec();
+            filters.extend(cleanup_date().to_vec());
+            filters
         }
     }, {
         assert_debug_snapshot!(result)

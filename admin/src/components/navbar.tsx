@@ -111,7 +111,7 @@ export function Navbar() {
     <>
       <header className="sticky top-0 z-20 border-b bg-background/95 backdrop-blur">
         <div className="mx-auto flex h-16 w-full max-w-360 items-center gap-3 px-4 md:px-8">
-          <SidebarTrigger className="size-8 rounded-none" />
+          <SidebarTrigger className="size-8 rounded-lg" />
           <Separator orientation="vertical" className="my-auto h-7" />
           <span className="hidden min-w-28 text-sm font-semibold md:block">
             {sectionLabel(pathname)}
@@ -119,7 +119,7 @@ export function Navbar() {
 
           <button
             type="button"
-            className="relative flex h-9 min-w-0 flex-1 items-center border bg-muted/30 px-9 text-left text-sm text-muted-foreground outline-none transition-colors hover:bg-muted focus-visible:border-primary focus-visible:ring-3 focus-visible:ring-primary/15 md:max-w-md"
+            className="relative flex h-9 min-w-0 flex-1 items-center rounded-lg border bg-muted/30 px-9 text-left text-sm text-muted-foreground outline-none transition-colors hover:bg-muted focus-visible:border-primary focus-visible:ring-3 focus-visible:ring-primary/15 md:max-w-md"
             onClick={() => setIsCommandOpen(true)}
           >
             <MagnifyingGlassIcon
@@ -127,7 +127,7 @@ export function Navbar() {
               aria-hidden
             />
             <span className="truncate">Type to search...</span>
-            <kbd className="absolute right-2 top-1/2 hidden h-5 -translate-y-1/2 items-center border bg-background px-1.5 font-mono text-[10px] font-medium text-muted-foreground sm:flex">
+            <kbd className="absolute right-2 top-1/2 hidden h-5 -translate-y-1/2 items-center rounded-md border bg-background px-1.5 font-mono text-[10px] font-medium text-muted-foreground sm:flex">
               Ctrl K
             </kbd>
           </button>
@@ -159,7 +159,7 @@ function CommandSearchDialog({
       onOpenChange={onOpenChange}
       title="Command search"
       description="Search for a page or command"
-      className="max-w-[calc(100%-2rem)] rounded-none! [&_[data-slot=command]]:rounded-none! [&_[data-slot=input-group]]:rounded-none! sm:max-w-md"
+      className="max-w-[calc(100%-2rem)] rounded-lg! [&_[data-slot=command]]:rounded-lg! [&_[data-slot=input-group]]:rounded-lg! sm:max-w-md"
     >
       <Command>
         <CommandInput placeholder="Type a command or search..." autoFocus />
@@ -169,7 +169,7 @@ function CommandSearchDialog({
             {commandSuggestions.map((suggestion) => (
               <CommandItem
                 key={suggestion.id}
-                className="rounded-none!"
+                className="rounded-lg!"
                 onSelect={() => {
                   onOpenChange(false);
                   void navigate({ to: suggestion.to });
@@ -198,7 +198,7 @@ function NotificationsButton() {
             type="button"
             variant="ghost"
             size="icon-sm"
-            className="relative rounded-none"
+            className="relative rounded-lg"
             aria-label="Notifications"
           />
         }
@@ -209,7 +209,7 @@ function NotificationsButton() {
       <PopoverContent
         align="end"
         sideOffset={10}
-        className="w-[min(calc(100vw-2rem),22rem)] gap-0 rounded-none p-0"
+        className="w-[min(calc(100vw-2rem),22rem)] gap-0 rounded-lg p-0"
       >
         <div className="border-b px-4 py-3">
           <p className="text-sm font-semibold">Notifications</p>
@@ -248,7 +248,7 @@ function ThemeToggle() {
       type="button"
       variant="ghost"
       size="icon-sm"
-      className="rounded-none"
+      className="rounded-lg"
       aria-label={isDark ? "Switch to light theme" : "Switch to dark theme"}
       onClick={toggleTheme}
     >

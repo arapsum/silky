@@ -1,19 +1,6 @@
-use rust_decimal::Decimal;
 use serde::{Deserialize, Serialize};
 use uuid::Uuid;
 use validator::{Validate, ValidationError};
-
-fn validate_currency(value: &str) -> Result<(), ValidationError> {
-    if value.len() == 3
-        && value
-            .chars()
-            .all(|character| character.is_ascii_alphabetic())
-    {
-        Ok(())
-    } else {
-        Err(ValidationError::new("invalid_currency"))
-    }
-}
 
 fn validate_country_code(value: &str) -> Result<(), ValidationError> {
     if value.len() == 2
@@ -24,14 +11,6 @@ fn validate_country_code(value: &str) -> Result<(), ValidationError> {
         Ok(())
     } else {
         Err(ValidationError::new("invalid_country_code"))
-    }
-}
-
-fn validate_non_negative(value: &Decimal) -> Result<(), ValidationError> {
-    if value.is_sign_negative() {
-        Err(ValidationError::new("negative_amount"))
-    } else {
-        Ok(())
     }
 }
 
@@ -139,18 +118,8 @@ pub struct NewOrder {
     customer_pid: Uuid,
     billing_address_pid: Option<Uuid>,
     shipping_address_pid: Option<Uuid>,
-    #[validate(custom(function = "validate_currency"))]
-    currency: String,
-    #[validate(custom(function = "validate_non_negative"))]
-    subtotal: Decimal,
-    #[validate(custom(function = "validate_non_negative"))]
-    discount_total: Decimal,
-    #[validate(custom(function = "validate_non_negative"))]
-    shipping_total: Decimal,
-    #[validate(custom(function = "validate_non_negative"))]
-    tax_total: Decimal,
-    #[validate(custom(function = "validate_non_negative"))]
-    grand_total: Decimal,
+    #[validate(length(min = 1, max = 100), nested)]
+    items: Vec<NewOrderItem>,
     customer_note: Option<String>,
     staff_note: Option<String>,
 }
@@ -169,28 +138,8 @@ impl NewOrder {
         self.shipping_address_pid
     }
     #[must_use]
-    pub fn currency(&self) -> &str {
-        &self.currency
-    }
-    #[must_use]
-    pub const fn subtotal(&self) -> Decimal {
-        self.subtotal
-    }
-    #[must_use]
-    pub const fn discount_total(&self) -> Decimal {
-        self.discount_total
-    }
-    #[must_use]
-    pub const fn shipping_total(&self) -> Decimal {
-        self.shipping_total
-    }
-    #[must_use]
-    pub const fn tax_total(&self) -> Decimal {
-        self.tax_total
-    }
-    #[must_use]
-    pub const fn grand_total(&self) -> Decimal {
-        self.grand_total
+    pub fn items(&self) -> &[NewOrderItem] {
+        &self.items
     }
     #[must_use]
     pub fn customer_note(&self) -> Option<&str> {
@@ -204,22 +153,53 @@ impl NewOrder {
 
 #[derive(Debug, Clone, Deserialize, Serialize, Validate)]
 #[serde(rename_all = "camelCase")]
-pub struct NewOrderDetail {
-    order_pid: Uuid,
+pub struct NewOrderItem {
     variant_pid: Uuid,
     #[validate(range(min = 1))]
     quantity: i32,
-    #[validate(custom(function = "validate_non_negative"))]
-    discount_total: Decimal,
-    #[validate(custom(function = "validate_non_negative"))]
-    tax_total: Decimal,
 }
 
-impl NewOrderDetail {
+#[derive(Debug, Clone, Deserialize, Serialize, Validate)]
+#[serde(rename_all = "camelCase")]
+pub struct UpdateOrder {
+    #[validate(length(min = 1, max = 32))]
+    status: Option<String>,
+    #[validate(length(min = 1, max = 32))]
+    payment_status: Option<String>,
+    #[validate(length(min = 1, max = 32))]
+    fulfillment_status: Option<String>,
+    staff_note: Option<String>,
+}
+
+impl UpdateOrder {
     #[must_use]
-    pub const fn order_pid(&self) -> Uuid {
-        self.order_pid
+    pub fn status(&self) -> Option<&str> {
+        self.status
+            .as_deref()
+            .map(str::trim)
+            .filter(|v| !v.is_empty())
     }
+    #[must_use]
+    pub fn payment_status(&self) -> Option<&str> {
+        self.payment_status
+            .as_deref()
+            .map(str::trim)
+            .filter(|v| !v.is_empty())
+    }
+    #[must_use]
+    pub fn fulfillment_status(&self) -> Option<&str> {
+        self.fulfillment_status
+            .as_deref()
+            .map(str::trim)
+            .filter(|v| !v.is_empty())
+    }
+    #[must_use]
+    pub fn staff_note(&self) -> Option<&str> {
+        self.staff_note.as_deref()
+    }
+}
+
+impl NewOrderItem {
     #[must_use]
     pub const fn variant_pid(&self) -> Uuid {
         self.variant_pid
@@ -227,13 +207,5 @@ impl NewOrderDetail {
     #[must_use]
     pub const fn quantity(&self) -> i32 {
         self.quantity
-    }
-    #[must_use]
-    pub const fn discount_total(&self) -> Decimal {
-        self.discount_total
-    }
-    #[must_use]
-    pub const fn tax_total(&self) -> Decimal {
-        self.tax_total
     }
 }

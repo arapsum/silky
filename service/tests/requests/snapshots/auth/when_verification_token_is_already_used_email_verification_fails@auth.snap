@@ -1,9 +1,8 @@
 ---
 source: tests/requests/auth.rs
-assertion_line: 277
 expression: "(response.status_code(), response.text())"
 ---
 (
     404,
-    "{\"error\":\"Entity not found\"}",
+    "{\"error\":\"Entity not found\",\"code\":\"entity_not_found\"}",
 )

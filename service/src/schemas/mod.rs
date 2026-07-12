@@ -9,14 +9,15 @@ pub mod validator;
 pub use self::{
     auth::{ChangePassword, ForgotPassword, LoginUser, RegisterUser, ResetPassword, UpdateProfile},
     categories::{CategoryAttributesInput, NewCategory, UpdateCategory},
-    orders::{NewAddress, NewOrder, NewOrderDetail},
+    orders::{NewAddress, NewOrder, NewOrderItem, UpdateOrder},
     products::{
         CreateProduct, CreateProductPicture, CreateProductTag, CreateProductVariant,
         CreateVariantOption, ProductListQuery, StockStatus, UpdateProduct, UpdateProductPicture,
         UpdateProductVariant,
     },
     request::{
-        CategoryListQuery, PaginationQuery, PermissionListQuery, PermissionRoleQuery, UserListQuery,
+        CategoryListQuery, OrderListQuery, PaginationQuery, PermissionListQuery,
+        PermissionRoleQuery, UserListQuery,
     },
     roles::{AssignPermission, AssignRole, NewRole, UpdateRole},
     validator::Validator,

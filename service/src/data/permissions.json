@@ -191,4 +191,20 @@
     "createdAt": "2026-07-10T09:00:00+00:00",
     "updatedAt": "2026-07-10T09:00:00+00:00"
   }
+  ,{
+    "id": 125,
+    "pid": "af3b7d51-6a4e-4ec4-8e41-2f5f6f1c9001",
+    "name": "orders:read",
+    "description": "View customer orders",
+    "createdAt": "2026-07-12T09:00:00+00:00",
+    "updatedAt": "2026-07-12T09:00:00+00:00"
+  },
+  {
+    "id": 126,
+    "pid": "b6f84e22-91a7-4a31-a19f-0f0d4f4c7002",
+    "name": "orders:update",
+    "description": "Update customer orders",
+    "createdAt": "2026-07-12T09:00:00+00:00",
+    "updatedAt": "2026-07-12T09:00:00+00:00"
+  }
 ]

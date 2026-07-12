@@ -20,6 +20,8 @@ use crate::{
 pub struct RbacLayer {
     state: Arc<AppContext>,
     required_permission: PermissionName,
+    allow_customers: bool,
+    deny_customers: bool,
 }
 
 impl RbacLayer {
@@ -28,7 +30,21 @@ impl RbacLayer {
         Self {
             state,
             required_permission,
+            allow_customers: false,
+            deny_customers: false,
         }
+    }
+
+    #[must_use]
+    pub const fn allow_customers(mut self) -> Self {
+        self.allow_customers = true;
+        self
+    }
+
+    #[must_use]
+    pub const fn deny_customers(mut self) -> Self {
+        self.deny_customers = true;
+        self
     }
 }
 
@@ -40,6 +56,8 @@ impl<S> Layer<S> for RbacLayer {
             inner,
             state: self.state.clone(),
             required_permission: self.required_permission,
+            allow_customers: self.allow_customers,
+            deny_customers: self.deny_customers,
         }
     }
 }
@@ -49,6 +67,8 @@ pub struct RbacService<S> {
     inner: S,
     state: Arc<AppContext>,
     required_permission: PermissionName,
+    allow_customers: bool,
+    deny_customers: bool,
 }
 
 impl<S> RbacService<S> {
@@ -62,6 +82,8 @@ impl<S> RbacService<S> {
             inner,
             state,
             required_permission,
+            allow_customers: false,
+            deny_customers: false,
         }
     }
 }
@@ -83,6 +105,8 @@ where
     fn call(&mut self, req: Request<B>) -> Self::Future {
         let state = self.state.clone();
         let required_permission = self.required_permission;
+        let allow_customers = self.allow_customers;
+        let deny_customers = self.deny_customers;
         let clone = self.inner.clone();
 
         let mut inner = std::mem::replace(&mut self.inner, clone);
@@ -95,6 +119,18 @@ where
             let Ok(user_pid) = Uuid::parse_str(claims.sub()) else {
                 return Ok(Error::Forbidden.response());
             };
+
+            if crate::models::User::has_role(state.db(), user_pid, "customer")
+                .await
+                .unwrap_or(false)
+            {
+                if deny_customers {
+                    return Ok(Error::Forbidden.response());
+                }
+                if allow_customers {
+                    return inner.call(req).await;
+                }
+            }
 
             let granted = Permission::is_granted_to_user_role(
                 state.db(),

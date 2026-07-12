@@ -11,7 +11,7 @@ use crate::{
     AppState, Error, Result,
     access_control::permissions,
     context::Claims,
-    middlewares::RbacLayer,
+    middlewares::{AuthLayer, RbacLayer},
     models::{Order, User},
     schemas::{OrderListQuery, UpdateOrder, Validator},
     utils::{AppExtension, AppJson, AppPath, AppQuery},
@@ -89,5 +89,5 @@ pub fn router(ctx: &AppState) -> Router {
                 .layer(RbacLayer::new(ctx.clone(), permissions::orders::UPDATE).deny_customers()),
         )
         .with_state(ctx.clone())
-        .layer(crate::middlewares::AuthLayer::new(ctx.clone()))
+        .layer(AuthLayer::new(ctx.clone()))
 }

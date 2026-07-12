@@ -4,7 +4,7 @@ use rstest::rstest;
 use serial_test::serial;
 use service::{
     models::{ModelError, Order, OrderItem},
-    schemas::NewOrder,
+    schemas::{NewOrder, OrderListQuery},
 };
 use uuid::Uuid;
 
@@ -190,6 +190,33 @@ async fn rejects_invalid_order_item_collections(
         .expect("order count should load");
 
     assert_debug_snapshot!(name, (result, order_count));
+}
+
+#[tokio::test]
+#[serial]
+async fn lists_and_fetches_orders_with_items() {
+    configure_insta!();
+    let ctx = boot_test().await.expect("test context should boot");
+    seed_data(ctx.db()).await.expect("seed should complete");
+    let query: OrderListQuery = serde_json::from_value(serde_json::json!({
+        "status": "completed",
+        "limit": 10,
+        "page": 1
+    }))
+    .expect("order query should deserialize");
+    let list = Order::find_all(ctx.db(), &query)
+        .await
+        .expect("orders should list");
+    let detail = Order::find_detail_by_pid(
+        ctx.db(),
+        Uuid::parse_str("f39bf4b5-4c1d-4c0b-b6d8-96f4f4f94002").expect("order pid"),
+    )
+    .await
+    .expect("order detail should load");
+
+    with_settings!({ filters => { let mut filters = cleanup_uuid().to_vec(); filters.extend(cleanup_date().to_vec()); filters.extend(cleanup_id()); filters } }, {
+        assert_debug_snapshot!("lists_and_fetches_orders_with_items", (list, detail))
+    });
 }
 
 #[test]

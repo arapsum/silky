@@ -5,6 +5,22 @@ expression: result
 Ok(
     [
         RolePermission {
+            id: 1004,
+            pid: b7c7d3b5-5e12-4a9b-a221-3c2e4f8b9101,
+            role_id: 11,
+            permission_id: 125,
+            created_at: 2026-07-12T09:00:00+00:00,
+            updated_at: 2026-07-12T09:00:00+00:00,
+        },
+        RolePermission {
+            id: 1005,
+            pid: d4e8f6a2-7c31-4b90-b552-1f3a5c7d8202,
+            role_id: 11,
+            permission_id: 126,
+            created_at: 2026-07-12T09:00:00+00:00,
+            updated_at: 2026-07-12T09:00:00+00:00,
+        },
+        RolePermission {
             id: 1001,
             pid: d1cb710f-f36b-49f8-b04c-f18aa0393c79,
             role_id: 22,

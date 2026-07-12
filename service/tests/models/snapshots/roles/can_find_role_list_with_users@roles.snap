@@ -17,7 +17,7 @@ Ok(
                     name: "Jane Smith",
                     email: "jane.smith@globex.com",
                     image: Some(
-                        "https://cdn.example.com/users/jane_smith.png",
+                        "https://randomuser.me/api/portraits/women/44.jpg",
                     ),
                 },
                 RoleUser {
@@ -25,7 +25,7 @@ Ok(
                     name: "John Doe",
                     email: "john.doe@acme.com",
                     image: Some(
-                        "https://cdn.example.com/users/john_doe.png",
+                        "https://randomuser.me/api/portraits/men/32.jpg",
                     ),
                 },
                 RoleUser {
@@ -33,7 +33,7 @@ Ok(
                     name: "Morgan Grimes",
                     email: "morgan@silk.io",
                     image: Some(
-                        "https://cdn.example.com/users/morgan_grimes.png",
+                        "https://randomuser.me/api/portraits/women/65.jpg",
                     ),
                 },
             ],
@@ -53,7 +53,7 @@ Ok(
                     name: "John Doe",
                     email: "john.doe@acme.com",
                     image: Some(
-                        "https://cdn.example.com/users/john_doe.png",
+                        "https://randomuser.me/api/portraits/men/32.jpg",
                     ),
                 },
                 RoleUser {
@@ -61,7 +61,7 @@ Ok(
                     name: "System Administrator",
                     email: "admin@silk.com",
                     image: Some(
-                        "https://cdn.example.com/users/system_admin.png",
+                        "https://randomuser.me/api/portraits/men/75.jpg",
                     ),
                 },
             ],

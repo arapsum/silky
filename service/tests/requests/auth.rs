@@ -374,8 +374,7 @@ async fn cannot_change_password_when_current_password_is_wrong() {
             }))
             .await;
 
-        assert_eq!(response.status_code(), 401);
-        assert_eq!(response.text(), "{\"error\":\"Invalid email or password\"}");
+        assert_debug_snapshot!((response.status_code(), response.text()));
 
         let login_response = server
             .post("/auth/login")

@@ -8,7 +8,7 @@ Ok(
         pid: f63b79c9-4753-40c3-bc78-8c4fd38abd5b,
         name: "t-shirts",
         slug: "t-shirts",
-        image_link: "https://cdn.example.com/categories/tshirts.png",
+        image_link: "https://images.unsplash.com/photo-1521572163474-6864f9cf17ab?auto=format&fit=crop&w=900&q=80",
         description: None,
         parent_id: None,
         created_at: 2026-06-26T08:13:00+00:00,

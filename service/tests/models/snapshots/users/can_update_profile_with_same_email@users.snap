@@ -9,7 +9,7 @@ Ok(
         name: "John Renamed",
         email: "john.doe@acme.com",
         image: Some(
-            "https://cdn.example.com/users/john_doe.png",
+            "https://randomuser.me/api/portraits/men/32.jpg",
         ),
         password_hash: "PASSWORD",
         verified_at: Some(

@@ -17,9 +17,11 @@ import { useMemo, useState, type FormEvent } from "react";
 import type { DateRange } from "react-day-picker";
 
 import { listOrders, ordersQueryKey, type Order } from "#/api/orders.ts";
+import { SummaryGrid } from "#/components/catalogue/summary-grid";
 import { DataTable } from "#/components/data-table";
 import { OrderStatusBadge } from "#/components/orders/order-status";
 import { PageHeader } from "#/components/page-header";
+import { Avatar, AvatarFallback, AvatarImage } from "#/components/ui/avatar";
 import { Button } from "#/components/ui/button";
 import { Calendar } from "#/components/ui/calendar";
 import { Input } from "#/components/ui/input";
@@ -49,6 +51,17 @@ function formatMoney(value: string, currency: string) {
   }).format(Number(value));
 }
 
+function customerInitials(name: string) {
+  return (
+    name
+      .split(/\s+/)
+      .filter(Boolean)
+      .slice(0, 2)
+      .map((part) => part[0]?.toUpperCase())
+      .join("") || "C"
+  );
+}
+
 function orderColumns(): ColumnDef<Order>[] {
   return [
     {
@@ -70,9 +83,18 @@ function orderColumns(): ColumnDef<Order>[] {
       header: "Customer",
       accessorFn: (order) => `${order.customerName} ${order.customerEmail}`,
       cell: ({ row }) => (
-        <div className="min-w-0">
-          <p className="truncate font-medium">{row.original.customerName}</p>
-          <p className="truncate text-xs text-muted-foreground">{row.original.customerEmail}</p>
+        <div className="flex min-w-0 items-center gap-3">
+          <Avatar size="sm">
+            <AvatarImage
+              src={row.original.customerImage ?? undefined}
+              alt={row.original.customerName}
+            />
+            <AvatarFallback>{customerInitials(row.original.customerName)}</AvatarFallback>
+          </Avatar>
+          <div className="min-w-0">
+            <p className="truncate font-medium">{row.original.customerName}</p>
+            <p className="truncate text-xs text-muted-foreground">{row.original.customerEmail}</p>
+          </div>
         </div>
       ),
       size: 260,
@@ -232,94 +254,72 @@ export function OrdersTable() {
         }
       />
 
-      <section
-        className="mb-5 grid rounded-lg border sm:grid-cols-2 xl:grid-cols-4"
-        aria-label="Order summary"
-      >
-        <div className="border-b p-4 sm:border-r xl:border-b-0">
-          <p className="text-xs font-medium uppercase tracking-wide text-muted-foreground">
-            {activeFilters ? "Matching orders" : "Total orders"}
-          </p>
-          <p className="mt-2 text-2xl font-semibold tabular-nums">{pagination?.totalItems ?? 0}</p>
-        </div>
-        <div className="border-b p-4 xl:border-r xl:border-b-0">
-          <p className="text-xs font-medium uppercase tracking-wide text-muted-foreground">
-            On this page
-          </p>
-          <p className="mt-2 text-2xl font-semibold tabular-nums">{orders.length}</p>
-        </div>
-        <div className="border-b p-4 sm:border-r sm:border-b-0 xl:border-r">
-          <p className="text-xs font-medium uppercase tracking-wide text-muted-foreground">
-            Awaiting payment
-          </p>
-          <p className="mt-2 text-2xl font-semibold tabular-nums">
-            {orders.filter((order) => order.paymentStatus === "pending").length}
-          </p>
-        </div>
-        <div className="p-4">
-          <p className="text-xs font-medium uppercase tracking-wide text-muted-foreground">
-            To fulfill
-          </p>
-          <p className="mt-2 text-2xl font-semibold tabular-nums">
-            {orders.filter((order) => order.fulfillmentStatus === "unfulfilled").length}
-          </p>
-        </div>
-      </section>
+      <SummaryGrid
+        ariaLabel="Order summary"
+        items={[
+          {
+            label: activeFilters ? "Matching orders" : "Total orders",
+            value: pagination?.totalItems ?? 0,
+          },
+          { label: "On this page", value: orders.length },
+          {
+            label: "Awaiting payment",
+            value: orders.filter((order) => order.paymentStatus === "pending").length,
+          },
+          {
+            label: "To fulfill",
+            value: orders.filter((order) => order.fulfillmentStatus === "unfulfilled").length,
+          },
+        ]}
+      />
 
       <div className="rounded-lg border bg-card">
-        <div className="grid gap-3 border-b p-3 xl:grid-cols-[minmax(18rem,1fr)_auto_auto_auto]">
-          <form onSubmit={applySearch} className="flex min-w-0">
-            <div className="relative min-w-0 flex-1">
+        <div className="flex flex-col gap-3 border-b p-3 sm:flex-row sm:items-center sm:justify-between">
+          <form onSubmit={applySearch} className="w-full min-w-0 sm:w-96">
+            <div className="relative min-w-0">
               <MagnifyingGlassIcon className="pointer-events-none absolute left-3 top-1/2 size-4 -translate-y-1/2 text-muted-foreground" />
               <Input
                 value={searchInput}
                 onChange={(event) => setSearchInput(event.target.value)}
                 placeholder="Search order number or customer"
-                className="rounded-lg pr-11 pl-9"
+                className="rounded-lg pl-9"
               />
-              <Button
-                type="submit"
-                variant="ghost"
-                size="icon-sm"
-                className="absolute right-1 top-1/2 -translate-y-1/2 rounded-md"
-                aria-label="Search orders"
-              >
-                <MagnifyingGlassIcon />
-              </Button>
             </div>
           </form>
 
-          <Select
-            value={status}
-            onValueChange={(value) => {
-              setStatus(value ?? ALL_STATUSES);
-              setPage(1);
-            }}
-          >
-            <SelectTrigger className="w-full rounded-lg bg-background xl:w-44">
-              <SelectValue />
-            </SelectTrigger>
-            <SelectContent className="rounded-lg">
-              <SelectItem value={ALL_STATUSES}>All statuses</SelectItem>
-              <SelectItem value="pending">Pending</SelectItem>
-              <SelectItem value="completed">Completed</SelectItem>
-              <SelectItem value="cancelled">Cancelled</SelectItem>
-            </SelectContent>
-          </Select>
+          <div className="flex flex-wrap items-center gap-3">
+            <Select
+              value={status}
+              onValueChange={(value) => {
+                setStatus(value ?? ALL_STATUSES);
+                setPage(1);
+              }}
+            >
+              <SelectTrigger className="w-full rounded-lg bg-background sm:w-44">
+                <SelectValue />
+              </SelectTrigger>
+              <SelectContent className="rounded-lg">
+                <SelectItem value={ALL_STATUSES}>All statuses</SelectItem>
+                <SelectItem value="pending">Pending</SelectItem>
+                <SelectItem value="completed">Completed</SelectItem>
+                <SelectItem value="cancelled">Cancelled</SelectItem>
+              </SelectContent>
+            </Select>
 
-          <DateRangePicker
-            value={dateRange}
-            onChange={(range) => {
-              setDateRange(range);
-              setPage(1);
-            }}
-          />
+            <DateRangePicker
+              value={dateRange}
+              onChange={(range) => {
+                setDateRange(range);
+                setPage(1);
+              }}
+            />
 
-          {activeFilters && (
-            <Button type="button" variant="ghost" className="rounded-lg" onClick={resetFilters}>
-              <XIcon /> Clear
-            </Button>
-          )}
+            {activeFilters && (
+              <Button type="button" variant="ghost" className="rounded-lg" onClick={resetFilters}>
+                <XIcon /> Clear
+              </Button>
+            )}
+          </div>
         </div>
 
         <DataTable

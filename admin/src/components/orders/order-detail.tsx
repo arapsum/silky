@@ -36,6 +36,7 @@ import {
 import { EmptyState } from "#/components/empty-state";
 import { ErrorState } from "#/components/error-state";
 import { PageHeader } from "#/components/page-header";
+import { Avatar, AvatarFallback, AvatarImage } from "#/components/ui/avatar";
 import { Button } from "#/components/ui/button";
 import {
   Dialog,
@@ -79,6 +80,17 @@ function optionSummary(options: Record<string, unknown>) {
   if (!values.length) return "No options recorded";
 
   return values.map(([name, value]) => `${titleCase(name)}: ${String(value)}`).join(" · ");
+}
+
+function customerInitials(name: string) {
+  return (
+    name
+      .split(/\s+/)
+      .filter(Boolean)
+      .slice(0, 2)
+      .map((part) => part[0]?.toUpperCase())
+      .join("") || "C"
+  );
 }
 
 function addressLines(address: OrderAddressSnapshot) {
@@ -208,14 +220,20 @@ function LineItems({ items, currency }: { items: OrderItem[]; currency: string }
 function CustomerInformation({ order }: { order: OrderDetail }) {
   return (
     <Panel title="Customer & addresses" icon={<UserIcon className="size-4" />}>
-      <div className="border-b px-4 py-4">
-        <p className="text-sm font-semibold">{order.customerName}</p>
-        <a
-          className="mt-1 block text-sm text-primary hover:underline"
-          href={`mailto:${order.customerEmail}`}
-        >
-          {order.customerEmail}
-        </a>
+      <div className="flex items-center gap-3 border-b px-4 py-4">
+        <Avatar>
+          <AvatarImage src={order.customerImage ?? undefined} alt={order.customerName} />
+          <AvatarFallback>{customerInitials(order.customerName)}</AvatarFallback>
+        </Avatar>
+        <div className="min-w-0">
+          <p className="truncate text-sm font-semibold">{order.customerName}</p>
+          <a
+            className="mt-1 block truncate text-sm text-primary hover:underline"
+            href={`mailto:${order.customerEmail}`}
+          >
+            {order.customerEmail}
+          </a>
+        </div>
       </div>
       <AddressBlock title="Shipping address" address={order.shippingAddressSnapshot} />
       <AddressBlock title="Billing address" address={order.billingAddressSnapshot} />

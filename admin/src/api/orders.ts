@@ -8,6 +8,7 @@ export type Order = {
   orderNumber: number;
   customerName: string;
   customerEmail: string;
+  customerImage: string | null;
   status: string;
   paymentStatus: string;
   fulfillmentStatus: string;

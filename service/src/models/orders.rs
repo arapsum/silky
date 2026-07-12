@@ -28,6 +28,8 @@ pub struct Order {
     shipping_address_id: Option<i32>,
     customer_name: String,
     customer_email: String,
+    #[sqlx(default)]
+    customer_image: Option<String>,
     billing_address_snapshot: Json<JsonValue>,
     shipping_address_snapshot: Json<JsonValue>,
     status: String,
@@ -121,7 +123,8 @@ impl Order {
                 placed_at
               )
               VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14, $15, now())
-              RETURNING *",
+              RETURNING *,
+                  (SELECT image FROM users WHERE id = customer_id) AS customer_image",
         )
         .bind(customer_id)
         .bind(billing.as_ref().map(|value| value.0))
@@ -187,9 +190,10 @@ impl Order {
     /// Returns [`ModelError::EntityNotFound`] when no order exists for `pid`.
     pub async fn find_by_pid(db: &PgPool, pid: Uuid) -> ModelResult<Self> {
         sqlx::query_as::<_, Self>(
-            r"SELECT *
-              FROM orders
-              WHERE pid = $1",
+            r"SELECT o.*, u.image AS customer_image
+              FROM orders o
+              JOIN users u ON u.id = o.customer_id
+              WHERE o.pid = $1",
         )
         .bind(pid)
         .fetch_optional(db)
@@ -237,7 +241,7 @@ impl Order {
         .await?;
 
         let orders = sqlx::query_as::<_, Self>(
-            r"SELECT o.*
+            r"SELECT o.*, u.image AS customer_image
               FROM orders o
               LEFT JOIN users u ON u.id = o.customer_id
               WHERE ($3::TEXT IS NULL OR o.status = $3)
@@ -290,7 +294,7 @@ impl Order {
         customer_pid: Uuid,
     ) -> ModelResult<OrderWithItems> {
         let order = sqlx::query_as::<_, Self>(
-            r"SELECT o.*
+            r"SELECT o.*, u.image AS customer_image
               FROM orders o
               JOIN users u ON u.id = o.customer_id
               WHERE o.pid = $1 AND u.pid = $2",
@@ -311,14 +315,16 @@ impl Order {
     /// database error when a status constraint is violated.
     pub async fn update(db: &PgPool, pid: Uuid, params: &UpdateOrder) -> ModelResult<Self> {
         sqlx::query_as::<_, Self>(
-            r"UPDATE orders
+            r"UPDATE orders o
               SET status = COALESCE($2, status),
                   payment_status = COALESCE($3, payment_status),
                   fulfillment_status = COALESCE($4, fulfillment_status),
                   staff_note = COALESCE($5, staff_note),
                   updated_at = now()
-              WHERE pid = $1
-              RETURNING *",
+              FROM users u
+              WHERE o.pid = $1
+                AND u.id = o.customer_id
+              RETURNING o.*, u.image AS customer_image",
         )
         .bind(pid)
         .bind(params.status())

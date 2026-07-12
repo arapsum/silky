@@ -107,12 +107,12 @@ async fn can_fetch_order(#[case] test_name: &str, #[case] pid: &str) {
 
 #[rstest]
 #[case("customer_can_list_own_orders", "john.doe@acme.com", 2, None)]
-// #[case(
-//     "customer_cannot_override_order_scope",
-//     "john.doe@acme.com",
-//     2,
-//     Some("/orders?customerPid=e761d8e3-fc3e-4a2e-a6c9-7c7a4f2130e8")
-// )]
+#[case(
+    "customer_cannot_override_order_scope",
+    "john.doe@acme.com",
+    2,
+    Some("/orders?customerPid=e761d8e3-fc3e-4a2e-a6c9-7c7a4f2130e8")
+)]
 #[case(
     "customer_with_no_orders_gets_empty_list",
     "jane.smith@globex.com",

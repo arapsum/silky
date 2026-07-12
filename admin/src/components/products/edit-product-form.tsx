@@ -137,7 +137,11 @@ function ProductPictureRow({
   return (
     <div className="grid gap-3 border bg-background p-3 md:grid-cols-[5rem_minmax(0,1fr)_7rem_2.5rem] md:items-center">
       <div className="size-16 overflow-hidden bg-muted">
-        <img src={picture.imageLink} alt="" className="h-full w-full object-cover" />
+        <img
+          src={picture.imageLink}
+          alt=""
+          className="h-full w-full max-h-full max-w-full object-cover"
+        />
       </div>
       <p className="break-all text-sm text-muted-foreground">{picture.imageLink}</p>
       <Input
@@ -203,7 +207,11 @@ function VariantPictureRow({
   return (
     <div className="grid gap-3 border bg-background p-3 md:grid-cols-[5rem_minmax(0,1fr)_7rem_2.5rem] md:items-center">
       <div className="size-16 overflow-hidden bg-muted">
-        <img src={picture.imageLink} alt="" className="h-full w-full object-cover" />
+        <img
+          src={picture.imageLink}
+          alt=""
+          className="h-full w-full max-h-full max-w-full object-cover"
+        />
       </div>
       <p className="break-all text-sm text-muted-foreground">{picture.imageLink}</p>
       <Input

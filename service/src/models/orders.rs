@@ -1,3 +1,5 @@
+use std::collections::{HashMap, HashSet};
+
 use chrono::{DateTime, FixedOffset};
 use rust_decimal::Decimal;
 use serde::{Deserialize, Serialize};
@@ -7,7 +9,12 @@ use uuid::Uuid;
 
 use crate::schemas::NewOrder;
 
-use super::{ModelError, ModelResult, Seedable};
+use super::{
+    ModelError, ModelResult, Seedable,
+    order_items::{CheckoutItem, OrderItem},
+};
+
+const ORDER_CURRENCY: &str = "USD";
 
 #[derive(Debug, Clone, Deserialize, Serialize, FromRow)]
 #[serde(rename_all = "camelCase")]
@@ -42,18 +49,21 @@ pub struct Order {
 }
 
 impl Order {
-    /// Creates a pending order for an existing customer.
+    /// Checks out an order and reserves its inventory in one transaction.
     ///
     /// Optional billing and shipping address references must belong to the
     /// customer. Their values are copied into JSON snapshots so later address
-    /// edits do not change the order history. The amount breakdown is checked
-    /// before insertion and the order is timestamped as placed.
+    /// edits do not change the order history. Product prices and totals are
+    /// loaded and calculated on the server. Every item and its corresponding
+    /// stock deduction is committed together with the order.
     ///
     /// # Errors
-    /// Returns an invalid-reference error for missing customers or addresses,
-    /// an invalid-input error for inconsistent totals, or a database error.
+    /// Returns an invalid-reference error for missing customers, addresses, or
+    /// variants; an invalid-input error for empty, duplicate, or unavailable
+    /// items; or a database error when checkout cannot be committed.
+    #[allow(clippy::too_many_lines)]
     pub async fn create(db: &PgPool, params: &NewOrder) -> ModelResult<Self> {
-        validate_totals(params)?;
+        validate_checkout_items(params)?;
         let mut txn = db.begin().await?;
         let (customer_id, customer_name, customer_email) =
             sqlx::query_as::<_, (i32, String, String)>(
@@ -65,12 +75,25 @@ impl Order {
             .bind(params.customer_pid())
             .fetch_optional(&mut *txn)
             .await?
-            .ok_or_else(|| ModelError::InvalidReference("Customer does not exist.".to_string()))?;
+            .ok_or(ModelError::CustomerNotFound)?;
 
-        let billing =
-            load_customer_address(&mut txn, customer_id, params.billing_address_pid()).await?;
-        let shipping =
-            load_customer_address(&mut txn, customer_id, params.shipping_address_pid()).await?;
+        let billing = load_customer_address(
+            &mut txn,
+            customer_id,
+            params.billing_address_pid(),
+            "billingAddressPid",
+        )
+        .await?;
+        let shipping = load_customer_address(
+            &mut txn,
+            customer_id,
+            params.shipping_address_pid(),
+            "shippingAddressPid",
+        )
+        .await?;
+
+        let mut variants = load_checkout_variants(&mut txn, params).await?;
+        let subtotal = calculate_subtotal(&variants, params)?;
         let order = sqlx::query_as::<_, Self>(
             r"INSERT INTO orders (
                 customer_id,
@@ -104,16 +127,49 @@ impl Order {
         ))
         .bind(customer_name)
         .bind(customer_email)
-        .bind(params.currency().to_uppercase())
-        .bind(params.subtotal())
-        .bind(params.discount_total())
-        .bind(params.shipping_total())
-        .bind(params.tax_total())
-        .bind(params.grand_total())
+        .bind(ORDER_CURRENCY)
+        .bind(subtotal)
+        .bind(Decimal::ZERO)
+        .bind(Decimal::ZERO)
+        .bind(Decimal::ZERO)
+        .bind(subtotal)
         .bind(params.customer_note().map(str::trim))
         .bind(params.staff_note().map(str::trim))
         .fetch_one(&mut *txn)
         .await?;
+
+        for requested_item in params.items() {
+            let variant = variants
+                .remove(&requested_item.variant_pid())
+                .ok_or(ModelError::ProductVariantUnavailable)?;
+            reserve_inventory(
+                &mut txn,
+                variant.variant_id,
+                variant.variant_pid,
+                requested_item.quantity(),
+                variant.stock_quantity,
+            )
+            .await?;
+            let line_total = variant.price * Decimal::from(requested_item.quantity());
+            OrderItem::insert(
+                &mut txn,
+                CheckoutItem {
+                    order_id: order.id,
+                    product_id: variant.product_id,
+                    variant_id: variant.variant_id,
+                    product_pid: variant.product_pid,
+                    variant_pid: variant.variant_pid,
+                    product_name: variant.product_name,
+                    sku: variant.sku,
+                    selected_options: variant.selected_options,
+                    quantity: requested_item.quantity(),
+                    unit_price: variant.price,
+                    line_total,
+                },
+            )
+            .await?;
+        }
+
         txn.commit().await?;
         Ok(order)
     }
@@ -283,25 +339,120 @@ impl Seedable for Order {
     }
 }
 
-fn validate_totals(params: &NewOrder) -> ModelResult<()> {
-    let amounts = [
-        params.subtotal(),
-        params.discount_total(),
-        params.shipping_total(),
-        params.tax_total(),
-        params.grand_total(),
-    ];
-    if amounts.iter().any(Decimal::is_sign_negative) {
-        return Err(ModelError::InvalidInput(
-            "Order amounts cannot be negative.".to_string(),
-        ));
+fn validate_checkout_items(params: &NewOrder) -> ModelResult<()> {
+    if params.items().is_empty() {
+        return Err(ModelError::OrderHasNoItems);
     }
-    let expected =
-        params.subtotal() - params.discount_total() + params.shipping_total() + params.tax_total();
-    if expected != params.grand_total() {
-        return Err(ModelError::InvalidInput(
-            "Order total does not match its breakdown.".to_string(),
-        ));
+
+    let mut variants = HashSet::with_capacity(params.items().len());
+    for item in params.items() {
+        if item.quantity() < 1 {
+            return Err(ModelError::InvalidOrderItemQuantity);
+        }
+        if !variants.insert(item.variant_pid()) {
+            return Err(ModelError::DuplicateOrderItem);
+        }
+    }
+
+    Ok(())
+}
+
+async fn load_checkout_variants(
+    txn: &mut sqlx::Transaction<'_, sqlx::Postgres>,
+    params: &NewOrder,
+) -> ModelResult<HashMap<Uuid, VariantSnapshot>> {
+    let variant_pids = params
+        .items()
+        .iter()
+        .map(crate::schemas::NewOrderItem::variant_pid)
+        .collect::<Vec<_>>();
+    let variants = sqlx::query_as::<_, VariantSnapshot>(
+        r"SELECT v.id AS variant_id,
+                v.pid AS variant_pid,
+                v.stock_quantity,
+                p.id AS product_id,
+                p.pid AS product_pid,
+                p.name AS product_name,
+                v.sku,
+                v.price,
+                COALESCE(
+                    (
+                        SELECT jsonb_object_agg(a.name, av.value)
+                        FROM variant_attribute_values vav
+                        JOIN attributes a ON a.id = vav.attribute_id
+                        JOIN attribute_values av ON av.id = vav.attribute_value_id
+                        WHERE vav.variant_id = v.id
+                    ),
+                    '{}'::jsonb
+                ) AS selected_options
+          FROM product_variants v
+          JOIN products p ON p.id = v.product_id
+          WHERE v.pid = ANY($1)
+            AND v.deleted_at IS NULL
+            AND p.deleted_at IS NULL
+          ORDER BY v.id
+          FOR UPDATE OF v",
+    )
+    .bind(&variant_pids)
+    .fetch_all(&mut **txn)
+    .await?;
+
+    if variants.len() != variant_pids.len() {
+        return Err(ModelError::ProductVariantUnavailable);
+    }
+
+    Ok(variants
+        .into_iter()
+        .map(|variant| (variant.variant_pid, variant))
+        .collect())
+}
+
+fn calculate_subtotal(
+    variants: &HashMap<Uuid, VariantSnapshot>,
+    params: &NewOrder,
+) -> ModelResult<Decimal> {
+    params
+        .items()
+        .iter()
+        .try_fold(Decimal::ZERO, |total, item| {
+            let variant = variants
+                .get(&item.variant_pid())
+                .ok_or(ModelError::ProductVariantUnavailable)?;
+            if variant.stock_quantity < item.quantity() {
+                return Err(ModelError::InsufficientStock {
+                    variant_pid: item.variant_pid(),
+                    requested: item.quantity(),
+                    available: variant.stock_quantity,
+                });
+            }
+            Ok(total + variant.price * Decimal::from(item.quantity()))
+        })
+}
+
+async fn reserve_inventory(
+    txn: &mut sqlx::Transaction<'_, sqlx::Postgres>,
+    variant_row_id: i32,
+    public_variant_id: Uuid,
+    quantity: i32,
+    available: i32,
+) -> ModelResult<()> {
+    let result = sqlx::query(
+        r"UPDATE product_variants
+          SET stock_quantity = stock_quantity - $1
+          WHERE id = $2
+            AND stock_quantity >= $1
+            AND deleted_at IS NULL",
+    )
+    .bind(quantity)
+    .bind(variant_row_id)
+    .execute(&mut **txn)
+    .await?;
+    if result.rows_affected() == 0 {
+        return Err(ModelError::InsufficientStock {
+            variant_pid: public_variant_id,
+            requested: quantity,
+            available,
+        });
     }
     Ok(())
 }
@@ -310,6 +461,7 @@ async fn load_customer_address(
     txn: &mut sqlx::Transaction<'_, sqlx::Postgres>,
     customer_id: i32,
     pid: Option<Uuid>,
+    field: &'static str,
 ) -> ModelResult<Option<(i32, JsonValue)>> {
     let Some(pid) = pid else {
         return Ok(None);
@@ -341,11 +493,20 @@ async fn load_customer_address(
     .fetch_optional(&mut **txn)
     .await?
     .map_or_else(
-        || {
-            Err(ModelError::InvalidReference(
-                "Customer address does not exist.".to_string(),
-            ))
-        },
+        || Err(ModelError::CustomerAddressNotFound { field }),
         |value| Ok(Some(value)),
     )
+}
+
+#[derive(Debug, FromRow)]
+struct VariantSnapshot {
+    variant_id: i32,
+    variant_pid: Uuid,
+    stock_quantity: i32,
+    product_id: i32,
+    product_pid: Uuid,
+    product_name: String,
+    sku: String,
+    price: Decimal,
+    selected_options: Json<JsonValue>,
 }

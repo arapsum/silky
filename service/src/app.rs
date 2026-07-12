@@ -19,7 +19,7 @@ use crate::{
     controllers,
     middlewares::trace,
     models::{
-        Address, Attribute, AttributeValue, Category, CategoryAttributeLink, Order, OrderDetail,
+        Address, Attribute, AttributeValue, Category, CategoryAttributeLink, Order, OrderItem,
         Permission, Picture, Product, ProductOption, ProductVariant, Role, RolePermission, User,
         UserRole, VariantAttributeValue,
     },
@@ -203,7 +203,7 @@ impl App {
         UserRole::seed_data(db, "userRoles.json").await?;
         Address::seed_data(db, "addresses.json").await?;
         Order::seed_data(db, "orders.json").await?;
-        OrderDetail::seed_data(db, "orderDetails.json").await?;
+        OrderItem::seed_data(db, "orderItems.json").await?;
 
         Ok(())
     }

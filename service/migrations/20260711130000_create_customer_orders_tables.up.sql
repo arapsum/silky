@@ -95,7 +95,7 @@ ON orders (payment_status);
 CREATE INDEX orders_fulfillment_status_idx
 ON orders (fulfillment_status);
 
-CREATE TABLE order_details (
+CREATE TABLE order_items (
     id SERIAL PRIMARY KEY,
     pid UUID NOT NULL UNIQUE DEFAULT gen_random_uuid(),
 
@@ -124,16 +124,16 @@ CREATE TABLE order_details (
     updated_at TIMESTAMPTZ NOT NULL DEFAULT now()
 );
 
-CREATE TRIGGER order_details_updated_at_trigger
-BEFORE UPDATE ON order_details
+CREATE TRIGGER order_items_updated_at_trigger
+BEFORE UPDATE ON order_items
 FOR EACH ROW
 EXECUTE FUNCTION set_updated_at();
 
-CREATE INDEX order_details_order_idx
-ON order_details (order_id, id);
-CREATE INDEX order_details_product_idx
-ON order_details (product_id)
+CREATE INDEX order_items_order_idx
+ON order_items (order_id, id);
+CREATE INDEX order_items_product_idx
+ON order_items (product_id)
 WHERE product_id IS NOT NULL;
-CREATE INDEX order_details_variant_idx
-ON order_details (variant_id)
+CREATE INDEX order_items_variant_idx
+ON order_items (variant_id)
 WHERE variant_id IS NOT NULL;

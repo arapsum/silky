@@ -2,7 +2,7 @@ pub mod addresses;
 pub mod categories;
 pub mod error;
 pub mod media_assets;
-pub mod order_details;
+pub mod order_items;
 pub mod orders;
 pub mod permissions;
 pub mod products;
@@ -21,7 +21,7 @@ pub use self::{
     categories::{Category, CategoryAttributeLink},
     error::{ModelError, ModelResult},
     media_assets::{FinalizeMediaAsset, MediaAsset},
-    order_details::OrderDetail,
+    order_items::OrderItem,
     orders::Order,
     permissions::Permission,
     products::{

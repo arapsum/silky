@@ -250,7 +250,7 @@ export function OrdersTable() {
       />
 
       <section
-        className="mb-5 grid border-y sm:grid-cols-2 xl:grid-cols-4"
+        className="mb-5 grid rounded-lg border sm:grid-cols-2 xl:grid-cols-4"
         aria-label="Order summary"
       >
         <div className="border-b p-4 sm:border-r xl:border-b-0">
@@ -283,7 +283,7 @@ export function OrdersTable() {
         </div>
       </section>
 
-      <div className="border bg-card">
+      <div className="rounded-lg border bg-card">
         <div className="grid gap-3 border-b p-3 xl:grid-cols-[minmax(18rem,1fr)_auto_auto_auto]">
           <form onSubmit={applySearch} className="flex min-w-0">
             <div className="relative min-w-0 flex-1">

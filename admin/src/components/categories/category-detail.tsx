@@ -62,7 +62,7 @@ function OverviewField({
 
 function Metric({ icon, label, value }: { icon: React.ReactNode; label: string; value: string }) {
   return (
-    <div className="flex min-h-24 items-center gap-3 border bg-card p-4">
+    <div className="flex min-h-24 items-center gap-3 rounded-lg border bg-card p-4">
       <span className="flex size-10 shrink-0 items-center justify-center bg-primary/10 text-primary">
         {icon}
       </span>
@@ -101,7 +101,7 @@ function CategoryDetailSkeleton() {
         <Skeleton className="h-9 w-56 rounded-lg" />
         <Skeleton className="h-9 w-56 rounded-lg" />
       </div>
-      <div className="grid border lg:grid-cols-[minmax(18rem,.72fr)_minmax(0,1.28fr)]">
+      <div className="grid rounded-lg border lg:grid-cols-[minmax(18rem,.72fr)_minmax(0,1.28fr)]">
         <Skeleton className="aspect-[4/3] w-full rounded-lg lg:aspect-auto" />
         <div className="grid gap-5 p-5 sm:grid-cols-2">
           {Array.from({ length: 6 }).map((_, index) => (
@@ -187,7 +187,7 @@ export default function CategoryDetailPage({ pid }: { pid: string }) {
         }
       />
 
-      <section className="border bg-card">
+      <section className="rounded-lg border bg-card">
         <div
           className={cn(
             "grid",
@@ -282,7 +282,7 @@ export default function CategoryDetailPage({ pid }: { pid: string }) {
       </div>
 
       <div className="mt-5 grid items-stretch gap-5 xl:grid-cols-[minmax(0,1.35fr)_minmax(20rem,.65fr)]">
-        <section className="border bg-card">
+        <section className="rounded-lg border bg-card">
           <SectionHeader
             title="Top products in this category"
             icon={<PackageIcon className="size-4" />}
@@ -326,7 +326,7 @@ export default function CategoryDetailPage({ pid }: { pid: string }) {
           )}
         </section>
 
-        <section className="border bg-card">
+        <section className="rounded-lg border bg-card">
           <SectionHeader
             title={`Child categories (${detail.children.length})`}
             icon={<StackIcon className="size-4" />}
@@ -383,7 +383,7 @@ export default function CategoryDetailPage({ pid }: { pid: string }) {
         </section>
       </div>
 
-      <section className="mt-5 border bg-card">
+      <section className="mt-5 rounded-lg border bg-card">
         <div className="grid lg:grid-cols-[minmax(0,1.35fr)_minmax(17rem,.65fr)]">
           <div>
             <SectionHeader title="Category attributes" icon={<TagIcon className="size-4" />} />

@@ -199,7 +199,7 @@ function ProductHero({ product }: { product: ProductDetail }) {
         : `${money(String(lowestPrice))} to ${money(String(highestPrice))}`;
 
   return (
-    <section className="border bg-card p-4 sm:p-5">
+    <section className="rounded-lg border bg-card p-4 sm:p-5">
       <div className="grid gap-7 lg:grid-cols-[minmax(20rem,.92fr)_minmax(0,1.08fr)] lg:gap-10">
         <ProductGallery key={product.pid} product={product} pictures={images} />
 
@@ -267,7 +267,7 @@ function Panel({
   className?: string;
 }) {
   return (
-    <section className={cn("flex h-full flex-col border bg-card", className)}>
+    <section className={cn("flex h-full flex-col rounded-lg border bg-card", className)}>
       <div className="flex items-center gap-2 border-b px-4 py-3.5">
         <span className="text-muted-foreground">{icon}</span>
         <h2 className="text-sm font-semibold">{title}</h2>
@@ -403,7 +403,7 @@ function ProductDetailSkeleton() {
         <Skeleton className="h-9 w-72 rounded-lg" />
         <Skeleton className="h-9 w-36 rounded-lg" />
       </div>
-      <div className="grid gap-8 border p-5 lg:grid-cols-2">
+      <div className="grid gap-8 rounded-lg border p-5 lg:grid-cols-2">
         <Skeleton className="aspect-square w-full rounded-lg" />
         <div className="grid content-center gap-5">
           <Skeleton className="h-5 w-3/5 rounded-lg" />
@@ -550,7 +550,7 @@ export default function ProductDetailPage({ pid }: { pid: string }) {
 
       <ProductHero product={product} />
 
-      <section className="mt-5 border bg-card">
+      <section className="mt-5 rounded-lg border bg-card">
         <div className="flex flex-col gap-3 border-b px-4 py-4 sm:flex-row sm:items-center sm:justify-between">
           <div>
             <h2 className="text-base font-semibold">

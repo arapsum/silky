@@ -119,7 +119,7 @@ export function Navbar() {
 
           <button
             type="button"
-            className="relative flex h-9 min-w-0 flex-1 items-center border bg-muted/30 px-9 text-left text-sm text-muted-foreground outline-none transition-colors hover:bg-muted focus-visible:border-primary focus-visible:ring-3 focus-visible:ring-primary/15 md:max-w-md"
+            className="relative flex h-9 min-w-0 flex-1 items-center rounded-lg border bg-muted/30 px-9 text-left text-sm text-muted-foreground outline-none transition-colors hover:bg-muted focus-visible:border-primary focus-visible:ring-3 focus-visible:ring-primary/15 md:max-w-md"
             onClick={() => setIsCommandOpen(true)}
           >
             <MagnifyingGlassIcon
@@ -127,7 +127,7 @@ export function Navbar() {
               aria-hidden
             />
             <span className="truncate">Type to search...</span>
-            <kbd className="absolute right-2 top-1/2 hidden h-5 -translate-y-1/2 items-center border bg-background px-1.5 font-mono text-[10px] font-medium text-muted-foreground sm:flex">
+            <kbd className="absolute right-2 top-1/2 hidden h-5 -translate-y-1/2 items-center rounded-md border bg-background px-1.5 font-mono text-[10px] font-medium text-muted-foreground sm:flex">
               Ctrl K
             </kbd>
           </button>

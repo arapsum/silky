@@ -2,30 +2,28 @@
 
 import type { ColumnDef } from "@tanstack/react-table";
 import {
-  CaretDoubleLeftIcon,
-  CaretDoubleRightIcon,
   CaretLeftIcon,
   CaretRightIcon,
   EyeIcon,
-  GridFourIcon,
   MagnifyingGlassIcon,
   PackageIcon,
   PlusIcon,
   TrashIcon,
+  XIcon,
 } from "@phosphor-icons/react";
-import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
+import { keepPreviousData, useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { Link } from "@tanstack/react-router";
-import { useMemo, useState } from "react";
+import { useMemo, useState, type FormEvent } from "react";
 import { toast } from "sonner";
 
 import {
   deleteProduct,
   listProducts,
   productsQueryKey,
-  type Pagination,
   type ProductListItem,
   type ProductListParams,
 } from "#/api/products.ts";
+import { SummaryGrid } from "#/components/catalogue/summary-grid";
 import { titleCase } from "#/components/catalogue/string-utils";
 import { DataTable } from "#/components/data-table";
 import { PageHeader } from "#/components/page-header";
@@ -51,7 +49,7 @@ import {
 } from "#/components/ui/select";
 import { cn } from "#/lib/utils";
 
-const rowOptions = [10, 20, 40] as const;
+const PAGE_SIZE = 20;
 const stockOptions = [
   { label: "All stock", value: "all" },
   { label: "In stock", value: "inStock" },
@@ -65,15 +63,6 @@ function money(value?: string) {
     style: "currency",
     currency: "USD",
   }).format(Number(value));
-}
-
-function rangeLabel(pagination?: Pagination) {
-  if (!pagination || pagination.totalItems === 0) return "No products";
-
-  const start = (pagination.page - 1) * pagination.limit + 1;
-  const end = Math.min(pagination.page * pagination.limit, pagination.totalItems);
-
-  return `${start}-${end} of ${pagination.totalItems} products`;
 }
 
 function productColumns({
@@ -231,21 +220,22 @@ function productColumns({
 
 export default function ProductCatalogue() {
   const queryClient = useQueryClient();
+  const [searchInput, setSearchInput] = useState("");
   const [search, setSearch] = useState("");
   const [stockStatus, setStockStatus] = useState<(typeof stockOptions)[number]["value"]>("all");
   const [page, setPage] = useState(1);
-  const [limit, setLimit] = useState<(typeof rowOptions)[number]>(10);
 
   const queryParams: ProductListParams = {
     page,
-    limit,
-    ...(search.trim() ? { search: search.trim() } : {}),
+    limit: PAGE_SIZE,
+    ...(search ? { search } : {}),
     ...(stockStatus !== "all" ? { stockStatus } : {}),
   };
 
   const productsQuery = useQuery({
     queryKey: [...productsQueryKey, queryParams],
     queryFn: () => listProducts(queryParams),
+    placeholderData: keepPreviousData,
   });
 
   const deleteMutation = useMutation({
@@ -275,16 +265,11 @@ export default function ProductCatalogue() {
   );
   const canGoPrevious = Boolean(pagination?.hasPrev);
   const canGoNext = Boolean(pagination?.hasNext);
+  const activeFilters = Boolean(search || stockStatus !== "all");
 
-  function onSearch(value: string) {
-    setSearch(value);
-    setPage(1);
-  }
-
-  function onLimitChange(value: string | null) {
-    if (!value) return;
-
-    setLimit(Number(value) as (typeof rowOptions)[number]);
+  function applySearch(event: FormEvent<HTMLFormElement>) {
+    event.preventDefault();
+    setSearch(searchInput.trim());
     setPage(1);
   }
 
@@ -295,134 +280,129 @@ export default function ProductCatalogue() {
     setPage(1);
   }
 
+  function resetFilters() {
+    setSearchInput("");
+    setSearch("");
+    setStockStatus("all");
+    setPage(1);
+  }
+
   return (
     <div className="w-full pb-10">
       <PageHeader
         title="Products"
         subtitle="Manage product catalogue rows, stock, pricing, and variants."
         actions={
-          <Button render={<Link to="/products/create" />}>
+          <Button className="rounded-lg" render={<Link to="/products/create" />}>
             <PlusIcon className="size-4" />
             Add Product
           </Button>
         }
       />
 
-      <div className="mb-4 flex flex-col gap-3 lg:flex-row lg:items-center lg:justify-between">
-        <div className="relative w-full lg:max-w-96">
-          <MagnifyingGlassIcon
-            className="pointer-events-none absolute left-3 top-1/2 size-4 -translate-y-1/2 text-muted-foreground"
-            aria-hidden
-          />
-          <Input
-            value={search}
-            onChange={(event) => onSearch(event.target.value)}
-            placeholder="Search products, categories, or SKU..."
-            className="rounded-lg pl-9"
-          />
-        </div>
-
-        <div className="flex items-center gap-3">
-          <Select value={stockStatus} onValueChange={onStockStatusChange}>
-            <SelectTrigger size="sm" className="w-36 rounded-lg">
-              <SelectValue />
-            </SelectTrigger>
-            <SelectContent>
-              {stockOptions.map((option) => (
-                <SelectItem key={option.value} value={option.value}>
-                  {option.label}
-                </SelectItem>
-              ))}
-            </SelectContent>
-          </Select>
-
-          <Button type="button" variant="outline" size="icon" aria-label="Grid view">
-            <GridFourIcon className="size-5" />
-          </Button>
-        </div>
-      </div>
-
-      <DataTable
-        columns={columns}
-        data={products}
-        getRowId={(product) => product.pid}
-        isLoading={productsQuery.isLoading}
-        isError={productsQuery.isError}
-        errorTitle="Products could not be loaded"
-        onRetry={() => productsQuery.refetch()}
-        emptyTitle={search ? "No matching products" : "No products found"}
-        emptyDescription={
-          search
-            ? "Try a different product name, category, or SKU."
-            : "Create a product to start building the catalogue."
-        }
+      <SummaryGrid
+        ariaLabel="Product summary"
+        items={[
+          {
+            label: activeFilters ? "Matching products" : "Total products",
+            value: pagination?.totalItems ?? 0,
+          },
+          { label: "On this page", value: products.length },
+          {
+            label: "In stock",
+            value: products.filter((product) => product.totalStock > 0).length,
+          },
+          {
+            label: "Out of stock",
+            value: products.filter((product) => product.totalStock === 0).length,
+          },
+        ]}
       />
 
-      <div className="mt-4 flex flex-col gap-3 text-sm text-muted-foreground lg:flex-row lg:items-center lg:justify-between">
-        <div className="flex items-center gap-3">
-          <span>Rows per page</span>
-          <Select value={String(limit)} onValueChange={onLimitChange}>
-            <SelectTrigger size="sm" className="w-20 rounded-lg">
-              <SelectValue />
-            </SelectTrigger>
-            <SelectContent>
-              {rowOptions.map((option) => (
-                <SelectItem key={option} value={String(option)}>
-                  {option}
-                </SelectItem>
-              ))}
-            </SelectContent>
-          </Select>
-          <span className="hidden sm:inline">{rangeLabel(pagination)}</span>
-        </div>
-
-        <div className="flex items-center gap-3 lg:justify-end">
-          <span>
-            Page {pagination?.page ?? page} of {pagination?.totalPages || 1}
-          </span>
-          <div className="flex gap-2">
-            <Button
-              type="button"
-              variant="outline"
-              size="icon-sm"
-              disabled={!canGoPrevious}
-              onClick={() => setPage(1)}
-              aria-label="First page"
-            >
-              <CaretDoubleLeftIcon className="size-4" />
-            </Button>
-            <Button
-              type="button"
-              variant="outline"
-              size="icon-sm"
-              disabled={!canGoPrevious}
-              onClick={() => setPage((current) => Math.max(1, current - 1))}
-              aria-label="Previous page"
-            >
-              <CaretLeftIcon className="size-4" />
-            </Button>
-            <Button
-              type="button"
-              variant="outline"
-              size="icon-sm"
-              disabled={!canGoNext}
-              onClick={() => setPage((current) => current + 1)}
-              aria-label="Next page"
-            >
-              <CaretRightIcon className="size-4" />
-            </Button>
-            <Button
-              type="button"
-              variant="outline"
-              size="icon-sm"
-              disabled={!canGoNext || !pagination}
-              onClick={() => setPage(pagination?.totalPages ?? page)}
-              aria-label="Last page"
-            >
-              <CaretDoubleRightIcon className="size-4" />
-            </Button>
+      <div className="rounded-lg border bg-card">
+        <div className="flex flex-col gap-3 border-b p-3 sm:flex-row sm:items-center sm:justify-between">
+          <form onSubmit={applySearch} className="w-full min-w-0 sm:w-96">
+            <div className="relative min-w-0">
+              <MagnifyingGlassIcon
+                className="pointer-events-none absolute left-3 top-1/2 size-4 -translate-y-1/2 text-muted-foreground"
+                aria-hidden
+              />
+              <Input
+                value={searchInput}
+                onChange={(event) => setSearchInput(event.target.value)}
+                placeholder="Search products, categories, or SKU..."
+                className="rounded-lg pl-9"
+              />
+            </div>
+          </form>
+          <div className="flex flex-wrap items-center gap-3">
+            <Select value={stockStatus} onValueChange={onStockStatusChange}>
+              <SelectTrigger className="w-full rounded-lg bg-background sm:w-40">
+                <SelectValue />
+              </SelectTrigger>
+              <SelectContent className="rounded-lg">
+                {stockOptions.map((option) => (
+                  <SelectItem key={option.value} value={option.value}>
+                    {option.label}
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+            {activeFilters && (
+              <Button type="button" variant="ghost" className="rounded-lg" onClick={resetFilters}>
+                <XIcon /> Clear
+              </Button>
+            )}
           </div>
         </div>
+
+        <DataTable
+          columns={columns}
+          data={products}
+          getRowId={(product) => product.pid}
+          isLoading={productsQuery.isLoading}
+          isError={productsQuery.isError}
+          errorTitle="Products could not be loaded"
+          onRetry={() => productsQuery.refetch()}
+          emptyTitle={activeFilters ? "No matching products" : "No products found"}
+          emptyDescription={
+            activeFilters
+              ? "Adjust or clear the current filters."
+              : "Create a product to start building the catalogue."
+          }
+        />
+
+        {!productsQuery.isError && !productsQuery.isLoading && pagination && (
+          <div className="flex flex-col gap-3 border-t p-3 text-sm text-muted-foreground sm:flex-row sm:items-center sm:justify-between">
+            <p>
+              Page {pagination.page} of {Math.max(pagination.totalPages, 1)} ·{" "}
+              {pagination.totalItems}
+              {" products"}
+            </p>
+            <div className="flex items-center gap-2">
+              <Button
+                type="button"
+                variant="outline"
+                size="sm"
+                className="rounded-lg"
+                disabled={!canGoPrevious || productsQuery.isFetching}
+                onClick={() => setPage((current) => current - 1)}
+              >
+                <CaretLeftIcon /> Previous
+              </Button>
+              <Button
+                type="button"
+                variant="outline"
+                size="sm"
+                className="rounded-lg"
+                disabled={!canGoNext || productsQuery.isFetching}
+                onClick={() => setPage((current) => current + 1)}
+              >
+                Next <CaretRightIcon />
+              </Button>
+            </div>
+          </div>
+        )}
       </div>
     </div>
   );

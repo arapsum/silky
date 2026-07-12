@@ -77,11 +77,7 @@ impl OrderItem {
         .bind(item.line_total)
         .fetch_optional(&mut **txn)
         .await?
-        .ok_or_else(|| {
-            ModelError::InvalidInput(
-                "Order items can only be added to pending orders.".to_string(),
-            )
-        })
+        .ok_or(ModelError::OrderNotEditable)
     }
 
     /// Lists order lines by order public ID in insertion order.

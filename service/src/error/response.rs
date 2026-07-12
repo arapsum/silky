@@ -69,6 +69,9 @@ impl Error {
 
     #[must_use]
     pub fn response(&self) -> Response {
+        if let Self::Model(model_error) = self {
+            return model_error.response();
+        }
         let (status, message) = self.response_body();
         (status, Json(json!({ "error": message }))).into_response()
     }

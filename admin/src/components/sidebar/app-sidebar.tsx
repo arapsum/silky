@@ -163,7 +163,7 @@ const dashboardRoutes: Route[] = [
     subs: [
       {
         title: "Orders",
-        link: "#",
+        link: "/orders",
         icon: <ShoppingBagIcon className="size-4" />,
       },
       {
@@ -385,7 +385,7 @@ function UserAccountMenu({ isCollapsed }: { isCollapsed: boolean }) {
               type="button"
               variant="ghost"
               className={cn(
-                "h-12 w-full justify-start gap-3 rounded-none px-2",
+                "h-12 w-full justify-start gap-3 rounded-lg px-2",
                 isCollapsed && "size-10 justify-center px-0",
               )}
             />
@@ -401,7 +401,7 @@ function UserAccountMenu({ isCollapsed }: { isCollapsed: boolean }) {
           )}
         </DropdownMenuTrigger>
 
-        <DropdownMenuContent align="end" side="right" sideOffset={8} className="w-64 rounded-none">
+        <DropdownMenuContent align="end" side="right" sideOffset={8} className="w-64 rounded-lg">
           <DropdownMenuLabel>
             <div className="flex items-center gap-3">
               <AccountAvatar user={currentUser} fallback={fallback} size="lg" />
@@ -418,7 +418,7 @@ function UserAccountMenu({ isCollapsed }: { isCollapsed: boolean }) {
 
           <DropdownMenuItem
             variant="destructive"
-            className="rounded-none"
+            className="rounded-lg"
             onClick={() => setIsLogoutDialogOpen(true)}
           >
             <SignOutIcon className="size-4" />
@@ -427,7 +427,7 @@ function UserAccountMenu({ isCollapsed }: { isCollapsed: boolean }) {
         </DropdownMenuContent>
       </DropdownMenu>
 
-      <AlertDialogContent className="rounded-none">
+      <AlertDialogContent className="rounded-lg">
         <AlertDialogHeader>
           <AlertDialogTitle>Sign out?</AlertDialogTitle>
           <AlertDialogDescription>
@@ -438,12 +438,12 @@ function UserAccountMenu({ isCollapsed }: { isCollapsed: boolean }) {
         </AlertDialogHeader>
 
         <AlertDialogFooter>
-          <AlertDialogCancel className="rounded-none" disabled={logoutMutation.isPending}>
+          <AlertDialogCancel className="rounded-lg" disabled={logoutMutation.isPending}>
             Cancel
           </AlertDialogCancel>
           <AlertDialogAction
             variant="destructive"
-            className="rounded-none"
+            className="rounded-lg"
             disabled={logoutMutation.isPending}
             onClick={handleConfirmLogout}
           >

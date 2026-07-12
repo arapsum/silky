@@ -102,7 +102,7 @@ function CategoryDetailSkeleton() {
         <Skeleton className="h-9 w-56 rounded-lg" />
       </div>
       <div className="grid rounded-lg border lg:grid-cols-[minmax(18rem,.72fr)_minmax(0,1.28fr)]">
-        <Skeleton className="aspect-[4/3] w-full rounded-lg lg:aspect-auto" />
+        <Skeleton className="h-80 w-full rounded-lg lg:h-96" />
         <div className="grid gap-5 p-5 sm:grid-cols-2">
           {Array.from({ length: 6 }).map((_, index) => (
             <Skeleton key={index} className="h-12 rounded-lg" />
@@ -198,8 +198,8 @@ export default function CategoryDetailPage({ pid }: { pid: string }) {
         >
           <div
             className={cn(
-              "flex items-center justify-center border-b bg-muted/40 lg:border-r lg:border-b-0",
-              hasImage ? "aspect-[4/3] lg:aspect-auto" : "min-h-28 lg:min-h-full",
+              "flex items-center justify-center overflow-hidden rounded-t-lg border-b bg-muted/40 lg:rounded-tl-lg lg:rounded-tr-none lg:rounded-bl-lg lg:border-r lg:border-b-0",
+              hasImage ? "h-80 lg:h-96" : "min-h-28 lg:min-h-full",
             )}
           >
             {hasImage ? (

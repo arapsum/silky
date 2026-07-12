@@ -117,7 +117,7 @@ function ProductGallery({
   return (
     <div className="flex min-w-0 flex-col-reverse gap-3 sm:flex-row">
       {pictures.length > 0 && (
-        <div className="flex shrink-0 gap-2 overflow-x-auto pb-1 sm:max-h-[28rem] sm:flex-col sm:overflow-y-auto sm:pb-0">
+        <div className="flex shrink-0 gap-2 overflow-x-auto pb-1 sm:max-h-96 sm:flex-col sm:overflow-y-auto sm:pb-0">
           {pictures.map((picture, index) => {
             const isSelected = picture.pid === selectedPicture?.pid;
 
@@ -140,7 +140,7 @@ function ProductGallery({
         </div>
       )}
 
-      <div className="relative flex aspect-[4/3] min-w-0 flex-1 items-center justify-center overflow-hidden bg-muted/50 lg:aspect-square">
+      <div className="relative flex h-80 min-w-0 flex-1 items-center justify-center overflow-hidden rounded-lg bg-muted/50 lg:h-96">
         {selectedPicture ? (
           <img
             src={selectedPicture.imageLink}
@@ -404,7 +404,7 @@ function ProductDetailSkeleton() {
         <Skeleton className="h-9 w-36 rounded-lg" />
       </div>
       <div className="grid gap-8 rounded-lg border p-5 lg:grid-cols-2">
-        <Skeleton className="aspect-square w-full rounded-lg" />
+        <Skeleton className="h-80 w-full rounded-lg lg:h-96" />
         <div className="grid content-center gap-5">
           <Skeleton className="h-5 w-3/5 rounded-lg" />
           <Skeleton className="h-20 w-full rounded-lg" />

@@ -4,7 +4,7 @@
     "pid": "f93e1e08-7f3a-44cb-8f83-3b5539723601",
     "productId": 201,
     "variantId": 201,
-    "imageLink": "https://cdn.example.com/products/classic-cotton-tshirt-black.png",
+    "imageLink": "https://images.unsplash.com/photo-1521572163474-6864f9cf17ab?auto=format&fit=crop&w=900&q=80",
     "displayOrder": 1,
     "createdAt": "2026-07-02T15:50:00+03:00",
     "updatedAt": "2026-07-02T15:50:00+03:00"
@@ -14,7 +14,7 @@
     "pid": "61622c81-0bf9-47d4-92bd-db020a543602",
     "productId": 201,
     "variantId": 202,
-    "imageLink": "https://cdn.example.com/products/classic-cotton-tshirt-blue.png",
+    "imageLink": "https://images.unsplash.com/photo-1503341504253-dff4815485f1?auto=format&fit=crop&w=900&q=80",
     "displayOrder": 2,
     "createdAt": "2026-07-02T15:51:00+03:00",
     "updatedAt": "2026-07-02T15:51:00+03:00"
@@ -24,7 +24,7 @@
     "pid": "7553f285-7649-46ab-9e7d-2aca3ccf3603",
     "productId": 202,
     "variantId": 203,
-    "imageLink": "https://cdn.example.com/products/tailored-chino-trousers-black.png",
+    "imageLink": "https://images.unsplash.com/photo-1594633312681-425c7b97ccd1?auto=format&fit=crop&w=900&q=80",
     "displayOrder": 1,
     "createdAt": "2026-07-02T15:52:00+03:00",
     "updatedAt": "2026-07-02T15:52:00+03:00"
@@ -34,7 +34,7 @@
     "pid": "859c9238-cab5-4f29-b08f-04c8c4243604",
     "productId": 202,
     "variantId": 204,
-    "imageLink": "https://cdn.example.com/products/tailored-chino-trousers-blue.png",
+    "imageLink": "https://images.unsplash.com/photo-1473966968600-fa801b869a1a?auto=format&fit=crop&w=900&q=80",
     "displayOrder": 2,
     "createdAt": "2026-07-02T15:53:00+03:00",
     "updatedAt": "2026-07-02T15:53:00+03:00"
@@ -44,7 +44,7 @@
     "pid": "9963a6f5-ce17-47fe-b69c-a07588f73605",
     "productId": 203,
     "variantId": 205,
-    "imageLink": "https://cdn.example.com/products/court-leather-sneakers-white.png",
+    "imageLink": "https://images.unsplash.com/photo-1608231387042-66d1773070a5?auto=format&fit=crop&w=900&q=80",
     "displayOrder": 1,
     "createdAt": "2026-07-02T15:54:00+03:00",
     "updatedAt": "2026-07-02T15:54:00+03:00"
@@ -54,7 +54,7 @@
     "pid": "8c7d48f2-a443-40f5-8624-f55091df3606",
     "productId": 203,
     "variantId": 206,
-    "imageLink": "https://cdn.example.com/products/court-leather-sneakers-black.png",
+    "imageLink": "https://images.unsplash.com/photo-1542291026-7eec264c27ff?auto=format&fit=crop&w=900&q=80",
     "displayOrder": 2,
     "createdAt": "2026-07-02T15:55:00+03:00",
     "updatedAt": "2026-07-02T15:55:00+03:00"

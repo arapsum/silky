@@ -108,6 +108,11 @@ pub struct OrderListQuery {
 
 impl OrderListQuery {
     #[must_use]
+    pub const fn with_customer_pid(mut self, customer_pid: Uuid) -> Self {
+        self.customer_pid = Some(customer_pid);
+        self
+    }
+    #[must_use]
     pub const fn limit(&self) -> Option<i64> {
         self.limit
     }

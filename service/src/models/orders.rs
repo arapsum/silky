@@ -7,7 +7,7 @@ use serde_json::Value as JsonValue;
 use sqlx::{FromRow, PgPool, types::Json};
 use uuid::Uuid;
 
-use crate::schemas::{NewOrder, OrderListQuery};
+use crate::schemas::{NewOrder, OrderListQuery, UpdateOrder};
 
 use super::{
     ModelError, ModelResult, PaginatedModel, Pagination, Seedable,
@@ -277,6 +277,57 @@ impl Order {
         let order = Self::find_by_pid(db, pid).await?;
         let items = OrderItem::find_by_order(db, pid).await?;
         Ok(OrderWithItems { order, items })
+    }
+
+    /// Fetches an order detail only when it belongs to the supplied customer.
+    ///
+    /// # Errors
+    /// Returns [`ModelError::EntityNotFound`] when the order does not belong to
+    /// the customer or when the order cannot be found.
+    pub async fn find_detail_for_customer(
+        db: &PgPool,
+        pid: Uuid,
+        customer_pid: Uuid,
+    ) -> ModelResult<OrderWithItems> {
+        let order = sqlx::query_as::<_, Self>(
+            r"SELECT o.*
+              FROM orders o
+              JOIN users u ON u.id = o.customer_id
+              WHERE o.pid = $1 AND u.pid = $2",
+        )
+        .bind(pid)
+        .bind(customer_pid)
+        .fetch_optional(db)
+        .await?
+        .ok_or(ModelError::EntityNotFound)?;
+        let items = OrderItem::find_by_order(db, pid).await?;
+        Ok(OrderWithItems { order, items })
+    }
+
+    /// Updates staff-managed order state and notes.
+    ///
+    /// # Errors
+    /// Returns [`ModelError::EntityNotFound`] when no order exists, or a
+    /// database error when a status constraint is violated.
+    pub async fn update(db: &PgPool, pid: Uuid, params: &UpdateOrder) -> ModelResult<Self> {
+        sqlx::query_as::<_, Self>(
+            r"UPDATE orders
+              SET status = COALESCE($2, status),
+                  payment_status = COALESCE($3, payment_status),
+                  fulfillment_status = COALESCE($4, fulfillment_status),
+                  staff_note = COALESCE($5, staff_note),
+                  updated_at = now()
+              WHERE pid = $1
+              RETURNING *",
+        )
+        .bind(pid)
+        .bind(params.status())
+        .bind(params.payment_status())
+        .bind(params.fulfillment_status())
+        .bind(params.staff_note())
+        .fetch_optional(db)
+        .await?
+        .ok_or(ModelError::EntityNotFound)
     }
 
     /// Loads orders from a data file and seeds them into the database.

@@ -159,6 +159,46 @@ pub struct NewOrderItem {
     quantity: i32,
 }
 
+#[derive(Debug, Clone, Deserialize, Serialize, Validate)]
+#[serde(rename_all = "camelCase")]
+pub struct UpdateOrder {
+    #[validate(length(min = 1, max = 32))]
+    status: Option<String>,
+    #[validate(length(min = 1, max = 32))]
+    payment_status: Option<String>,
+    #[validate(length(min = 1, max = 32))]
+    fulfillment_status: Option<String>,
+    staff_note: Option<String>,
+}
+
+impl UpdateOrder {
+    #[must_use]
+    pub fn status(&self) -> Option<&str> {
+        self.status
+            .as_deref()
+            .map(str::trim)
+            .filter(|v| !v.is_empty())
+    }
+    #[must_use]
+    pub fn payment_status(&self) -> Option<&str> {
+        self.payment_status
+            .as_deref()
+            .map(str::trim)
+            .filter(|v| !v.is_empty())
+    }
+    #[must_use]
+    pub fn fulfillment_status(&self) -> Option<&str> {
+        self.fulfillment_status
+            .as_deref()
+            .map(str::trim)
+            .filter(|v| !v.is_empty())
+    }
+    #[must_use]
+    pub fn staff_note(&self) -> Option<&str> {
+        self.staff_note.as_deref()
+    }
+}
+
 impl NewOrderItem {
     #[must_use]
     pub const fn variant_pid(&self) -> Uuid {

@@ -120,12 +120,12 @@ export function ImagePreviewSlot({ preview, icon, className }: ImagePreviewSlotP
   return (
     <div
       className={cn(
-        "flex min-h-28 items-center justify-center overflow-hidden rounded-xl border bg-muted/40",
+        "flex aspect-square w-full max-w-44 min-h-0 items-center justify-center overflow-hidden rounded-xl border bg-muted/40",
         className,
       )}
     >
       {preview ? (
-        <img src={preview} alt="" className="h-full w-full object-cover" />
+        <img src={preview} alt="" className="h-full w-full max-h-full max-w-full object-cover" />
       ) : (
         (icon ?? <ImageSquareIcon className="size-9 text-muted-foreground" aria-hidden />)
       )}
@@ -141,7 +141,11 @@ export function ImageGrid({ images, onRemove }: ImageGridProps) {
       {images.map((image) => (
         <div key={image.id} className="overflow-hidden border bg-background">
           <div className="aspect-square bg-muted">
-            <img src={image.preview} alt="" className="h-full w-full object-cover" />
+            <img
+              src={image.preview}
+              alt=""
+              className="h-full w-full max-h-full max-w-full object-cover"
+            />
           </div>
           <div className="flex items-center justify-between gap-2 p-2">
             <span className="truncate text-xs text-muted-foreground">{image.file.name}</span>

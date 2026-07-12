@@ -24,6 +24,54 @@ export type Order = {
   updatedAt: string;
 };
 
+export type OrderAddressSnapshot = {
+  recipientName?: string;
+  company?: string | null;
+  lineOne?: string;
+  lineTwo?: string | null;
+  city?: string;
+  region?: string | null;
+  postalCode?: string | null;
+  countryCode?: string;
+  email?: string | null;
+  phone?: string | null;
+};
+
+export type OrderItem = {
+  pid: string;
+  productPid: string;
+  variantPid: string;
+  productName: string;
+  sku: string;
+  selectedOptions: Record<string, unknown>;
+  quantity: number;
+  unitPrice: string;
+  discountTotal: string;
+  taxTotal: string;
+  lineTotal: string;
+  createdAt: string;
+  updatedAt: string;
+};
+
+export type OrderDetail = Order & {
+  billingAddressSnapshot: OrderAddressSnapshot;
+  shippingAddressSnapshot: OrderAddressSnapshot;
+  customerNote: string | null;
+  staffNote: string | null;
+};
+
+export type OrderWithItems = {
+  order: OrderDetail;
+  items: OrderItem[];
+};
+
+export type UpdateOrderInput = {
+  status?: string;
+  paymentStatus?: string;
+  fulfillmentStatus?: string;
+  staffNote?: string;
+};
+
 export type OrderListParams = {
   page?: number;
   limit?: number;
@@ -55,5 +103,19 @@ function orderSearchParams(params: OrderListParams) {
 export function listOrders(params: OrderListParams = {}) {
   return apiRequest<PaginatedOrders>(`/orders${orderSearchParams(params)}`, {
     fallback: "Orders could not be loaded",
+  });
+}
+
+export function getOrder(pid: string) {
+  return apiRequest<OrderWithItems>(`/orders/${pid}`, {
+    fallback: "Order could not be loaded",
+  });
+}
+
+export function updateOrder(pid: string, input: UpdateOrderInput) {
+  return apiRequest<OrderDetail>(`/orders/${pid}`, {
+    method: "PATCH",
+    body: JSON.stringify(input),
+    fallback: "Order could not be updated",
   });
 }

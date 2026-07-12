@@ -3,6 +3,7 @@
 import type { ColumnDef } from "@tanstack/react-table";
 import {
   ArrowClockwiseIcon,
+  ArrowRightIcon,
   CalendarBlankIcon,
   CaretLeftIcon,
   CaretRightIcon,
@@ -10,14 +11,15 @@ import {
   XIcon,
 } from "@phosphor-icons/react";
 import { keepPreviousData, useQuery } from "@tanstack/react-query";
+import { Link } from "@tanstack/react-router";
 import { format } from "date-fns";
 import { useMemo, useState, type FormEvent } from "react";
 import type { DateRange } from "react-day-picker";
 
 import { listOrders, ordersQueryKey, type Order } from "#/api/orders.ts";
 import { DataTable } from "#/components/data-table";
+import { OrderStatusBadge } from "#/components/orders/order-status";
 import { PageHeader } from "#/components/page-header";
-import { Badge } from "#/components/ui/badge";
 import { Button } from "#/components/ui/button";
 import { Calendar } from "#/components/ui/calendar";
 import { Input } from "#/components/ui/input";
@@ -40,46 +42,11 @@ const dateFormatter = new Intl.DateTimeFormat(undefined, {
   year: "numeric",
 });
 
-function titleCase(value: string) {
-  return value
-    .split(/[-_\s]+/)
-    .filter(Boolean)
-    .map((part) => part.charAt(0).toUpperCase() + part.slice(1))
-    .join(" ");
-}
-
 function formatMoney(value: string, currency: string) {
   return new Intl.NumberFormat(undefined, {
     style: "currency",
     currency,
   }).format(Number(value));
-}
-
-function statusClass(status: string) {
-  switch (status.toLowerCase()) {
-    case "completed":
-    case "paid":
-    case "fulfilled":
-      return "border-primary/30 bg-primary/10 text-primary";
-    case "cancelled":
-    case "failed":
-    case "refunded":
-      return "border-destructive/30 bg-destructive/10 text-destructive";
-    case "pending":
-    case "unfulfilled":
-      return "border-amber-500/30 bg-amber-500/10 text-amber-600 dark:text-amber-300";
-    default:
-      return "border-border bg-muted text-muted-foreground";
-  }
-}
-
-function StatusBadge({ value }: { value: string }) {
-  return (
-    <Badge variant="outline" className={statusClass(value)}>
-      <span className="size-1 bg-current" aria-hidden />
-      {titleCase(value)}
-    </Badge>
-  );
 }
 
 function orderColumns(): ColumnDef<Order>[] {
@@ -125,22 +92,38 @@ function orderColumns(): ColumnDef<Order>[] {
       id: "payment",
       header: "Payment",
       accessorFn: (order) => order.paymentStatus,
-      cell: ({ row }) => <StatusBadge value={row.original.paymentStatus} />,
+      cell: ({ row }) => <OrderStatusBadge value={row.original.paymentStatus} />,
       size: 140,
     },
     {
       id: "fulfillment",
       header: "Fulfillment",
       accessorFn: (order) => order.fulfillmentStatus,
-      cell: ({ row }) => <StatusBadge value={row.original.fulfillmentStatus} />,
+      cell: ({ row }) => <OrderStatusBadge value={row.original.fulfillmentStatus} />,
       size: 150,
     },
     {
       id: "status",
       header: "Order status",
       accessorFn: (order) => order.status,
-      cell: ({ row }) => <StatusBadge value={row.original.status} />,
+      cell: ({ row }) => <OrderStatusBadge value={row.original.status} />,
       size: 150,
+    },
+    {
+      id: "actions",
+      header: "",
+      enableSorting: false,
+      cell: ({ row }) => (
+        <Button
+          variant="outline"
+          size="sm"
+          className="rounded-lg"
+          render={<Link to="/orders/$pid" params={{ pid: row.original.pid }} />}
+        >
+          View <ArrowRightIcon />
+        </Button>
+      ),
+      size: 112,
     },
   ];
 }

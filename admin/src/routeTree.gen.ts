@@ -20,6 +20,7 @@ import { Route as MainProductsCreateIndexRouteImport } from './routes/_main/prod
 import { Route as MainProductsPidIndexRouteImport } from './routes/_main/products/$pid/index'
 import { Route as MainPeopleStaffIndexRouteImport } from './routes/_main/people/staff/index'
 import { Route as MainPeopleCustomersIndexRouteImport } from './routes/_main/people/customers/index'
+import { Route as MainOrdersPidIndexRouteImport } from './routes/_main/orders/$pid/index'
 import { Route as MainCategoriesCreateIndexRouteImport } from './routes/_main/categories/create/index'
 import { Route as MainCategoriesPidIndexRouteImport } from './routes/_main/categories/$pid/index'
 import { Route as MainAccessControlRolesIndexRouteImport } from './routes/_main/access-control/roles/index'
@@ -81,6 +82,11 @@ const MainPeopleCustomersIndexRoute =
     path: '/people/customers/',
     getParentRoute: () => MainRouteRoute,
   } as any)
+const MainOrdersPidIndexRoute = MainOrdersPidIndexRouteImport.update({
+  id: '/orders/$pid/',
+  path: '/orders/$pid/',
+  getParentRoute: () => MainRouteRoute,
+} as any)
 const MainCategoriesCreateIndexRoute =
   MainCategoriesCreateIndexRouteImport.update({
     id: '/categories/create/',
@@ -122,6 +128,7 @@ export interface FileRoutesByFullPath {
   '/access-control/roles/': typeof MainAccessControlRolesIndexRoute
   '/categories/$pid/': typeof MainCategoriesPidIndexRoute
   '/categories/create/': typeof MainCategoriesCreateIndexRoute
+  '/orders/$pid/': typeof MainOrdersPidIndexRoute
   '/people/customers/': typeof MainPeopleCustomersIndexRoute
   '/people/staff/': typeof MainPeopleStaffIndexRoute
   '/products/$pid/': typeof MainProductsPidIndexRoute
@@ -139,6 +146,7 @@ export interface FileRoutesByTo {
   '/access-control/roles': typeof MainAccessControlRolesIndexRoute
   '/categories/$pid': typeof MainCategoriesPidIndexRoute
   '/categories/create': typeof MainCategoriesCreateIndexRoute
+  '/orders/$pid': typeof MainOrdersPidIndexRoute
   '/people/customers': typeof MainPeopleCustomersIndexRoute
   '/people/staff': typeof MainPeopleStaffIndexRoute
   '/products/$pid': typeof MainProductsPidIndexRoute
@@ -158,6 +166,7 @@ export interface FileRoutesById {
   '/_main/access-control/roles/': typeof MainAccessControlRolesIndexRoute
   '/_main/categories/$pid/': typeof MainCategoriesPidIndexRoute
   '/_main/categories/create/': typeof MainCategoriesCreateIndexRoute
+  '/_main/orders/$pid/': typeof MainOrdersPidIndexRoute
   '/_main/people/customers/': typeof MainPeopleCustomersIndexRoute
   '/_main/people/staff/': typeof MainPeopleStaffIndexRoute
   '/_main/products/$pid/': typeof MainProductsPidIndexRoute
@@ -177,6 +186,7 @@ export interface FileRouteTypes {
     | '/access-control/roles/'
     | '/categories/$pid/'
     | '/categories/create/'
+    | '/orders/$pid/'
     | '/people/customers/'
     | '/people/staff/'
     | '/products/$pid/'
@@ -194,6 +204,7 @@ export interface FileRouteTypes {
     | '/access-control/roles'
     | '/categories/$pid'
     | '/categories/create'
+    | '/orders/$pid'
     | '/people/customers'
     | '/people/staff'
     | '/products/$pid'
@@ -212,6 +223,7 @@ export interface FileRouteTypes {
     | '/_main/access-control/roles/'
     | '/_main/categories/$pid/'
     | '/_main/categories/create/'
+    | '/_main/orders/$pid/'
     | '/_main/people/customers/'
     | '/_main/people/staff/'
     | '/_main/products/$pid/'
@@ -303,6 +315,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof MainPeopleCustomersIndexRouteImport
       parentRoute: typeof MainRouteRoute
     }
+    '/_main/orders/$pid/': {
+      id: '/_main/orders/$pid/'
+      path: '/orders/$pid'
+      fullPath: '/orders/$pid/'
+      preLoaderRoute: typeof MainOrdersPidIndexRouteImport
+      parentRoute: typeof MainRouteRoute
+    }
     '/_main/categories/create/': {
       id: '/_main/categories/create/'
       path: '/categories/create'
@@ -351,6 +370,7 @@ interface MainRouteRouteChildren {
   MainAccessControlRolesIndexRoute: typeof MainAccessControlRolesIndexRoute
   MainCategoriesPidIndexRoute: typeof MainCategoriesPidIndexRoute
   MainCategoriesCreateIndexRoute: typeof MainCategoriesCreateIndexRoute
+  MainOrdersPidIndexRoute: typeof MainOrdersPidIndexRoute
   MainPeopleCustomersIndexRoute: typeof MainPeopleCustomersIndexRoute
   MainPeopleStaffIndexRoute: typeof MainPeopleStaffIndexRoute
   MainProductsPidIndexRoute: typeof MainProductsPidIndexRoute
@@ -369,6 +389,7 @@ const MainRouteRouteChildren: MainRouteRouteChildren = {
   MainAccessControlRolesIndexRoute: MainAccessControlRolesIndexRoute,
   MainCategoriesPidIndexRoute: MainCategoriesPidIndexRoute,
   MainCategoriesCreateIndexRoute: MainCategoriesCreateIndexRoute,
+  MainOrdersPidIndexRoute: MainOrdersPidIndexRoute,
   MainPeopleCustomersIndexRoute: MainPeopleCustomersIndexRoute,
   MainPeopleStaffIndexRoute: MainPeopleStaffIndexRoute,
   MainProductsPidIndexRoute: MainProductsPidIndexRoute,

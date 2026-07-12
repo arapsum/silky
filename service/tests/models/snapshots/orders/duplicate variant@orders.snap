@@ -1,0 +1,10 @@
+---
+source: tests/models/orders.rs
+expression: "(result, order_count)"
+---
+(
+    Err(
+        "Each product variant may appear only once per order",
+    ),
+    2,
+)

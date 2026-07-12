@@ -1,6 +1,6 @@
 use insta::{Settings, assert_debug_snapshot};
 use rstest::rstest;
-use service::schemas::{NewAddress, NewOrder, NewOrderDetail, Validator};
+use service::schemas::{NewAddress, NewOrder, Validator};
 use uuid::Uuid;
 
 macro_rules! configure_insta {
@@ -48,26 +48,20 @@ fn rejects_invalid_addresses(#[case] name: &str, #[case] value: &str, #[case] ex
 }
 
 #[rstest]
-#[case("bad currency", serde_json::json!("US"))]
-#[case("negative subtotal", serde_json::json!(-1))]
-#[case("negative grand total", serde_json::json!(-1))]
-fn rejects_invalid_orders(#[case] name: &str, #[case] value: serde_json::Value) {
+#[case("empty order", serde_json::json!([]))]
+#[case(
+    "zero item quantity",
+    serde_json::json!([{
+        "variantPid": Uuid::nil(),
+        "quantity": 0
+    }])
+)]
+fn rejects_invalid_orders(#[case] name: &str, #[case] items: serde_json::Value) {
     configure_insta!();
-    let mut payload = serde_json::json!({
+    let payload = serde_json::json!({
         "customerPid": Uuid::nil(),
-        "currency": "USD",
-        "subtotal": "10.00",
-        "discountTotal": "0.00",
-        "shippingTotal": "0.00",
-        "taxTotal": "0.00",
-        "grandTotal": "10.00"
+        "items": items
     });
-    match name {
-        "bad currency" => payload["currency"] = value,
-        "negative subtotal" => payload["subtotal"] = value,
-        "negative grand total" => payload["grandTotal"] = value,
-        _ => unreachable!(),
-    }
     let input = serde_json::from_value::<NewOrder>(payload).expect("order should deserialize");
     let validator = Validator::new(input);
     let result = validator.validate();
@@ -75,22 +69,4 @@ fn rejects_invalid_orders(#[case] name: &str, #[case] value: serde_json::Value) 
         .map(|_| "valid".to_string())
         .map_err(|error| error.to_string());
     assert_debug_snapshot!(name, result);
-}
-
-#[test]
-fn rejects_zero_order_detail_quantity() {
-    configure_insta!();
-    let input: NewOrderDetail = serde_json::from_value(serde_json::json!({
-        "orderPid": Uuid::nil(),
-        "variantPid": Uuid::nil(),
-        "quantity": 0,
-        "discountTotal": "0.00",
-        "taxTotal": "0.00"
-    }))
-    .expect("detail should deserialize");
-    let result = Validator::new(input)
-        .validate()
-        .map(|_| "valid".to_string())
-        .map_err(|error| error.to_string());
-    assert_debug_snapshot!("rejects_zero_order_detail_quantity", result);
 }

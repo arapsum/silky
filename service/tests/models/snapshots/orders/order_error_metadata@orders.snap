@@ -1,0 +1,70 @@
+---
+source: tests/models/orders.rs
+expression: metadata
+---
+[
+    (
+        "customer_not_found",
+        Some(
+            "customerPid",
+        ),
+        404,
+        "Customer does not exist",
+    ),
+    (
+        "customer_address_not_found",
+        Some(
+            "shippingAddressPid",
+        ),
+        404,
+        "The selected customer address does not exist",
+    ),
+    (
+        "order_items_required",
+        Some(
+            "items",
+        ),
+        400,
+        "An order must contain at least one item",
+    ),
+    (
+        "invalid_order_item_quantity",
+        Some(
+            "items.quantity",
+        ),
+        400,
+        "Order item quantity must be at least one",
+    ),
+    (
+        "duplicate_order_item",
+        Some(
+            "items",
+        ),
+        400,
+        "Each product variant may appear only once per order",
+    ),
+    (
+        "product_variant_unavailable",
+        Some(
+            "items.variantPid",
+        ),
+        404,
+        "One or more product variants do not exist",
+    ),
+    (
+        "insufficient_stock",
+        Some(
+            "items.variantPid",
+        ),
+        409,
+        "Insufficient stock for variant 00000000-0000-0000-0000-000000000000: requested 4, available 2",
+    ),
+    (
+        "order_not_editable",
+        Some(
+            "status",
+        ),
+        409,
+        "Order items can only be changed while an order is pending",
+    ),
+]

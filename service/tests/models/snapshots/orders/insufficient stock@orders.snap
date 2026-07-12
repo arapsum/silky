@@ -1,0 +1,13 @@
+---
+source: tests/models/orders.rs
+expression: "(result, orders_before, orders_after, stock_before, stock_after)"
+---
+(
+    Err(
+        "Insufficient stock for variant PID: requested 33, available 32",
+    ),
+    2,
+    2,
+    32,
+    32,
+)

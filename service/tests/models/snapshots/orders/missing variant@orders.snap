@@ -1,0 +1,13 @@
+---
+source: tests/models/orders.rs
+expression: "(result, orders_before, orders_after, stock_before, stock_after)"
+---
+(
+    Err(
+        "One or more product variants do not exist",
+    ),
+    2,
+    2,
+    32,
+    32,
+)

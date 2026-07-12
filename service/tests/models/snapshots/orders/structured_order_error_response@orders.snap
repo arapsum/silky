@@ -1,0 +1,17 @@
+---
+source: tests/models/orders.rs
+expression: "(status, body)"
+---
+(
+    409,
+    Object {
+        "error": String("Insufficient stock for variant PID: requested 4, available 2"),
+        "code": String("insufficient_stock"),
+        "field": String("items.variantPid"),
+        "details": Object {
+            "variantPid": String("PID"),
+            "requested": Number(4),
+            "available": Number(2),
+        },
+    },
+)

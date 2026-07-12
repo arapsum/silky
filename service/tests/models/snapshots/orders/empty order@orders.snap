@@ -1,0 +1,10 @@
+---
+source: tests/models/orders.rs
+expression: "(result, order_count)"
+---
+(
+    Err(
+        "An order must contain at least one item",
+    ),
+    2,
+)

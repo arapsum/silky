@@ -16,6 +16,9 @@ expression: "(found, items, remaining_stock)"
         ),
         customer_name: "John Doe",
         customer_email: "john.doe@acme.com",
+        customer_image: Some(
+            "https://randomuser.me/api/portraits/men/32.jpg",
+        ),
         billing_address_snapshot: Json(
             Object {
                 "pid": String("PID"),

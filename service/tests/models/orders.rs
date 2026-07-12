@@ -214,6 +214,12 @@ async fn lists_and_fetches_orders_with_items() {
     .await
     .expect("order detail should load");
 
+    let detail_json = serde_json::to_value(&detail).expect("order detail should serialize");
+    assert_eq!(
+        detail_json["order"]["customerImage"],
+        "https://randomuser.me/api/portraits/men/32.jpg"
+    );
+
     with_settings!({ filters => { let mut filters = cleanup_uuid().to_vec(); filters.extend(cleanup_date().to_vec()); filters.extend(cleanup_id()); filters } }, {
         assert_debug_snapshot!("lists_and_fetches_orders_with_items", (list, detail))
     });

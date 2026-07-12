@@ -15,6 +15,7 @@ expression: "(response.status_code(), body)"
                 "shippingAddressId": Number(301),
                 "customerName": String("John Doe"),
                 "customerEmail": String("john.doe@acme.com"),
+                "customerImage": String("https://randomuser.me/api/portraits/men/32.jpg"),
                 "billingAddressSnapshot": Object {
                     "pid": String("PID"),
                     "city": String("Nairobi"),
@@ -71,6 +72,7 @@ expression: "(response.status_code(), body)"
                 "shippingAddressId": Number(301),
                 "customerName": String("John Doe"),
                 "customerEmail": String("john.doe@acme.com"),
+                "customerImage": String("https://randomuser.me/api/portraits/men/32.jpg"),
                 "billingAddressSnapshot": Object {
                     "pid": String("PID"),
                     "city": String("Nairobi"),

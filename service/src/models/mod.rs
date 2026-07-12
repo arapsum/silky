@@ -22,7 +22,7 @@ pub use self::{
     error::{ModelError, ModelResult},
     media_assets::{FinalizeMediaAsset, MediaAsset},
     order_items::OrderItem,
-    orders::Order,
+    orders::{Order, OrderWithItems},
     permissions::Permission,
     products::{
         Attribute, AttributeValue, NewPicture, NewProductOption, NewVariant,

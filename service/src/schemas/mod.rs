@@ -16,7 +16,8 @@ pub use self::{
         UpdateProductVariant,
     },
     request::{
-        CategoryListQuery, PaginationQuery, PermissionListQuery, PermissionRoleQuery, UserListQuery,
+        CategoryListQuery, OrderListQuery, PaginationQuery, PermissionListQuery,
+        PermissionRoleQuery, UserListQuery,
     },
     roles::{AssignPermission, AssignRole, NewRole, UpdateRole},
     validator::Validator,

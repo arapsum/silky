@@ -7,10 +7,10 @@ use serde_json::Value as JsonValue;
 use sqlx::{FromRow, PgPool, types::Json};
 use uuid::Uuid;
 
-use crate::schemas::NewOrder;
+use crate::schemas::{NewOrder, OrderListQuery};
 
 use super::{
-    ModelError, ModelResult, Seedable,
+    ModelError, ModelResult, PaginatedModel, Pagination, Seedable,
     order_items::{CheckoutItem, OrderItem},
 };
 
@@ -46,6 +46,13 @@ pub struct Order {
     completed_at: Option<DateTime<FixedOffset>>,
     created_at: DateTime<FixedOffset>,
     updated_at: DateTime<FixedOffset>,
+}
+
+#[derive(Debug, Clone, Serialize)]
+#[serde(rename_all = "camelCase")]
+pub struct OrderWithItems {
+    pub order: Order,
+    pub items: Vec<OrderItem>,
 }
 
 impl Order {
@@ -188,6 +195,88 @@ impl Order {
         .fetch_optional(db)
         .await?
         .ok_or(ModelError::EntityNotFound)
+    }
+
+    /// Lists orders with pagination and optional lifecycle filters.
+    ///
+    /// Results are ordered newest first. The list contains order headers; use
+    /// [`Self::find_detail_by_pid`] when the line items are required.
+    ///
+    /// # Errors
+    /// Returns a database error when the count or page query fails.
+    pub async fn find_all(
+        db: &PgPool,
+        query: &OrderListQuery,
+    ) -> ModelResult<PaginatedModel<Self>> {
+        let limit = query.limit().unwrap_or(20).clamp(1, 40);
+        let page = query.page().unwrap_or(1).max(1);
+        let offset = (page - 1) * limit;
+        let customer_pid = query.customer_pid();
+        let search = query.search().map(|value| format!("%{value}%"));
+
+        let total_items = sqlx::query_scalar::<_, i64>(
+            r"SELECT COUNT(*)
+              FROM orders o
+              LEFT JOIN users u ON u.id = o.customer_id
+              WHERE ($1::TEXT IS NULL OR o.status = $1)
+                AND ($2::TEXT IS NULL OR o.payment_status = $2)
+                AND ($3::TEXT IS NULL OR o.fulfillment_status = $3)
+                AND ($4::UUID IS NULL OR u.pid = $4)
+                AND ($5::TEXT IS NULL OR o.order_number::TEXT ILIKE $5 OR o.customer_name ILIKE $5 OR o.customer_email ILIKE $5)
+                AND ($6::DATE IS NULL OR o.created_at >= $6::DATE)
+                AND ($7::DATE IS NULL OR o.created_at < ($7::DATE + INTERVAL '1 day'))",
+        )
+        .bind(query.status())
+        .bind(query.payment_status())
+        .bind(query.fulfillment_status())
+        .bind(customer_pid)
+        .bind(search.as_deref())
+        .bind(query.created_from())
+        .bind(query.created_to())
+        .fetch_one(db)
+        .await?;
+
+        let orders = sqlx::query_as::<_, Self>(
+            r"SELECT o.*
+              FROM orders o
+              LEFT JOIN users u ON u.id = o.customer_id
+              WHERE ($3::TEXT IS NULL OR o.status = $3)
+                AND ($4::TEXT IS NULL OR o.payment_status = $4)
+                AND ($5::TEXT IS NULL OR o.fulfillment_status = $5)
+                AND ($6::UUID IS NULL OR u.pid = $6)
+                AND ($7::TEXT IS NULL OR o.order_number::TEXT ILIKE $7 OR o.customer_name ILIKE $7 OR o.customer_email ILIKE $7)
+                AND ($8::DATE IS NULL OR o.created_at >= $8::DATE)
+                AND ($9::DATE IS NULL OR o.created_at < ($9::DATE + INTERVAL '1 day'))
+              ORDER BY o.created_at DESC, o.id DESC
+              LIMIT $1 OFFSET $2",
+        )
+        .bind(limit)
+        .bind(offset)
+        .bind(query.status())
+        .bind(query.payment_status())
+        .bind(query.fulfillment_status())
+        .bind(customer_pid)
+        .bind(search.as_deref())
+        .bind(query.created_from())
+        .bind(query.created_to())
+        .fetch_all(db)
+        .await?;
+
+        Ok(PaginatedModel::new(
+            orders,
+            Pagination::new(page, limit, total_items),
+        ))
+    }
+
+    /// Fetches an order header together with all of its immutable line snapshots.
+    ///
+    /// # Errors
+    /// Returns [`ModelError::EntityNotFound`] when no order exists for `pid`,
+    /// or a database error when its items cannot be loaded.
+    pub async fn find_detail_by_pid(db: &PgPool, pid: Uuid) -> ModelResult<OrderWithItems> {
+        let order = Self::find_by_pid(db, pid).await?;
+        let items = OrderItem::find_by_order(db, pid).await?;
+        Ok(OrderWithItems { order, items })
     }
 
     /// Loads orders from a data file and seeds them into the database.

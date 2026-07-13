@@ -5,6 +5,38 @@ expression: result
 Ok(
     [
         RolePermission {
+            id: 1009,
+            pid: 20b6a2a8-4ffb-42b3-aa76-ea39aa399b9e,
+            role_id: 11,
+            permission_id: 112,
+            created_at: 2026-07-13T09:00:00+00:00,
+            updated_at: 2026-07-13T09:00:00+00:00,
+        },
+        RolePermission {
+            id: 1006,
+            pid: cc3ec7e8-d42b-4a6d-bd49-11e136a5da76,
+            role_id: 11,
+            permission_id: 109,
+            created_at: 2026-07-13T09:00:00+00:00,
+            updated_at: 2026-07-13T09:00:00+00:00,
+        },
+        RolePermission {
+            id: 1007,
+            pid: f6823d33-b3cb-49b9-afdb-f74c9803a1ac,
+            role_id: 11,
+            permission_id: 110,
+            created_at: 2026-07-13T09:00:00+00:00,
+            updated_at: 2026-07-13T09:00:00+00:00,
+        },
+        RolePermission {
+            id: 1008,
+            pid: 1275a6e5-15d4-4d0e-9ac3-c0924e7a0cdf,
+            role_id: 11,
+            permission_id: 111,
+            created_at: 2026-07-13T09:00:00+00:00,
+            updated_at: 2026-07-13T09:00:00+00:00,
+        },
+        RolePermission {
             id: 1004,
             pid: b7c7d3b5-5e12-4a9b-a221-3c2e4f8b9101,
             role_id: 11,

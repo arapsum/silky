@@ -3,7 +3,6 @@
 import type { ColumnDef } from "@tanstack/react-table";
 import { zodResolver } from "@hookform/resolvers/zod";
 import {
-  ArrowClockwiseIcon,
   CaretLeftIcon,
   CaretRightIcon,
   MagnifyingGlassIcon,
@@ -28,7 +27,9 @@ import {
 import { SummaryGrid } from "#/components/catalogue/summary-grid";
 import { DataTable } from "#/components/data-table";
 import FormField from "#/components/form-field";
+import { formatDate, initials, titleCase } from "#/utils/formatters";
 import { PageHeader } from "#/components/page-header";
+import { RefreshButton } from "#/components/refresh-button";
 import { Avatar, AvatarFallback, AvatarImage } from "#/components/ui/avatar";
 import { Badge } from "#/components/ui/badge";
 import { Button } from "#/components/ui/button";
@@ -48,7 +49,6 @@ import {
   SelectTrigger,
   SelectValue,
 } from "#/components/ui/select";
-import { cn } from "#/lib/utils";
 
 type PeopleTablePageProps = {
   title: string;
@@ -82,35 +82,6 @@ const createStaffUserSchema = z
   });
 
 type CreateStaffUserValues = z.infer<typeof createStaffUserSchema>;
-
-const dateFormatter = new Intl.DateTimeFormat(undefined, {
-  day: "2-digit",
-  month: "short",
-  year: "numeric",
-});
-
-function initials(name?: string) {
-  const value = (name ?? "User")
-    .split(/\s+/)
-    .filter(Boolean)
-    .slice(0, 2)
-    .map((part) => part[0]?.toUpperCase())
-    .join("");
-
-  return value || "U";
-}
-
-function titleCase(value: string) {
-  return value
-    .split(/[-_\s]+/)
-    .filter(Boolean)
-    .map((part) => part.charAt(0).toUpperCase() + part.slice(1))
-    .join(" ");
-}
-
-function formatDate(value: string) {
-  return dateFormatter.format(new Date(value));
-}
 
 function roleBadgeClass(role: string) {
   switch (role.toLowerCase()) {
@@ -303,18 +274,10 @@ export default function PeopleTablePage({ title, description, category }: People
         subtitle={description}
         actions={
           <>
-            <Button
-              type="button"
-              variant="outline"
-              className="rounded-lg"
-              onClick={() => usersQuery.refetch()}
-              disabled={usersQuery.isFetching}
-            >
-              <ArrowClockwiseIcon
-                className={cn("size-4", usersQuery.isFetching && "animate-spin")}
-              />
-              Refresh
-            </Button>
+            <RefreshButton
+              onRefresh={() => void usersQuery.refetch()}
+              isRefreshing={usersQuery.isFetching}
+            />
             {category === "staff" && (
               <Button
                 type="button"

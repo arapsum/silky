@@ -22,6 +22,7 @@ import {
 import { CatalogueRowActions } from "#/components/catalogue/catalogue-row-actions";
 import { SummaryGrid } from "#/components/catalogue/summary-grid";
 import { DataTable } from "#/components/data-table";
+import { formatNumber } from "#/utils/formatters";
 import { PageHeader } from "#/components/page-header";
 import { Button } from "#/components/ui/button";
 import { Input } from "#/components/ui/input";
@@ -45,7 +46,7 @@ const hierarchyOptions = [
 function productLabel(category: Category) {
   if (category.productCount === undefined) return "N/A";
 
-  return Intl.NumberFormat().format(category.productCount);
+  return formatNumber(category.productCount);
 }
 
 function categoryColumns({

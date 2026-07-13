@@ -1,7 +1,6 @@
 "use client";
 
 import {
-  ArrowClockwiseIcon,
   EyeIcon,
   ImageSquareIcon,
   KeyIcon,
@@ -30,7 +29,9 @@ import {
 } from "#/api/roles.ts";
 import { EmptyState } from "#/components/empty-state";
 import { ErrorState } from "#/components/error-state";
+import { titleCase } from "#/utils/formatters";
 import { PageHeader } from "#/components/page-header";
+import { RefreshButton } from "#/components/refresh-button";
 import { Button } from "#/components/ui/button";
 import { Input } from "#/components/ui/input";
 import {
@@ -48,14 +49,6 @@ const ALL_ROLES = "__all__";
 function splitPermissionName(name: string) {
   const [resource = "system", action = "access"] = name.split(":");
   return { resource, action };
-}
-
-function titleCase(value: string) {
-  return value
-    .split(/[-_\s]+/)
-    .filter(Boolean)
-    .map((part) => part.charAt(0).toUpperCase() + part.slice(1))
-    .join(" ");
 }
 
 function groupPermissions(permissions: Permission[]) {
@@ -255,18 +248,7 @@ export default function PermissionsPage() {
       <PageHeader
         title="Permissions"
         subtitle="Review each role's access across the admin system."
-        actions={
-          <Button
-            type="button"
-            variant="outline"
-            className="rounded-lg"
-            onClick={refresh}
-            disabled={isRefreshing}
-          >
-            <ArrowClockwiseIcon className={cn(isRefreshing && "animate-spin")} />
-            Refresh
-          </Button>
-        }
+        actions={<RefreshButton onRefresh={refresh} isRefreshing={isRefreshing} />}
       />
 
       <section className="rounded-lg border bg-card">

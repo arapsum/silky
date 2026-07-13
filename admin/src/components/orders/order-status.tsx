@@ -1,4 +1,5 @@
 import { Badge } from "#/components/ui/badge";
+import { titleCase } from "#/utils/formatters";
 
 export const ORDER_STATUSES = [
   "pending",
@@ -12,14 +13,6 @@ export const ORDER_STATUSES = [
 export const PAYMENT_STATUSES = ["pending", "authorized", "paid", "failed", "refunded"] as const;
 
 export const FULFILLMENT_STATUSES = ["unfulfilled", "partial", "fulfilled", "cancelled"] as const;
-
-export function titleCase(value: string) {
-  return value
-    .split(/[-_\s]+/)
-    .filter(Boolean)
-    .map((part) => part.charAt(0).toUpperCase() + part.slice(1))
-    .join(" ");
-}
 
 export function orderStatusClass(status: string) {
   switch (status.toLowerCase()) {

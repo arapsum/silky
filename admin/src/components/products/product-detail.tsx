@@ -27,7 +27,7 @@ import {
   type ProductPicture,
   type ProductVariantDetail,
 } from "#/api/products.ts";
-import { titleCase } from "#/components/catalogue/string-utils";
+import { formatCurrency, formatDateTime, formatNumber, titleCase } from "#/utils/formatters";
 import { EmptyState } from "#/components/empty-state";
 import { ErrorState } from "#/components/error-state";
 import { PageHeader } from "#/components/page-header";
@@ -46,26 +46,6 @@ import { Badge } from "#/components/ui/badge";
 import { Button } from "#/components/ui/button";
 import { Skeleton } from "#/components/ui/skeleton";
 import { cn } from "#/lib/utils";
-
-function money(value: string) {
-  return Intl.NumberFormat(undefined, {
-    style: "currency",
-    currency: "USD",
-  }).format(Number(value));
-}
-
-function number(value: number) {
-  return Intl.NumberFormat().format(value);
-}
-
-function dateTime(value: string | null) {
-  if (!value) return "Not available";
-
-  return new Intl.DateTimeFormat(undefined, {
-    dateStyle: "medium",
-    timeStyle: "short",
-  }).format(new Date(value));
-}
 
 function productImages(product: ProductDetail) {
   return [...product.pictures, ...product.variants.flatMap((variant) => variant.pictures)];
@@ -195,8 +175,8 @@ function ProductHero({ product }: { product: ProductDetail }) {
     lowestPrice === undefined
       ? "Not set"
       : lowestPrice === highestPrice
-        ? money(String(lowestPrice))
-        : `${money(String(lowestPrice))} to ${money(String(highestPrice))}`;
+        ? formatCurrency(lowestPrice)
+        : `${formatCurrency(lowestPrice)} to ${formatCurrency(highestPrice ?? lowestPrice)}`;
 
   return (
     <section className="rounded-lg border bg-card p-4 sm:p-5">
@@ -223,30 +203,30 @@ function ProductHero({ product }: { product: ProductDetail }) {
               icon={<TagIcon className="size-4" />}
               label="Price"
               value={priceRange}
-              detail={variant ? `Default ${money(variant.price)}` : "No default price"}
+              detail={variant ? `Default ${formatCurrency(variant.price)}` : "No default price"}
             />
             <ProductMetric
               icon={<CubeIcon className="size-4" />}
               label="Inventory"
-              value={number(stock)}
+              value={formatNumber(stock)}
               detail="Units across all SKUs"
             />
             <ProductMetric
               icon={<StackIcon className="size-4" />}
               label="Variants"
-              value={number(product.variants.length)}
-              detail={`${number(product.options.length)} option dimensions`}
+              value={formatNumber(product.variants.length)}
+              detail={`${formatNumber(product.options.length)} option dimensions`}
             />
           </div>
 
           <dl className="mt-auto grid grid-cols-2 gap-x-8 gap-y-5 pt-6 sm:grid-cols-3">
             <DetailField label="Product type">Simple product</DetailField>
-            <DetailField label="Media">{number(images.length)} images</DetailField>
+            <DetailField label="Media">{formatNumber(images.length)} images</DetailField>
             <DetailField label="Category slug">{product.category.slug}</DetailField>
             <div className="text-xs text-muted-foreground sm:col-span-3">
-              Created {dateTime(product.createdAt)}
+              Created {formatDateTime(product.createdAt)}
               <span className="mx-2 text-border">|</span>
-              Updated {dateTime(product.updatedAt)}
+              Updated {formatDateTime(product.updatedAt)}
             </div>
           </dl>
         </div>
@@ -377,8 +357,12 @@ function VariantTable({ variants }: { variants: ProductVariantDetail[] }) {
                   </div>
                 </td>
                 <td className="px-3 py-2.5 font-mono text-xs font-medium">{variant.sku}</td>
-                <td className="px-3 py-2.5 text-right font-medium">{money(variant.price)}</td>
-                <td className="px-3 py-2.5 text-right">{number(variant.stockQuantity)} units</td>
+                <td className="px-3 py-2.5 text-right font-medium">
+                  {formatCurrency(variant.price)}
+                </td>
+                <td className="px-3 py-2.5 text-right">
+                  {formatNumber(variant.stockQuantity)} units
+                </td>
                 <td className="px-3 py-2.5">
                   <Badge
                     variant="outline"
@@ -554,7 +538,7 @@ export default function ProductDetailPage({ pid }: { pid: string }) {
         <div className="flex flex-col gap-3 border-b px-4 py-4 sm:flex-row sm:items-center sm:justify-between">
           <div>
             <h2 className="text-base font-semibold">
-              Variants ({number(product.variants.length)})
+              Variants ({formatNumber(product.variants.length)})
             </h2>
             <p className="mt-1 text-sm text-muted-foreground">
               Each option combination creates a unique sellable SKU.
@@ -562,7 +546,7 @@ export default function ProductDetailPage({ pid }: { pid: string }) {
           </div>
           <div className="flex items-center gap-2 text-xs font-medium text-muted-foreground">
             <ImagesIcon className="size-4" />
-            {number(images.length)} images
+            {formatNumber(images.length)} images
           </div>
         </div>
         <VariantTable variants={product.variants} />

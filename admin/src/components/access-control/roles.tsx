@@ -2,7 +2,6 @@
 
 import { zodResolver } from "@hookform/resolvers/zod";
 import {
-  ArrowClockwiseIcon,
   DotsThreeIcon,
   MagnifyingGlassIcon,
   PencilSimpleIcon,
@@ -26,6 +25,8 @@ import {
 import { EmptyState } from "#/components/empty-state";
 import { ErrorState } from "#/components/error-state";
 import FormField from "#/components/form-field";
+import { initials, titleCase } from "#/utils/formatters";
+import { RefreshButton } from "#/components/refresh-button";
 import { Avatar, AvatarFallback, AvatarImage } from "#/components/ui/avatar";
 import { Button } from "#/components/ui/button";
 import { PageHeader } from "#/components/page-header";
@@ -55,25 +56,6 @@ const roleSchema = z.object({
 type RoleValues = z.infer<typeof roleSchema>;
 
 type RoleDialogMode = { type: "create"; role?: never } | { type: "edit"; role: Role };
-
-function sentenceCase(value: string) {
-  return value
-    .split(/[\s_]+/)
-    .filter(Boolean)
-    .map((part) => part.charAt(0).toUpperCase() + part.slice(1))
-    .join(" ");
-}
-
-function userInitials(name?: string) {
-  const initials = (name ?? "User")
-    .split(/\s+/)
-    .filter(Boolean)
-    .slice(0, 2)
-    .map((part) => part[0]?.toUpperCase())
-    .join("");
-
-  return initials || "U";
-}
 
 function rolePayload(values: RoleValues, preserveEmptyDescription = false): RoleInput {
   const description = values.description?.trim() ?? "";
@@ -111,17 +93,10 @@ export default function RolesPage() {
         subtitle="Manage access roles used to group permissions across the admin system."
         actions={
           <>
-            <Button
-              type="button"
-              variant="outline"
-              onClick={() => rolesQuery.refetch()}
-              disabled={rolesQuery.isFetching}
-            >
-              <ArrowClockwiseIcon
-                className={cn("size-4", rolesQuery.isFetching && "animate-spin")}
-              />
-              Refresh
-            </Button>
+            <RefreshButton
+              onRefresh={() => void rolesQuery.refetch()}
+              isRefreshing={rolesQuery.isFetching}
+            />
             <Button type="button" onClick={() => setDialogMode({ type: "create" })}>
               <PlusIcon className="size-4" />
               New Role
@@ -262,7 +237,7 @@ function RoleCard({
           >
             <ShieldCheckIcon className="size-5" aria-hidden />
           </span>
-          <h2 className="truncate text-lg font-semibold">{sentenceCase(role.name)}</h2>
+          <h2 className="truncate text-lg font-semibold">{titleCase(role.name)}</h2>
         </div>
 
         <Button type="button" variant="ghost" size="icon-sm" aria-label="Role actions">
@@ -301,7 +276,7 @@ function AvatarStack({ users, remaining }: { users: RoleUser[]; remaining: numbe
       {users.map((user) => (
         <Avatar key={user.pid} size="sm" className="ring-2 ring-background">
           <AvatarImage src={user.image ?? undefined} alt={user.name} />
-          <AvatarFallback>{userInitials(user.name)}</AvatarFallback>
+          <AvatarFallback>{initials(user.name)}</AvatarFallback>
         </Avatar>
       ))}
       {remaining > 0 && (

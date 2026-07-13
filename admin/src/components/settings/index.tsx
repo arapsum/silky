@@ -17,6 +17,7 @@ import {
 } from "#/api/account.ts";
 import { uploadAvatarImage } from "#/api/uploads.ts";
 import FormField from "#/components/form-field";
+import { initials } from "#/utils/formatters";
 import { Avatar, AvatarFallback, AvatarImage } from "#/components/ui/avatar";
 import { Button } from "#/components/ui/button";
 import { Separator } from "#/components/ui/separator";
@@ -99,15 +100,6 @@ function SectionHeader({ title, description }: { title: string; description: str
   );
 }
 
-function userInitials(name?: string) {
-  return (name ?? "User")
-    .split(/\s+/)
-    .filter(Boolean)
-    .slice(0, 2)
-    .map((part) => part[0]?.toUpperCase())
-    .join("");
-}
-
 function validateAvatarFile(file: File) {
   if (!AVATAR_TYPES.has(file.type)) {
     return "Upload a PNG, JPG or WebP image";
@@ -146,7 +138,7 @@ function PersonalInformationSection({ user }: { user?: CurrentUser }) {
 
   const watchedName = form.watch("name");
   const avatarPreview = avatarPreviewUrl || user?.image || undefined;
-  const initials = userInitials(watchedName || user?.name);
+  const avatarInitials = initials(watchedName || user?.name);
 
   function selectAvatar(file?: File) {
     if (!file) return;
@@ -223,7 +215,7 @@ function PersonalInformationSection({ user }: { user?: CurrentUser }) {
         <div className="grid gap-4 sm:grid-cols-[auto_1fr] sm:items-center">
           <Avatar className="size-16">
             <AvatarImage src={avatarPreview} alt={watchedName || user?.name || "User avatar"} />
-            <AvatarFallback>{initials}</AvatarFallback>
+            <AvatarFallback>{avatarInitials}</AvatarFallback>
           </Avatar>
 
           <button

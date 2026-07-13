@@ -30,6 +30,7 @@ import {
   useSidebar,
 } from "@/components/ui/sidebar";
 import { Skeleton } from "@/components/ui/skeleton";
+import { initials } from "@/utils/formatters";
 import { cn } from "@/lib/utils";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { Link, useNavigate } from "@tanstack/react-router";
@@ -300,17 +301,6 @@ const dashboardRoutes: Route[] = [
   },
 ];
 
-function userInitials(name?: string) {
-  const initials = (name ?? "User")
-    .split(/\s+/)
-    .filter(Boolean)
-    .slice(0, 2)
-    .map((part) => part[0]?.toUpperCase())
-    .join("");
-
-  return initials || "U";
-}
-
 export function AppSidebar() {
   const { state } = useSidebar();
   const isCollapsed = state === "collapsed";
@@ -353,7 +343,7 @@ function UserAccountMenu({ isCollapsed }: { isCollapsed: boolean }) {
   });
 
   const currentUser = currentUserQuery.data;
-  const fallback = userInitials(currentUser?.name);
+  const fallback = initials(currentUser?.name);
 
   const logoutMutation = useMutation({
     mutationFn: logout,

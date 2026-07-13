@@ -2,7 +2,6 @@
 
 import type { ColumnDef } from "@tanstack/react-table";
 import {
-  ArrowClockwiseIcon,
   ArrowRightIcon,
   CalendarBlankIcon,
   CaretLeftIcon,
@@ -19,8 +18,10 @@ import type { DateRange } from "react-day-picker";
 import { listOrders, ordersQueryKey, type Order } from "#/api/orders.ts";
 import { SummaryGrid } from "#/components/catalogue/summary-grid";
 import { DataTable } from "#/components/data-table";
+import { formatCurrency, formatDate, initials } from "#/utils/formatters";
 import { OrderStatusBadge } from "#/components/orders/order-status";
 import { PageHeader } from "#/components/page-header";
+import { RefreshButton } from "#/components/refresh-button";
 import { Avatar, AvatarFallback, AvatarImage } from "#/components/ui/avatar";
 import { Button } from "#/components/ui/button";
 import { Calendar } from "#/components/ui/calendar";
@@ -38,30 +39,6 @@ import { cn } from "#/lib/utils";
 const ALL_STATUSES = "all";
 const PAGE_SIZE = 20;
 
-const dateFormatter = new Intl.DateTimeFormat(undefined, {
-  day: "2-digit",
-  month: "short",
-  year: "numeric",
-});
-
-function formatMoney(value: string, currency: string) {
-  return new Intl.NumberFormat(undefined, {
-    style: "currency",
-    currency,
-  }).format(Number(value));
-}
-
-function customerInitials(name: string) {
-  return (
-    name
-      .split(/\s+/)
-      .filter(Boolean)
-      .slice(0, 2)
-      .map((part) => part[0]?.toUpperCase())
-      .join("") || "C"
-  );
-}
-
 function orderColumns(): ColumnDef<Order>[] {
   return [
     {
@@ -72,7 +49,7 @@ function orderColumns(): ColumnDef<Order>[] {
         <div>
           <p className="font-mono text-xs font-semibold">#{row.original.orderNumber}</p>
           <p className="mt-1 text-xs text-muted-foreground">
-            {dateFormatter.format(new Date(row.original.placedAt ?? row.original.createdAt))}
+            {formatDate(row.original.placedAt ?? row.original.createdAt)}
           </p>
         </div>
       ),
@@ -89,7 +66,7 @@ function orderColumns(): ColumnDef<Order>[] {
               src={row.original.customerImage ?? undefined}
               alt={row.original.customerName}
             />
-            <AvatarFallback>{customerInitials(row.original.customerName)}</AvatarFallback>
+            <AvatarFallback>{initials(row.original.customerName, "C")}</AvatarFallback>
           </Avatar>
           <div className="min-w-0">
             <p className="truncate font-medium">{row.original.customerName}</p>
@@ -105,7 +82,7 @@ function orderColumns(): ColumnDef<Order>[] {
       accessorFn: (order) => Number(order.grandTotal),
       cell: ({ row }) => (
         <span className="font-mono text-xs font-semibold">
-          {formatMoney(row.original.grandTotal, row.original.currency)}
+          {formatCurrency(row.original.grandTotal, row.original.currency)}
         </span>
       ),
       size: 140,
@@ -241,16 +218,10 @@ export function OrdersTable() {
         title="Orders"
         subtitle="Track customer orders, payments, and fulfillment from one operational view."
         actions={
-          <Button
-            type="button"
-            variant="outline"
-            className="rounded-lg"
-            onClick={() => ordersQuery.refetch()}
-            disabled={ordersQuery.isFetching}
-          >
-            <ArrowClockwiseIcon className={cn(ordersQuery.isFetching && "animate-spin")} />
-            Refresh
-          </Button>
+          <RefreshButton
+            onRefresh={() => void ordersQuery.refetch()}
+            isRefreshing={ordersQuery.isFetching}
+          />
         }
       />
 

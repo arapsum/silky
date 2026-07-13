@@ -26,12 +26,12 @@ import {
   type OrderItem,
   type UpdateOrderInput,
 } from "#/api/orders.ts";
+import { formatCurrency, formatDateTime, initials, titleCase } from "#/utils/formatters";
 import {
   FULFILLMENT_STATUSES,
   ORDER_STATUSES,
   OrderStatusBadge,
   PAYMENT_STATUSES,
-  titleCase,
 } from "#/components/orders/order-status";
 import { EmptyState } from "#/components/empty-state";
 import { ErrorState } from "#/components/error-state";
@@ -58,39 +58,12 @@ import { Skeleton } from "#/components/ui/skeleton";
 import { Textarea } from "#/components/ui/textarea";
 import { cn } from "#/lib/utils";
 
-function formatMoney(value: string, currency: string) {
-  return new Intl.NumberFormat(undefined, {
-    style: "currency",
-    currency,
-  }).format(Number(value));
-}
-
-function formatDateTime(value: string | null) {
-  if (!value) return "Not recorded";
-
-  return new Intl.DateTimeFormat(undefined, {
-    dateStyle: "medium",
-    timeStyle: "short",
-  }).format(new Date(value));
-}
-
 function optionSummary(options: Record<string, unknown>) {
   const values = Object.entries(options).filter(([, value]) => value !== null && value !== "");
 
   if (!values.length) return "No options recorded";
 
   return values.map(([name, value]) => `${titleCase(name)}: ${String(value)}`).join(" · ");
-}
-
-function customerInitials(name: string) {
-  return (
-    name
-      .split(/\s+/)
-      .filter(Boolean)
-      .slice(0, 2)
-      .map((part) => part[0]?.toUpperCase())
-      .join("") || "C"
-  );
 }
 
 function addressLines(address: OrderAddressSnapshot) {
@@ -197,7 +170,7 @@ function LineItems({ items, currency }: { items: OrderItem[]; currency: string }
                   </td>
                   <td className="px-4 py-3.5 text-right tabular-nums">{item.quantity}</td>
                   <td className="px-4 py-3.5 text-right font-medium tabular-nums">
-                    {formatMoney(item.lineTotal, currency)}
+                    {formatCurrency(item.lineTotal, currency)}
                   </td>
                 </tr>
               ))}
@@ -223,7 +196,7 @@ function CustomerInformation({ order }: { order: OrderDetail }) {
       <div className="flex items-center gap-3 border-b px-4 py-4">
         <Avatar>
           <AvatarImage src={order.customerImage ?? undefined} alt={order.customerName} />
-          <AvatarFallback>{customerInitials(order.customerName)}</AvatarFallback>
+          <AvatarFallback>{initials(order.customerName, "C")}</AvatarFallback>
         </Avatar>
         <div className="min-w-0">
           <p className="truncate text-sm font-semibold">{order.customerName}</p>
@@ -259,13 +232,13 @@ function PaymentSummary({ order }: { order: OrderDetail }) {
           >
             <dt>{label}</dt>
             <dd className="font-medium tabular-nums text-foreground">
-              {formatMoney(amount, order.currency)}
+              {formatCurrency(amount, order.currency)}
             </dd>
           </div>
         ))}
         <div className="flex items-center justify-between gap-4 border-t pt-3 text-base font-semibold">
           <dt>Order total</dt>
-          <dd className="tabular-nums">{formatMoney(order.grandTotal, order.currency)}</dd>
+          <dd className="tabular-nums">{formatCurrency(order.grandTotal, order.currency)}</dd>
         </div>
       </dl>
     </Panel>
@@ -505,7 +478,7 @@ export default function OrderDetailPage({ pid }: { pid: string }) {
             <OrderStatusBadge value={order.status} />
           </>
         }
-        subtitle={`${order.customerName} · Placed ${formatDateTime(order.placedAt ?? order.createdAt)}`}
+        subtitle={`${order.customerName} · Placed ${formatDateTime(order.placedAt ?? order.createdAt, "Not recorded")}`}
         actions={
           <>
             <Button className="rounded-lg" variant="outline" render={<Link to="/orders" />}>
@@ -529,7 +502,7 @@ export default function OrderDetailPage({ pid }: { pid: string }) {
           label="Placed on"
           className="border-b xl:border-r xl:border-b-0"
         >
-          {formatDateTime(order.placedAt ?? order.createdAt)}
+          {formatDateTime(order.placedAt ?? order.createdAt, "Not recorded")}
         </OrderFact>
         <OrderFact
           icon={<CreditCardIcon className="size-5" />}
@@ -554,9 +527,9 @@ export default function OrderDetailPage({ pid }: { pid: string }) {
       </div>
 
       <p className="mt-4 text-xs text-muted-foreground">
-        Created {formatDateTime(order.createdAt)}
+        Created {formatDateTime(order.createdAt, "Not recorded")}
         <span className="mx-2 text-border">|</span>
-        Updated {formatDateTime(order.updatedAt)}
+        Updated {formatDateTime(order.updatedAt, "Not recorded")}
       </p>
     </div>
   );

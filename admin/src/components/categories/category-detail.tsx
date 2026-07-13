@@ -19,7 +19,7 @@ import { Link, useNavigate } from "@tanstack/react-router";
 import { toast } from "sonner";
 
 import { categoriesQueryKey, deleteCategory, getCategoryDetail } from "#/api/categories.ts";
-import { titleCase } from "#/components/catalogue/string-utils";
+import { formatDateTime, formatNumber, titleCase } from "#/utils/formatters";
 import { EmptyState } from "#/components/empty-state";
 import { ErrorState } from "#/components/error-state";
 import { PageHeader } from "#/components/page-header";
@@ -38,19 +38,6 @@ import { Badge } from "#/components/ui/badge";
 import { Button } from "#/components/ui/button";
 import { Skeleton } from "#/components/ui/skeleton";
 import { cn } from "#/lib/utils";
-
-function number(value: number) {
-  return Intl.NumberFormat().format(value);
-}
-
-function dateTime(value: string | null) {
-  if (!value) return "Not available";
-
-  return new Intl.DateTimeFormat(undefined, {
-    dateStyle: "medium",
-    timeStyle: "short",
-  }).format(new Date(value));
-}
 
 function OverviewField({
   icon,
@@ -301,7 +288,7 @@ export default function CategoryDetailPage({ pid }: { pid: string }) {
                 <span className="font-mono text-xs">{category.slug}</span>
               </OverviewField>
               <OverviewField icon={<StackIcon className="size-4" />} label="Child categories">
-                {number(detail.children.length)}
+                {formatNumber(detail.children.length)}
               </OverviewField>
               <OverviewField icon={<CubeIcon className="size-4" />} label="Parent category">
                 {category.parentName ? titleCase(category.parentName) : "Top level"}
@@ -318,8 +305,8 @@ export default function CategoryDetailPage({ pid }: { pid: string }) {
             </dl>
 
             <div className="mt-6 flex flex-wrap gap-x-6 gap-y-2 border-t pt-4 text-xs text-muted-foreground">
-              <span>Created {dateTime(category.createdAt)}</span>
-              <span>Updated {dateTime(category.updatedAt)}</span>
+              <span>Created {formatDateTime(category.createdAt)}</span>
+              <span>Updated {formatDateTime(category.updatedAt)}</span>
             </div>
           </div>
         </div>
@@ -329,22 +316,22 @@ export default function CategoryDetailPage({ pid }: { pid: string }) {
         <Metric
           icon={<PackageIcon className="size-5" />}
           label="Total products"
-          value={number(category.productCount ?? 0)}
+          value={formatNumber(category.productCount ?? 0)}
         />
         <Metric
           icon={<CheckCircleIcon className="size-5" />}
           label="Active products"
-          value={number(category.productCount ?? 0)}
+          value={formatNumber(category.productCount ?? 0)}
         />
         <Metric
           icon={<StackIcon className="size-5" />}
           label="Total variants"
-          value={number(detail.totalVariants)}
+          value={formatNumber(detail.totalVariants)}
         />
         <Metric
           icon={<CubeIcon className="size-5" />}
           label="Total stock"
-          value={number(detail.totalStock)}
+          value={formatNumber(detail.totalStock)}
         />
       </div>
 
@@ -377,7 +364,7 @@ export default function CategoryDetailPage({ pid }: { pid: string }) {
                     </p>
                   </div>
                   <div className="min-w-16 text-right">
-                    <p className="text-sm font-semibold">{number(product.stockQuantity)}</p>
+                    <p className="text-sm font-semibold">{formatNumber(product.stockQuantity)}</p>
                     <p className="text-[11px] text-muted-foreground">units</p>
                   </div>
                 </Link>
@@ -427,7 +414,7 @@ export default function CategoryDetailPage({ pid }: { pid: string }) {
                   </div>
                   <div className="text-right">
                     <p className="text-xs text-muted-foreground">
-                      {number(child.productCount)} products
+                      {formatNumber(child.productCount)} products
                     </p>
                     <Badge
                       variant="outline"

@@ -25,6 +25,7 @@ import { SummaryGrid } from "#/components/catalogue/summary-grid";
 import { titleCase } from "#/components/catalogue/string-utils";
 import { CatalogueRowActions } from "#/components/catalogue/catalogue-row-actions";
 import { DataTable } from "#/components/data-table";
+import { formatCurrency, formatNumber } from "#/utils/formatters";
 import { PageHeader } from "#/components/page-header";
 import { Button } from "#/components/ui/button";
 import { Input } from "#/components/ui/input";
@@ -43,15 +44,6 @@ const stockOptions = [
   { label: "In stock", value: "inStock" },
   { label: "Out of stock", value: "outOfStock" },
 ] as const;
-
-function money(value?: string) {
-  if (!value) return "N/A";
-
-  return Intl.NumberFormat(undefined, {
-    style: "currency",
-    currency: "USD",
-  }).format(Number(value));
-}
 
 function productColumns({
   onDelete,
@@ -127,7 +119,13 @@ function productColumns({
       id: "price",
       header: "Price",
       accessorFn: (product) => Number(product.defaultVariant?.price ?? 0),
-      cell: ({ row }) => <span>{money(row.original.defaultVariant?.price)}</span>,
+      cell: ({ row }) => (
+        <span>
+          {row.original.defaultVariant?.price
+            ? formatCurrency(row.original.defaultVariant.price)
+            : "N/A"}
+        </span>
+      ),
       size: 120,
     },
     {
@@ -136,7 +134,7 @@ function productColumns({
       accessorKey: "totalStock",
       cell: ({ row }) => (
         <span className={cn(row.original.totalStock === 0 && "text-destructive")}>
-          {Intl.NumberFormat().format(row.original.totalStock)}
+          {formatNumber(row.original.totalStock)}
         </span>
       ),
       size: 100,
@@ -145,7 +143,7 @@ function productColumns({
       id: "variants",
       header: "Variants",
       accessorKey: "variantCount",
-      cell: ({ row }) => <span>{Intl.NumberFormat().format(row.original.variantCount)}</span>,
+      cell: ({ row }) => <span>{formatNumber(row.original.variantCount)}</span>,
       size: 120,
     },
     {

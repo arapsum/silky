@@ -81,7 +81,11 @@ export function CatalogueRowActions({
             Edit
           </DropdownMenuItem>
           <DropdownMenuSeparator />
-          {deleteDisabled ? deleteItem : <AlertDialogTrigger render={deleteItem} />}
+          {deleteDisabled ? (
+            deleteItem
+          ) : (
+            <AlertDialogTrigger nativeButton={false} render={deleteItem} />
+          )}
         </DropdownMenuContent>
       </DropdownMenu>
 

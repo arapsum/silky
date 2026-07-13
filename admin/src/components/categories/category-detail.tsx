@@ -12,15 +12,28 @@ import {
   PlusIcon,
   StackIcon,
   TagIcon,
+  TrashIcon,
 } from "@phosphor-icons/react";
-import { useQuery } from "@tanstack/react-query";
-import { Link } from "@tanstack/react-router";
+import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
+import { Link, useNavigate } from "@tanstack/react-router";
+import { toast } from "sonner";
 
-import { getCategoryDetail } from "#/api/categories.ts";
+import { categoriesQueryKey, deleteCategory, getCategoryDetail } from "#/api/categories.ts";
 import { titleCase } from "#/components/catalogue/string-utils";
 import { EmptyState } from "#/components/empty-state";
 import { ErrorState } from "#/components/error-state";
 import { PageHeader } from "#/components/page-header";
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+  AlertDialogTrigger,
+} from "#/components/ui/alert-dialog";
 import { Badge } from "#/components/ui/badge";
 import { Button } from "#/components/ui/button";
 import { Skeleton } from "#/components/ui/skeleton";
@@ -125,9 +138,22 @@ function CategoryDetailSkeleton() {
 
 export default function CategoryDetailPage({ pid }: { pid: string }) {
   const [failedImage, setFailedImage] = useState<string>();
+  const navigate = useNavigate();
+  const queryClient = useQueryClient();
   const categoryQuery = useQuery({
     queryKey: ["category-detail", pid],
     queryFn: () => getCategoryDetail(pid),
+  });
+  const deleteMutation = useMutation({
+    mutationFn: () => deleteCategory(pid),
+    onSuccess: async () => {
+      await queryClient.invalidateQueries({ queryKey: categoriesQueryKey });
+      toast.success("Category deleted", { id: "delete-category-success" });
+      await navigate({ to: "/categories" });
+    },
+    onError: (error) => {
+      toast.error(error.message, { id: "delete-category-error" });
+    },
   });
 
   if (categoryQuery.isLoading) return <CategoryDetailSkeleton />;
@@ -159,6 +185,7 @@ export default function CategoryDetailPage({ pid }: { pid: string }) {
 
   const category = detail.category;
   const hasImage = Boolean(category.imageLink && failedImage !== category.imageLink);
+  const hasProducts = (category.productCount ?? 0) > 0;
 
   return (
     <div className="w-full pb-10">
@@ -180,6 +207,42 @@ export default function CategoryDetailPage({ pid }: { pid: string }) {
               <ArrowLeftIcon className="size-4" />
               Back
             </Button>
+            <AlertDialog>
+              <AlertDialogTrigger
+                render={
+                  <Button
+                    className="rounded-lg"
+                    variant="outline"
+                    disabled={deleteMutation.isPending || hasProducts}
+                    title={hasProducts ? "Categories with products cannot be deleted." : undefined}
+                  />
+                }
+              >
+                <TrashIcon className="size-4" />
+                Delete
+              </AlertDialogTrigger>
+              <AlertDialogContent className="rounded-lg">
+                <AlertDialogHeader>
+                  <AlertDialogTitle>Delete category?</AlertDialogTitle>
+                  <AlertDialogDescription>
+                    {titleCase(category.name)} will be removed from the active catalogue.
+                  </AlertDialogDescription>
+                </AlertDialogHeader>
+                <AlertDialogFooter>
+                  <AlertDialogCancel className="rounded-lg" disabled={deleteMutation.isPending}>
+                    Cancel
+                  </AlertDialogCancel>
+                  <AlertDialogAction
+                    variant="destructive"
+                    className="rounded-lg"
+                    disabled={deleteMutation.isPending}
+                    onClick={() => deleteMutation.mutate()}
+                  >
+                    Delete category
+                  </AlertDialogAction>
+                </AlertDialogFooter>
+              </AlertDialogContent>
+            </AlertDialog>
             <Button
               className="rounded-lg"
               render={<Link to="/categories/$pid/edit" params={{ pid }} />}

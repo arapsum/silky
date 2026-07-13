@@ -650,21 +650,53 @@ impl Category {
     /// # Errors
     ///
     /// Returns [`ModelError::EntityNotFound`] when no category exists for
-    /// `pid`. Returns a database error if the update fails.
+    /// `pid`, and [`ModelError::CategoryHasProducts`] when active products
+    /// still belong to the category. Returns a database error if the update
+    /// fails.
     pub async fn delete(db: &PgPool, pid: Uuid) -> ModelResult<Self> {
+        let mut txn = db.begin().await?;
         let category = sqlx::query_as::<_, Self>(
             r"
-            UPDATE categories
-            SET
-                deleted_at = NOW()
+            SELECT *
+            FROM categories
             WHERE pid = $1
-            RETURNING *
+            FOR UPDATE
         ",
         )
         .bind(pid)
-        .fetch_optional(db)
+        .fetch_optional(&mut *txn)
         .await?
-        .ok_or_else(|| ModelError::EntityNotFound)?;
+        .ok_or(ModelError::EntityNotFound)?;
+
+        let has_products = sqlx::query_scalar::<_, bool>(
+            r"
+            SELECT EXISTS(
+                SELECT 1
+                FROM products
+                WHERE category_id = $1 AND deleted_at IS NULL
+            )
+            ",
+        )
+        .bind(category.id())
+        .fetch_one(&mut *txn)
+        .await?;
+
+        if has_products {
+            return Err(ModelError::CategoryHasProducts);
+        }
+
+        let category = sqlx::query_as::<_, Self>(
+            r"
+            UPDATE categories
+            SET deleted_at = NOW()
+            WHERE id = $1
+            RETURNING *
+            ",
+        )
+        .bind(category.id())
+        .fetch_one(&mut *txn)
+        .await?;
+        txn.commit().await?;
 
         Ok(category)
     }

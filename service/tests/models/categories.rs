@@ -597,15 +597,9 @@ async fn can_find_category_by_name(#[case] test_name: &str, #[case] name: String
     assert_debug_snapshot!(test_name, result);
 }
 
-#[rstest]
-#[case("can_delete_category", "00b92bcb-cc7a-4a2b-bd80-e9c1b40d1c46")]
-#[case(
-    "cannot_delete_category_when_pid_does_not_exist",
-    "00000000-0000-0000-0000-000000000000"
-)]
 #[tokio::test]
 #[serial]
-async fn can_delete_category(#[case] test_name: &str, #[case] pid: &str) {
+async fn can_delete_category_without_products() {
     configure_insta!();
 
     let ctx = boot_test().await.unwrap();
@@ -614,7 +608,19 @@ async fn can_delete_category(#[case] test_name: &str, #[case] pid: &str) {
         .await
         .expect("Failed to seed categories");
 
-    let result = Category::delete(ctx.db(), uuid(pid)).await;
+    let category = Category::create(
+        ctx.db(),
+        &new_category(
+            "Accessories".to_string(),
+            "https://cdn.example.com/categories/accessories.png".to_string(),
+            None,
+            Some("Bags and belts".to_string()),
+        ),
+    )
+    .await
+    .expect("Failed to create an empty category");
+
+    let result = Category::delete(ctx.db(), category.pid()).await;
 
     with_settings!({
         filters => {
@@ -624,6 +630,34 @@ async fn can_delete_category(#[case] test_name: &str, #[case] pid: &str) {
             filters
         }
     }, {
-        assert_debug_snapshot!(test_name, result)
+        assert_debug_snapshot!("can_delete_category", result)
     })
+}
+
+#[rstest]
+#[case(
+    "cannot_delete_category_when_it_contains_products",
+    "f63b79c9-4753-40c3-bc78-8c4fd38abd5b"
+)]
+#[case(
+    "cannot_delete_category_when_pid_does_not_exist",
+    "00000000-0000-0000-0000-000000000000"
+)]
+#[tokio::test]
+#[serial]
+async fn cannot_delete_category(#[case] test_name: &str, #[case] pid: &str) {
+    configure_insta!();
+
+    let ctx = boot_test().await.unwrap();
+
+    Category::seed_data(ctx.db(), "categories.json")
+        .await
+        .expect("Failed to seed categories");
+    Product::seed_data(ctx.db(), "products.json")
+        .await
+        .expect("Failed to seed products");
+
+    let result = Category::delete(ctx.db(), uuid(pid)).await;
+
+    assert_debug_snapshot!(test_name, result);
 }

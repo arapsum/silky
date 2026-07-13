@@ -1,0 +1,8 @@
+---
+source: tests/requests/categories.rs
+expression: "(response.status_code(), response.text())"
+---
+(
+    409,
+    "{\"error\":\"Categories with products cannot be deleted\",\"code\":\"category_has_products\"}",
+)

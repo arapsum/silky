@@ -10,6 +10,7 @@ use crate::utils;
 const TSHIRTS_PID: &str = "f63b79c9-4753-40c3-bc78-8c4fd38abd5b";
 const TROUSERS_PID: &str = "00b92bcb-cc7a-4a2b-bd80-e9c1b40d1c46";
 const SNEAKERS_PID: &str = "9a4a662b-2d78-4697-8469-e0b58c7bc4d2";
+const ACCESSORIES_PID: &str = "50bda9bb-0e4a-4b86-a97c-6943d4c1eec0";
 const MISSING_PID: &str = "00000000-0000-0000-0000-000000000000";
 
 macro_rules! configure_insta {
@@ -138,6 +139,36 @@ async fn create_child_category(db: &sqlx::PgPool) {
     .execute(db)
     .await
     .expect("Failed to create child category");
+}
+
+async fn create_deletable_category(db: &sqlx::PgPool) {
+    sqlx::query(
+        r"
+        INSERT INTO categories (
+            id,
+            pid,
+            name,
+            slug,
+            image_link,
+            description,
+            created_at,
+            updated_at
+        ) VALUES (
+            105,
+            $1::uuid,
+            'accessories',
+            'accessories',
+            'https://cdn.example.com/categories/accessories.png',
+            'Bags and belts',
+            NOW(),
+            NOW()
+        )
+        ",
+    )
+    .bind(ACCESSORIES_PID)
+    .execute(db)
+    .await
+    .expect("Failed to create an empty category");
 }
 
 async fn soft_delete_category(db: &sqlx::PgPool) {
@@ -520,7 +551,8 @@ async fn can_update_category(
 }
 
 #[rstest]
-#[case("can_delete_category", TROUSERS_PID)]
+#[case("can_delete_category", ACCESSORIES_PID)]
+#[case("cannot_delete_category_when_category_contains_products", TROUSERS_PID)]
 #[case("cannot_delete_category_when_pid_does_not_exist", MISSING_PID)]
 #[case("cannot_delete_category_when_pid_is_invalid", "not-a-uuid")]
 #[tokio::test]
@@ -532,6 +564,7 @@ async fn can_delete_category(#[case] test_name: &str, #[case] pid: &str) {
         crate::seed_data(ctx.db())
             .await
             .expect("Failed to seed data");
+        create_deletable_category(ctx.db()).await;
         allow_category_writes(ctx.db()).await;
 
         let token = access_token(&server).await;

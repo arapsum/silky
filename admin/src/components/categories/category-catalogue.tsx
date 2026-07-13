@@ -125,6 +125,8 @@ function categoryColumns({
               view={<Link to="/categories/$pid" params={{ pid: category.pid }} />}
               edit={<Link to="/categories/$pid/edit" params={{ pid: category.pid }} />}
               isDeleting={isDeleting}
+              deleteDisabled={(category.productCount ?? 0) > 0}
+              deleteDisabledReason="Categories with products cannot be deleted."
               onDelete={() => onDelete(category)}
             />
           </div>

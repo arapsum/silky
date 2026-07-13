@@ -27,6 +27,8 @@ type CatalogueRowActionsProps = {
   view: ReactElement;
   edit: ReactElement;
   isDeleting: boolean;
+  deleteDisabled?: boolean;
+  deleteDisabledReason?: string;
   onDelete: () => void;
 };
 
@@ -36,9 +38,22 @@ export function CatalogueRowActions({
   view,
   edit,
   isDeleting,
+  deleteDisabled = false,
+  deleteDisabledReason,
   onDelete,
 }: CatalogueRowActionsProps) {
   const itemTypeLabel = itemType.toLowerCase();
+  const deleteItem = (
+    <DropdownMenuItem
+      variant="destructive"
+      className="rounded-md"
+      disabled={deleteDisabled}
+      title={deleteDisabledReason}
+    >
+      <TrashIcon className="size-4" aria-hidden />
+      Delete
+    </DropdownMenuItem>
+  );
 
   return (
     <AlertDialog>
@@ -66,12 +81,7 @@ export function CatalogueRowActions({
             Edit
           </DropdownMenuItem>
           <DropdownMenuSeparator />
-          <AlertDialogTrigger
-            render={<DropdownMenuItem variant="destructive" className="rounded-md" />}
-          >
-            <TrashIcon className="size-4" aria-hidden />
-            Delete
-          </AlertDialogTrigger>
+          {deleteDisabled ? deleteItem : <AlertDialogTrigger render={deleteItem} />}
         </DropdownMenuContent>
       </DropdownMenu>
 

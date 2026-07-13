@@ -10,6 +10,8 @@ use uuid::Uuid;
 
 #[derive(Debug, thiserror::Error)]
 pub enum ModelError {
+    #[error("Categories with products cannot be deleted")]
+    CategoryHasProducts,
     #[error("entity already exists")]
     EntityAlreadyExists(String),
     #[error("entity not found")]
@@ -234,6 +236,7 @@ impl ModelError {
     #[must_use]
     pub fn response_body(&self) -> (StatusCode, String) {
         let (status, message) = match self {
+            Self::CategoryHasProducts => (StatusCode::CONFLICT, self.to_string()),
             Self::EntityAlreadyExists(message) => (StatusCode::CONFLICT, message.clone()),
             Self::EntityNotFound => (StatusCode::NOT_FOUND, "Entity not found".to_string()),
             Self::InvalidInput(message) => (StatusCode::BAD_REQUEST, message.clone()),
@@ -287,6 +290,7 @@ impl ModelError {
     #[must_use]
     pub const fn code(&self) -> &'static str {
         match self {
+            Self::CategoryHasProducts => "category_has_products",
             Self::CustomerNotFound => "customer_not_found",
             Self::CustomerAddressNotFound { .. } => "customer_address_not_found",
             Self::OrderHasNoItems => "order_items_required",

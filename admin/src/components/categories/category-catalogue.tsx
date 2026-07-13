@@ -4,10 +4,8 @@ import type { ColumnDef } from "@tanstack/react-table";
 import {
   CaretLeftIcon,
   CaretRightIcon,
-  EyeIcon,
   MagnifyingGlassIcon,
   PlusIcon,
-  TrashIcon,
   XIcon,
 } from "@phosphor-icons/react";
 import { keepPreviousData, useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
@@ -21,20 +19,10 @@ import {
   listCategories,
   type Category,
 } from "#/api/categories.ts";
+import { CatalogueRowActions } from "#/components/catalogue/catalogue-row-actions";
 import { SummaryGrid } from "#/components/catalogue/summary-grid";
 import { DataTable } from "#/components/data-table";
 import { PageHeader } from "#/components/page-header";
-import {
-  AlertDialog,
-  AlertDialogAction,
-  AlertDialogCancel,
-  AlertDialogContent,
-  AlertDialogDescription,
-  AlertDialogFooter,
-  AlertDialogHeader,
-  AlertDialogTitle,
-  AlertDialogTrigger,
-} from "#/components/ui/alert-dialog";
 import { Button } from "#/components/ui/button";
 import { Input } from "#/components/ui/input";
 import {
@@ -130,53 +118,20 @@ function categoryColumns({
         const category = row.original;
 
         return (
-          <div className="flex justify-end gap-2">
-            <Button
-              type="button"
-              variant="outline"
-              size="icon-sm"
-              aria-label={`View ${category.name}`}
-              render={<Link to="/categories/$pid" params={{ pid: category.pid }} />}
-            >
-              <EyeIcon className="size-4" />
-            </Button>
-            <AlertDialog>
-              <AlertDialogTrigger
-                render={
-                  <Button
-                    type="button"
-                    variant="outline"
-                    size="icon-sm"
-                    aria-label={`Delete ${category.name}`}
-                  />
-                }
-              >
-                <TrashIcon className="size-4" />
-              </AlertDialogTrigger>
-              <AlertDialogContent>
-                <AlertDialogHeader>
-                  <AlertDialogTitle>Delete category?</AlertDialogTitle>
-                  <AlertDialogDescription>
-                    {titleCase(category.name)} will be removed from the active catalogue.
-                  </AlertDialogDescription>
-                </AlertDialogHeader>
-                <AlertDialogFooter>
-                  <AlertDialogCancel disabled={isDeleting}>Cancel</AlertDialogCancel>
-                  <AlertDialogAction
-                    variant="destructive"
-                    disabled={isDeleting}
-                    onClick={() => onDelete(category)}
-                  >
-                    Delete
-                  </AlertDialogAction>
-                </AlertDialogFooter>
-              </AlertDialogContent>
-            </AlertDialog>
+          <div className="flex justify-end">
+            <CatalogueRowActions
+              itemName={titleCase(category.name)}
+              itemType="Category"
+              view={<Link to="/categories/$pid" params={{ pid: category.pid }} />}
+              edit={<Link to="/categories/$pid/edit" params={{ pid: category.pid }} />}
+              isDeleting={isDeleting}
+              onDelete={() => onDelete(category)}
+            />
           </div>
         );
       },
       enableSorting: false,
-      size: 112,
+      size: 72,
     },
   ];
 }

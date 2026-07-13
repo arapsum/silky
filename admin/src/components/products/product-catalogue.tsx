@@ -4,11 +4,9 @@ import type { ColumnDef } from "@tanstack/react-table";
 import {
   CaretLeftIcon,
   CaretRightIcon,
-  EyeIcon,
   MagnifyingGlassIcon,
   PackageIcon,
   PlusIcon,
-  TrashIcon,
   XIcon,
 } from "@phosphor-icons/react";
 import { keepPreviousData, useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
@@ -25,19 +23,9 @@ import {
 } from "#/api/products.ts";
 import { SummaryGrid } from "#/components/catalogue/summary-grid";
 import { titleCase } from "#/components/catalogue/string-utils";
+import { CatalogueRowActions } from "#/components/catalogue/catalogue-row-actions";
 import { DataTable } from "#/components/data-table";
 import { PageHeader } from "#/components/page-header";
-import {
-  AlertDialog,
-  AlertDialogAction,
-  AlertDialogCancel,
-  AlertDialogContent,
-  AlertDialogDescription,
-  AlertDialogFooter,
-  AlertDialogHeader,
-  AlertDialogTitle,
-  AlertDialogTrigger,
-} from "#/components/ui/alert-dialog";
 import { Button } from "#/components/ui/button";
 import { Input } from "#/components/ui/input";
 import {
@@ -167,53 +155,20 @@ function productColumns({
         const product = row.original;
 
         return (
-          <div className="flex justify-end gap-2">
-            <Button
-              type="button"
-              variant="outline"
-              size="icon-sm"
-              aria-label={`View ${product.name}`}
-              render={<Link to="/products/$pid" params={{ pid: product.pid }} />}
-            >
-              <EyeIcon className="size-4" />
-            </Button>
-            <AlertDialog>
-              <AlertDialogTrigger
-                render={
-                  <Button
-                    type="button"
-                    variant="outline"
-                    size="icon-sm"
-                    aria-label={`Delete ${product.name}`}
-                  />
-                }
-              >
-                <TrashIcon className="size-4" />
-              </AlertDialogTrigger>
-              <AlertDialogContent>
-                <AlertDialogHeader>
-                  <AlertDialogTitle>Delete product?</AlertDialogTitle>
-                  <AlertDialogDescription>
-                    {product.name} will be removed from the active catalogue.
-                  </AlertDialogDescription>
-                </AlertDialogHeader>
-                <AlertDialogFooter>
-                  <AlertDialogCancel disabled={isDeleting}>Cancel</AlertDialogCancel>
-                  <AlertDialogAction
-                    variant="destructive"
-                    disabled={isDeleting}
-                    onClick={() => onDelete(product)}
-                  >
-                    Delete
-                  </AlertDialogAction>
-                </AlertDialogFooter>
-              </AlertDialogContent>
-            </AlertDialog>
+          <div className="flex justify-end">
+            <CatalogueRowActions
+              itemName={product.name}
+              itemType="Product"
+              view={<Link to="/products/$pid" params={{ pid: product.pid }} />}
+              edit={<Link to="/products/$pid/edit" params={{ pid: product.pid }} />}
+              isDeleting={isDeleting}
+              onDelete={() => onDelete(product)}
+            />
           </div>
         );
       },
       enableSorting: false,
-      size: 112,
+      size: 72,
     },
   ];
 }

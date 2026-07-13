@@ -33,7 +33,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from "#/components/ui/select";
-import { titleCase } from "#/components/catalogue/string-utils";
+import { titleCase } from "#/utils/formatters";
 import { cn } from "#/lib/utils";
 
 const PAGE_SIZE = 20;

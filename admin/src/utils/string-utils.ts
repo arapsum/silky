@@ -5,5 +5,3 @@ export function slugify(value: string) {
     .replace(/[^a-z0-9]+/g, "-")
     .replace(/^-+|-+$/g, "");
 }
-
-export { titleCase } from "#/utils/formatters";

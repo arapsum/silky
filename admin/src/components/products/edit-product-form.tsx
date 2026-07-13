@@ -46,7 +46,7 @@ import {
   CatalogueFormSection,
 } from "#/components/catalogue/form-layout";
 import { ImageDropzone } from "#/components/catalogue/image-upload";
-import { titleCase } from "#/components/catalogue/string-utils";
+import { titleCase } from "#/utils/formatters";
 import { EmptyState } from "#/components/empty-state";
 import { ErrorState } from "#/components/error-state";
 import FormField from "#/components/form-field";

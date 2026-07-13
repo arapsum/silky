@@ -26,7 +26,8 @@ import {
   ImagePreviewSlot,
   type ImageDraft,
 } from "#/components/catalogue/image-upload";
-import { slugify, titleCase } from "#/components/catalogue/string-utils";
+import { slugify } from "#/utils/string-utils";
+import { titleCase } from "#/utils/formatters";
 import { EmptyState } from "#/components/empty-state";
 import { ErrorState } from "#/components/error-state";
 import FormField from "#/components/form-field";

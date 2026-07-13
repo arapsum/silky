@@ -22,7 +22,7 @@ import {
   type ProductListParams,
 } from "#/api/products.ts";
 import { SummaryGrid } from "#/components/catalogue/summary-grid";
-import { titleCase } from "#/components/catalogue/string-utils";
+import { titleCase } from "#/utils/formatters";
 import { CatalogueRowActions } from "#/components/catalogue/catalogue-row-actions";
 import { DataTable } from "#/components/data-table";
 import { formatCurrency, formatNumber } from "#/utils/formatters";

@@ -1,6 +1,7 @@
 "use client";
 
 import type { ColumnDef } from "@tanstack/react-table";
+import { zodResolver } from "@hookform/resolvers/zod";
 import {
   ArrowClockwiseIcon,
   CaretLeftIcon,
@@ -11,11 +12,14 @@ import {
 } from "@phosphor-icons/react";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { useEffect, useMemo, useState, type FormEvent } from "react";
+import { useForm } from "react-hook-form";
 import { toast } from "sonner";
+import { z } from "zod";
 
 import { listRoles, rolesQueryKey, type Role } from "#/api/roles.ts";
 import {
   assignRoleToUser,
+  createStaffUser,
   listUsers,
   revokeRoleFromUser,
   usersQueryKey,
@@ -23,6 +27,7 @@ import {
 } from "#/api/users.ts";
 import { SummaryGrid } from "#/components/catalogue/summary-grid";
 import { DataTable } from "#/components/data-table";
+import FormField from "#/components/form-field";
 import { PageHeader } from "#/components/page-header";
 import { Avatar, AvatarFallback, AvatarImage } from "#/components/ui/avatar";
 import { Badge } from "#/components/ui/badge";
@@ -52,6 +57,31 @@ type PeopleTablePageProps = {
 };
 
 const PAGE_SIZE = 20;
+
+const createStaffUserSchema = z
+  .object({
+    name: z
+      .string()
+      .trim()
+      .min(6, "Name requires 6 letters")
+      .max(32, "Name must be under 32 letters")
+      .regex(/^[a-zA-Z0-9_ ]+$/, "Only letters, numbers and underscores can be used."),
+    email: z.email("Invalid email address"),
+    roleId: z.string().min(1, "Choose an initial role"),
+    password: z
+      .string()
+      .min(8, "Password requires 8 characters")
+      .max(48, "Password must be under 48 characters")
+      .regex(/^\S+$/, "Password cannot have spaces")
+      .refine((value) => !value.includes(","), "Password cannot have commas"),
+    confirmPassword: z.string(),
+  })
+  .refine((values) => values.password === values.confirmPassword, {
+    message: "Passwords do not match",
+    path: ["confirmPassword"],
+  });
+
+type CreateStaffUserValues = z.infer<typeof createStaffUserSchema>;
 
 const dateFormatter = new Intl.DateTimeFormat(undefined, {
   day: "2-digit",
@@ -213,6 +243,7 @@ export default function PeopleTablePage({ title, description, category }: People
   const [search, setSearch] = useState("");
   const [page, setPage] = useState(1);
   const [selectedUser, setSelectedUser] = useState<User>();
+  const [isCreateStaffDialogOpen, setIsCreateStaffDialogOpen] = useState(false);
   const usersQuery = useQuery({
     queryKey: [...usersQueryKey, category],
     queryFn: () => listUsers(),
@@ -271,16 +302,30 @@ export default function PeopleTablePage({ title, description, category }: People
         title={title}
         subtitle={description}
         actions={
-          <Button
-            type="button"
-            variant="outline"
-            className="rounded-lg"
-            onClick={() => usersQuery.refetch()}
-            disabled={usersQuery.isFetching}
-          >
-            <ArrowClockwiseIcon className={cn("size-4", usersQuery.isFetching && "animate-spin")} />
-            Refresh
-          </Button>
+          <>
+            <Button
+              type="button"
+              variant="outline"
+              className="rounded-lg"
+              onClick={() => usersQuery.refetch()}
+              disabled={usersQuery.isFetching}
+            >
+              <ArrowClockwiseIcon
+                className={cn("size-4", usersQuery.isFetching && "animate-spin")}
+              />
+              Refresh
+            </Button>
+            {category === "staff" && (
+              <Button
+                type="button"
+                className="rounded-lg"
+                onClick={() => setIsCreateStaffDialogOpen(true)}
+              >
+                <UserPlusIcon />
+                Add staff member
+              </Button>
+            )}
+          </>
         }
       />
 
@@ -387,7 +432,174 @@ export default function PeopleTablePage({ title, description, category }: People
           )
         }
       />
+      <CreateStaffUserDialog
+        open={isCreateStaffDialogOpen}
+        roles={rolesQuery.data ?? []}
+        isLoadingRoles={rolesQuery.isLoading}
+        onOpenChange={setIsCreateStaffDialogOpen}
+      />
     </div>
+  );
+}
+
+function CreateStaffUserDialog({
+  open,
+  roles,
+  isLoadingRoles,
+  onOpenChange,
+}: {
+  open: boolean;
+  roles: Role[];
+  isLoadingRoles: boolean;
+  onOpenChange: (open: boolean) => void;
+}) {
+  const queryClient = useQueryClient();
+  const staffRoles = roles.filter((role) => role.name.toLowerCase() !== "customer");
+  const form = useForm<CreateStaffUserValues>({
+    resolver: zodResolver(createStaffUserSchema),
+    defaultValues: {
+      name: "",
+      email: "",
+      roleId: "",
+      password: "",
+      confirmPassword: "",
+    },
+  });
+  const staffRoleOptions = staffRoles.map((role) => ({
+    label: titleCase(role.name),
+    value: String(role.id),
+  }));
+
+  function handleOpenChange(nextOpen: boolean) {
+    if (!nextOpen) {
+      form.reset();
+    }
+
+    onOpenChange(nextOpen);
+  }
+
+  const mutation = useMutation({
+    mutationFn: (values: CreateStaffUserValues) => {
+      return createStaffUser({
+        name: values.name.trim(),
+        email: values.email.trim(),
+        password: values.password,
+        confirmPassword: values.confirmPassword,
+        roleId: Number(values.roleId),
+      });
+    },
+    onSuccess: async (response) => {
+      await Promise.all([
+        queryClient.invalidateQueries({ queryKey: usersQueryKey }),
+        queryClient.invalidateQueries({ queryKey: rolesQueryKey }),
+      ]);
+      toast.success(response.message, { id: "staff-user-created" });
+      handleOpenChange(false);
+    },
+    onError: (error) => toast.error(error.message, { id: "staff-user-create-error" }),
+  });
+
+  return (
+    <Dialog open={open} onOpenChange={handleOpenChange}>
+      <DialogContent className="rounded-lg sm:max-w-lg">
+        <DialogHeader>
+          <DialogTitle>Add staff member</DialogTitle>
+          <DialogDescription>
+            Create an internal account and assign its initial access role. Customer accounts are
+            created through the storefront instead.
+          </DialogDescription>
+        </DialogHeader>
+
+        <form
+          className="space-y-4"
+          onSubmit={form.handleSubmit((values) => mutation.mutate(values))}
+          noValidate
+        >
+          <div className="grid gap-4 sm:grid-cols-2">
+            <div className="sm:col-span-2">
+              <FormField
+                control={form.control}
+                name="name"
+                label="Full name"
+                autoComplete="name"
+                className="rounded-lg"
+                required
+              />
+            </div>
+            <div className="sm:col-span-2">
+              <FormField
+                control={form.control}
+                name="email"
+                label="Work email"
+                type="email"
+                autoComplete="email"
+                className="rounded-lg"
+                required
+              />
+            </div>
+            <div className="sm:col-span-2">
+              <FormField
+                control={form.control}
+                name="roleId"
+                label="Initial role"
+                type="select"
+                placeholder={isLoadingRoles ? "Loading roles..." : "Select a role"}
+                options={staffRoleOptions}
+                disabled={isLoadingRoles || !staffRoleOptions.length}
+                className="rounded-lg bg-background"
+                required
+              />
+              {!isLoadingRoles && !staffRoles.length && (
+                <p className="text-sm text-muted-foreground">
+                  Create a non-customer role before adding staff members.
+                </p>
+              )}
+            </div>
+            <div>
+              <FormField
+                control={form.control}
+                name="password"
+                label="Temporary password"
+                type="password"
+                autoComplete="new-password"
+                className="rounded-lg"
+                required
+              />
+            </div>
+            <div>
+              <FormField
+                control={form.control}
+                name="confirmPassword"
+                label="Confirm password"
+                type="password"
+                autoComplete="new-password"
+                className="rounded-lg"
+                required
+              />
+            </div>
+          </div>
+
+          <DialogFooter>
+            <Button
+              type="button"
+              variant="outline"
+              className="rounded-lg"
+              onClick={() => handleOpenChange(false)}
+            >
+              Cancel
+            </Button>
+            <Button
+              type="submit"
+              className="rounded-lg"
+              disabled={mutation.isPending || isLoadingRoles || !staffRoles.length}
+            >
+              <UserPlusIcon />
+              {mutation.isPending ? "Creating..." : "Create staff account"}
+            </Button>
+          </DialogFooter>
+        </form>
+      </DialogContent>
+    </Dialog>
   );
 }
 

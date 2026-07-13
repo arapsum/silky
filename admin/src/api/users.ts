@@ -26,6 +26,18 @@ export type AssignUserRoleInput = {
   roleId: number;
 };
 
+export type CreateStaffUserInput = {
+  name: string;
+  email: string;
+  password: string;
+  confirmPassword: string;
+  roleId: number;
+};
+
+type CreateStaffUserResponse = {
+  message: string;
+};
+
 export type UserRoleAssignment = {
   id: number;
   pid: string;
@@ -46,6 +58,14 @@ export function listUsers(role?: string) {
 
   return apiRequest<User[]>(`/users${query ? `?${query}` : ""}`, {
     fallback: "Unable to load users",
+  });
+}
+
+export function createStaffUser(input: CreateStaffUserInput) {
+  return apiRequest<CreateStaffUserResponse>("/users", {
+    method: "POST",
+    body: JSON.stringify(input),
+    fallback: "Unable to create staff account",
   });
 }
 

@@ -1,14 +1,14 @@
 "use client";
 
 import { zodResolver } from "@hookform/resolvers/zod";
-import { useMutation } from "@tanstack/react-query";
+import { useMutation, useQuery } from "@tanstack/react-query";
 import { useNavigate } from "@tanstack/react-router";
-import { useEffect, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { useForm } from "react-hook-form";
 import { toast } from "sonner";
 import { z } from "zod";
 
-import { createCategory } from "#/api/categories.ts";
+import { categoriesQueryKey, createCategory, listCategories } from "#/api/categories.ts";
 import { uploadCategoryImage } from "#/api/uploads.ts";
 import {
   CatalogueFormActions,
@@ -21,7 +21,7 @@ import {
   ImagePreviewSlot,
   type ImageDraft,
 } from "#/components/catalogue/image-upload";
-import { slugify } from "#/components/catalogue/string-utils";
+import { slugify, titleCase } from "#/components/catalogue/string-utils";
 import FormField from "#/components/form-field";
 import { Button } from "#/components/ui/button";
 
@@ -44,13 +44,6 @@ const categorySchema = z.object({
 
 type CategoryFormValues = z.infer<typeof categorySchema>;
 
-const parentCategoryOptions = [
-  { label: "No parent category", value: "none" },
-  { label: "T-shirts", value: "101" },
-  { label: "Trousers", value: "102" },
-  { label: "Shoes", value: "103" },
-];
-
 const displayTypeOptions = [
   { label: "Products grid", value: "products-grid" },
   { label: "Feature collection", value: "feature-collection" },
@@ -60,6 +53,20 @@ const displayTypeOptions = [
 export default function CreateCategoryForm() {
   const navigate = useNavigate();
   const [thumbnail, setThumbnail] = useState<ImageDraft>();
+  const categoriesQuery = useQuery({
+    queryKey: [...categoriesQueryKey, { limit: 100 }],
+    queryFn: () => listCategories({ limit: 100 }),
+  });
+  const parentCategoryOptions = useMemo(
+    () => [
+      { label: "No parent category", value: "none" },
+      ...(categoriesQuery.data?.data ?? []).map((category) => ({
+        label: titleCase(category.name),
+        value: String(category.id),
+      })),
+    ],
+    [categoriesQuery.data?.data],
+  );
 
   const form = useForm<CategoryFormValues>({
     resolver: zodResolver(categorySchema),
@@ -159,8 +166,9 @@ export default function CreateCategoryForm() {
           name="parentCategory"
           type="select"
           label="Parent Category"
-          placeholder="Select..."
+          placeholder={categoriesQuery.isLoading ? "Loading..." : "Select..."}
           options={parentCategoryOptions}
+          disabled={categoriesQuery.isLoading}
         />
         <FormField
           control={form.control}

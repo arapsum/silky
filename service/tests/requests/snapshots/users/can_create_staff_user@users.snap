@@ -1,0 +1,9 @@
+---
+source: tests/requests/users.rs
+expression: "(response.status_code(), response.text(), assigned_roles,)"
+---
+(
+    201,
+    "{\"message\":\"Staff account created successfully. Please ask the user to verify their email.\"}",
+    1,
+)

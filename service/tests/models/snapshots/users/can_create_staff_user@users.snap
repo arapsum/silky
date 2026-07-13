@@ -1,0 +1,36 @@
+---
+source: tests/models/user.rs
+expression: "(result, assignments)"
+---
+(
+    Ok(
+        User {
+            id: ID,
+            pid: PID,
+            name: "Warehouse Manager",
+            email: "warehouse.manager@silk.com",
+            image: None,
+            password_hash: "PASSWORD",
+            verified_at: None,
+            verification_token_hash: None,
+            verification_token_expires_at: None,
+            reset_token_hash: None,
+            reset_token_expires_at: None,
+            created_at: DATE,
+            updated_at: DATE,
+            deleted_at: None,
+        },
+    ),
+    Ok(
+        [
+            UserRole {
+                id: ID,
+                pid: PID,
+                user_id: ID,
+                role_id: ID,
+                created_at: DATE,
+                updated_at: DATE,
+            },
+        ],
+    ),
+)

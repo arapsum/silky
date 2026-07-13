@@ -5,14 +5,16 @@ use axum::{
     response::{IntoResponse, Response},
     routing::{get, post},
 };
+use uuid::Uuid;
 
 use crate::{
     AppState, Result,
     access_control::permissions,
     middlewares::RbacLayer,
     models::{User, UserRole},
-    schemas::{AssignRole, UserListQuery, Validator},
+    schemas::{AssignRole, CreateStaffUser, UserListQuery, Validator},
     utils::{AppJson, AppQuery},
+    views::AuthResponse,
 };
 
 #[tracing::instrument(skip(ctx))]
@@ -27,6 +29,45 @@ async fn list(
     let users = User::find_list_with_roles(ctx.db(), validated.role()).await?;
 
     Ok((StatusCode::OK, Json(users)).into_response())
+}
+
+/// Provisions a staff account with its first non-customer role.
+///
+/// Public customer registration remains under `/auth/register`; this endpoint
+/// is protected by the dedicated `users:create` permission instead.
+#[tracing::instrument(skip(ctx, params))]
+#[debug_handler]
+async fn create(
+    State(ctx): State<AppState>,
+    AppJson(params): AppJson<CreateStaffUser<'static>>,
+) -> Result<Response> {
+    let validator = Validator::new(params);
+    let validated = validator.validate()?;
+
+    let mut created = User::create_staff(ctx.db(), validated).await?;
+    let verification_token = Uuid::new_v4().to_string();
+
+    created
+        .set_verification_token(
+            ctx.db(),
+            &verification_token,
+            ctx.config().auth().verification_token_expiry(),
+        )
+        .await?;
+
+    if let Some(queue) = ctx.queue().get() {
+        queue
+            .enqueue_welcome(created.pid(), verification_token)
+            .await?;
+    }
+
+    Ok((
+        StatusCode::CREATED,
+        Json(AuthResponse::new(
+            "Staff account created successfully. Please ask the user to verify their email.",
+        )),
+    )
+        .into_response())
 }
 
 #[tracing::instrument(skip(ctx))]
@@ -62,6 +103,10 @@ pub fn router(ctx: &AppState) -> Router {
         .route(
             "/",
             get(list).layer(RbacLayer::new(ctx.clone(), permissions::users::READ)),
+        )
+        .route(
+            "/",
+            post(create).layer(RbacLayer::new(ctx.clone(), permissions::users::CREATE)),
         )
         .route(
             "/roles",

@@ -38,5 +38,37 @@
     "permissionId": 126,
     "createdAt": "2026-07-12T09:00:00+00:00",
     "updatedAt": "2026-07-12T09:00:00+00:00"
+  },
+  {
+    "id": 1006,
+    "pid": "cc3ec7e8-d42b-4a6d-bd49-11e136a5da76",
+    "roleId": 11,
+    "permissionId": 109,
+    "createdAt": "2026-07-13T09:00:00+00:00",
+    "updatedAt": "2026-07-13T09:00:00+00:00"
+  },
+  {
+    "id": 1007,
+    "pid": "f6823d33-b3cb-49b9-afdb-f74c9803a1ac",
+    "roleId": 11,
+    "permissionId": 110,
+    "createdAt": "2026-07-13T09:00:00+00:00",
+    "updatedAt": "2026-07-13T09:00:00+00:00"
+  },
+  {
+    "id": 1008,
+    "pid": "1275a6e5-15d4-4d0e-9ac3-c0924e7a0cdf",
+    "roleId": 11,
+    "permissionId": 111,
+    "createdAt": "2026-07-13T09:00:00+00:00",
+    "updatedAt": "2026-07-13T09:00:00+00:00"
+  },
+  {
+    "id": 1009,
+    "pid": "20b6a2a8-4ffb-42b3-aa76-ea39aa399b9e",
+    "roleId": 11,
+    "permissionId": 112,
+    "createdAt": "2026-07-13T09:00:00+00:00",
+    "updatedAt": "2026-07-13T09:00:00+00:00"
   }
 ]

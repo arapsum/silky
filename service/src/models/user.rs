@@ -9,7 +9,7 @@ use sha2::{Digest, Sha256};
 use sqlx::{Encode, Executor, PgPool, Postgres, Row, prelude::FromRow};
 use uuid::Uuid;
 
-use crate::schemas::{ChangePassword, LoginUser, RegisterUser, UpdateProfile};
+use crate::schemas::{ChangePassword, CreateStaffUser, LoginUser, RegisterUser, UpdateProfile};
 
 use super::{ModelError, ModelResult, Seedable};
 
@@ -119,6 +119,76 @@ impl User {
         .bind(password_hash)
         .bind(params.image())
         .fetch_one(&mut *txn)
+        .await?;
+
+        txn.commit().await?;
+
+        Ok(user)
+    }
+
+    /// Creates a staff user and assigns its initial role in one transaction.
+    ///
+    /// Customer accounts are created through the storefront registration flow,
+    /// so the customer role is deliberately rejected here. This keeps staff
+    /// provisioning separate and prevents a partially-created user without an
+    /// access role when an assignment cannot be stored.
+    ///
+    /// # Errors
+    ///
+    /// Returns [`ModelError::EntityAlreadyExists`] when the email is already
+    /// registered. Returns [`ModelError::InvalidReference`] when the role does
+    /// not exist, [`ModelError::InvalidInput`] when it is the customer role,
+    /// or a database/password-hashing error when the transaction cannot be
+    /// completed.
+    pub async fn create_staff(db: &PgPool, params: &CreateStaffUser<'_>) -> ModelResult<Self> {
+        let mut txn = db.begin().await?;
+
+        let exists = sqlx::query_scalar::<_, i32>("SELECT id FROM users WHERE email = $1")
+            .bind(params.email())
+            .fetch_optional(&mut *txn)
+            .await?;
+
+        if exists.is_some() {
+            return Err(ModelError::EntityAlreadyExists(
+                "User with email already exists".into(),
+            ));
+        }
+
+        let role_name = sqlx::query_scalar::<_, String>("SELECT name FROM roles WHERE id = $1")
+            .bind(params.role_id())
+            .fetch_optional(&mut *txn)
+            .await?
+            .ok_or_else(|| ModelError::InvalidReference("Staff role does not exist".into()))?;
+
+        if role_name.eq_ignore_ascii_case("customer") {
+            return Err(ModelError::InvalidInput(
+                "Customer accounts must be created through the storefront registration flow".into(),
+            ));
+        }
+
+        let user = sqlx::query_as::<_, Self>(
+            r"
+            INSERT INTO users (name, email, password_hash, image)
+            VALUES ($1, $2, $3, $4)
+            RETURNING *
+        ",
+        )
+        .bind(params.name())
+        .bind(params.email())
+        .bind(Self::hash_password(params.password())?)
+        .bind(params.image())
+        .fetch_one(&mut *txn)
+        .await?;
+
+        sqlx::query(
+            r"
+            INSERT INTO users_roles (user_id, role_id)
+            VALUES ($1, $2)
+        ",
+        )
+        .bind(user.id)
+        .bind(params.role_id())
+        .execute(&mut *txn)
         .await?;
 
         txn.commit().await?;

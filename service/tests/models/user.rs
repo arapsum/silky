@@ -6,7 +6,7 @@ use serial_test::serial;
 use service::{
     App,
     models::{ModelError, user::User},
-    schemas::{ChangePassword, RegisterUser, UpdateProfile},
+    schemas::{ChangePassword, CreateStaffUser, RegisterUser, UpdateProfile},
 };
 use uuid::Uuid;
 
@@ -33,6 +33,17 @@ fn update_profile(name: &str, email: &str, image: Option<&str>) -> UpdateProfile
         Cow::Owned(name.to_string()),
         Cow::Owned(email.to_string()),
         image.map(|image| Cow::Owned(image.to_string())),
+    )
+}
+
+fn staff_user_params(email: &str, role_id: i32) -> CreateStaffUser<'static> {
+    CreateStaffUser::new(
+        Cow::Owned(email.to_string()),
+        Cow::Owned("Warehouse Manager".to_string()),
+        Cow::Owned("Password123".to_string()),
+        Cow::Owned("Password123".to_string()),
+        role_id,
+        None,
     )
 }
 
@@ -88,6 +99,78 @@ async fn cannot_create_user_when_email_already_exists() {
     let result = User::create(ctx.db(), &params).await;
 
     assert_debug_snapshot!(result);
+}
+
+#[rstest]
+#[case("can_create_staff_user", "warehouse.manager@silk.com", 11, true)]
+#[case(
+    "cannot_create_staff_user_when_email_already_exists",
+    "john.doe@acme.com",
+    11,
+    false
+)]
+#[case(
+    "cannot_create_staff_user_with_customer_role",
+    "shopper@silk.com",
+    22,
+    true
+)]
+#[case(
+    "cannot_create_staff_user_with_missing_role",
+    "missing.role@silk.com",
+    999,
+    true
+)]
+#[tokio::test]
+#[serial]
+async fn create_staff_user(
+    #[case] test_name: &str,
+    #[case] email: &str,
+    #[case] role_id: i32,
+    #[case] remove_after: bool,
+) {
+    configure_insta!();
+
+    let ctx = boot_test().await.unwrap();
+    App::seed(ctx.db()).await.unwrap();
+
+    let result = User::create_staff(ctx.db(), &staff_user_params(email, role_id)).await;
+    let assignments = match &result {
+        Ok(user) => service::models::UserRole::find_by_user(ctx.db(), user.id()).await,
+        Err(_) => Ok(Vec::new()),
+    };
+    let assigned_role_ids = assignments
+        .as_ref()
+        .expect("Failed to inspect the created user's roles")
+        .iter()
+        .map(service::models::UserRole::role_id)
+        .collect::<Vec<_>>();
+    let expected_role_ids = if result.is_ok() {
+        vec![role_id]
+    } else {
+        Vec::new()
+    };
+    assert_eq!(assigned_role_ids, expected_role_ids);
+
+    if remove_after {
+        sqlx::query("DELETE FROM users WHERE email = $1")
+            .bind(email)
+            .execute(ctx.db())
+            .await
+            .expect("Failed to remove test user");
+    }
+
+    with_settings!({
+        filters => {
+            let mut filters = cleanup_uuid().to_vec();
+            filters.extend(cleanup_date().to_vec());
+            filters.extend(cleanup_password());
+            filters.extend(cleanup_id());
+            filters
+        }
+    }, {
+        assert_debug_snapshot!(test_name, (result, assignments))
+    })
 }
 
 #[tokio::test]

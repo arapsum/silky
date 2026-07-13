@@ -241,7 +241,7 @@ impl<'a> UpdateProfile<'a> {
     }
 }
 
-fn validate_password(password: &str) -> Result<(), ValidationError> {
+pub(crate) fn validate_password(password: &str) -> Result<(), ValidationError> {
     const MIN_LENGTH: usize = 8;
     const MAX_LENGTH: usize = 48;
 
@@ -276,7 +276,7 @@ fn validate_password(password: &str) -> Result<(), ValidationError> {
     Ok(())
 }
 
-fn validate_name(name: &str) -> Result<(), ValidationError> {
+pub(crate) fn validate_name(name: &str) -> Result<(), ValidationError> {
     const MIN_LENGTH: usize = 6;
     const MAX_LENGTH: usize = 32;
 

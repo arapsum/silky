@@ -1,0 +1,9 @@
+---
+source: tests/requests/users.rs
+expression: "(response.status_code(), response.text(), assigned_roles,)"
+---
+(
+    404,
+    "{\"error\":\"Staff role does not exist\",\"code\":\"invalid_reference\"}",
+    0,
+)

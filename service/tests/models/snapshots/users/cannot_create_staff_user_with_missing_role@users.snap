@@ -1,0 +1,14 @@
+---
+source: tests/models/user.rs
+expression: "(result, assignments)"
+---
+(
+    Err(
+        InvalidReference(
+            "Staff role does not exist",
+        ),
+    ),
+    Ok(
+        [],
+    ),
+)

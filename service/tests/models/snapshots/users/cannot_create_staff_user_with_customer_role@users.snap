@@ -1,0 +1,14 @@
+---
+source: tests/models/user.rs
+expression: "(result, assignments)"
+---
+(
+    Err(
+        InvalidInput(
+            "Customer accounts must be created through the storefront registration flow",
+        ),
+    ),
+    Ok(
+        [],
+    ),
+)

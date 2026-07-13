@@ -1,0 +1,9 @@
+---
+source: tests/requests/users.rs
+expression: "(response.status_code(), response.text(), assigned_roles,)"
+---
+(
+    400,
+    "{\"error\":\"Customer accounts must be created through the storefront registration flow\",\"code\":\"invalid_input\"}",
+    0,
+)

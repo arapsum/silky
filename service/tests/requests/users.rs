@@ -43,6 +43,14 @@ async fn revoke_user_role(db: &sqlx::PgPool, user_id: i32, role_id: i32) {
     .expect("Failed to revoke user role");
 }
 
+async fn remove_user(db: &sqlx::PgPool, email: &str) {
+    sqlx::query("DELETE FROM users WHERE email = $1")
+        .bind(email)
+        .execute(db)
+        .await
+        .expect("Failed to remove test user");
+}
+
 fn response_filters() -> Vec<(&'static str, &'static str)> {
     let mut filters = utils::cleanup_date().to_vec();
     filters.extend(utils::cleanup_uuid().to_vec());
@@ -76,6 +84,123 @@ async fn can_list_users(#[case] test_name: &str, #[case] path: &str) {
             filters => response_filters()
         }, {
             assert_debug_snapshot!(test_name, (response.status_code(), response.text()))
+        })
+    })
+    .await;
+}
+
+#[rstest]
+#[case(
+    "can_create_staff_user",
+    serde_json::json!({
+        "name": "Warehouse Manager",
+        "email": "warehouse.manager@silk.com",
+        "password": "Password123",
+        "confirmPassword": "Password123",
+        "roleId": 11
+    }),
+    1
+)]
+#[case(
+    "cannot_create_staff_user_when_email_already_exists",
+    serde_json::json!({
+        "name": "John Doe",
+        "email": "john.doe@acme.com",
+        "password": "Password123",
+        "confirmPassword": "Password123",
+        "roleId": 11
+    }),
+    2
+)]
+#[case(
+    "cannot_create_staff_user_with_customer_role",
+    serde_json::json!({
+        "name": "Customer Account",
+        "email": "shopper@silk.com",
+        "password": "Password123",
+        "confirmPassword": "Password123",
+        "roleId": 22
+    }),
+    0
+)]
+#[case(
+    "cannot_create_staff_user_with_missing_role",
+    serde_json::json!({
+        "name": "Missing Role",
+        "email": "missing.role@silk.com",
+        "password": "Password123",
+        "confirmPassword": "Password123",
+        "roleId": 999
+    }),
+    0
+)]
+#[case(
+    "cannot_create_staff_user_with_invalid_payload",
+    serde_json::json!({
+        "name": "Warehouse Manager",
+        "email": "warehouse.invalid@silk.com",
+        "password": "Password123",
+        "confirmPassword": "Different123",
+        "roleId": 11
+    }),
+    0
+)]
+#[tokio::test]
+#[serial]
+async fn can_create_staff_user(
+    #[case] test_name: &str,
+    #[case] params: serde_json::Value,
+    #[case] expected_role_count: i64,
+) {
+    crate::request(|server, ctx| async move {
+        configure_insta!();
+
+        crate::seed_data(ctx.db())
+            .await
+            .expect("Failed to seed data");
+
+        let email = params["email"].as_str().expect("Email should be present");
+        let is_seeded_email = email == "john.doe@acme.com";
+        if !is_seeded_email {
+            remove_user(ctx.db(), email).await;
+        }
+        let token = access_token(&server).await;
+        let (auth_header, auth_value) = utils::auth_header(token);
+
+        let response = server
+            .post("/users")
+            .add_header(auth_header, auth_value)
+            .json(&params)
+            .await;
+
+        let assigned_roles = sqlx::query_scalar::<_, i64>(
+            r"
+            SELECT COUNT(*)
+            FROM users_roles
+            JOIN users ON users.id = users_roles.user_id
+            WHERE users.email = $1
+        ",
+        )
+        .bind(email)
+        .fetch_one(ctx.db())
+        .await
+        .expect("Failed to inspect staff role assignment");
+        assert_eq!(
+            assigned_roles, expected_role_count,
+            "The request should leave the expected number of roles assigned to {email}",
+        );
+        if !is_seeded_email {
+            remove_user(ctx.db(), email).await;
+        }
+
+        with_settings!({
+            filters => response_filters()
+        }, {
+            assert_debug_snapshot!(test_name, (
+                response.status_code(),
+                response.text(),
+                assigned_roles,
+            ))
         })
     })
     .await;
@@ -182,6 +307,7 @@ async fn can_revoke_role_from_user(#[case] test_name: &str, #[case] params: serd
     "POST",
     "/users/roles"
 )]
+#[case("cannot_create_staff_user_without_credentials", "POST", "/users")]
 #[case(
     "cannot_revoke_role_from_user_without_credentials",
     "DELETE",
@@ -204,10 +330,19 @@ async fn cannot_access_users_without_credentials(
         let response = match method {
             "GET" => server.get(path).await,
             "POST" => {
-                server
-                    .post(path)
-                    .json(&serde_json::json!({ "userId": 22, "roleId": 11 }))
-                    .await
+                let params = if path == "/users" {
+                    serde_json::json!({
+                        "name": "Warehouse Manager",
+                        "email": "warehouse.manager@silk.com",
+                        "password": "Password123",
+                        "confirmPassword": "Password123",
+                        "roleId": 11
+                    })
+                } else {
+                    serde_json::json!({ "userId": 22, "roleId": 11 })
+                };
+
+                server.post(path).json(&params).await
             }
             "DELETE" => {
                 server
@@ -228,12 +363,25 @@ async fn cannot_access_users_without_credentials(
 }
 
 #[rstest]
-#[case("cannot_list_users_without_permission", "GET")]
-#[case("cannot_assign_role_to_user_without_permission", "POST")]
-#[case("cannot_revoke_role_from_user_without_permission", "DELETE")]
+#[case("cannot_list_users_without_permission", "GET", "/users")]
+#[case(
+    "cannot_assign_role_to_user_without_permission",
+    "POST",
+    "/users/roles"
+)]
+#[case("cannot_create_staff_user_without_permission", "POST", "/users")]
+#[case(
+    "cannot_revoke_role_from_user_without_permission",
+    "DELETE",
+    "/users/roles"
+)]
 #[tokio::test]
 #[serial]
-async fn cannot_modify_users_without_permission(#[case] test_name: &str, #[case] method: &str) {
+async fn cannot_modify_users_without_permission(
+    #[case] test_name: &str,
+    #[case] method: &str,
+    #[case] path: &str,
+) {
     crate::request(|server, ctx| async move {
         configure_insta!();
 
@@ -244,22 +392,29 @@ async fn cannot_modify_users_without_permission(#[case] test_name: &str, #[case]
         let (auth_header, auth_value) = utils::auth_header(token);
 
         let response = match method {
-            "GET" => {
-                server
-                    .get("/users")
-                    .add_header(auth_header, auth_value)
-                    .await
-            }
+            "GET" => server.get(path).add_header(auth_header, auth_value).await,
             "POST" => {
+                let params = if path == "/users" {
+                    serde_json::json!({
+                        "name": "Warehouse Manager",
+                        "email": "warehouse.manager@silk.com",
+                        "password": "Password123",
+                        "confirmPassword": "Password123",
+                        "roleId": 11
+                    })
+                } else {
+                    serde_json::json!({ "userId": 22, "roleId": 11 })
+                };
+
                 server
-                    .post("/users/roles")
+                    .post(path)
                     .add_header(auth_header, auth_value)
-                    .json(&serde_json::json!({ "userId": 22, "roleId": 11 }))
+                    .json(&params)
                     .await
             }
             "DELETE" => {
                 server
-                    .delete("/users/roles")
+                    .delete(path)
                     .add_header(auth_header, auth_value)
                     .json(&serde_json::json!({ "userId": 11, "roleId": 11 }))
                     .await

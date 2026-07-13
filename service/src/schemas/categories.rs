@@ -99,6 +99,8 @@ pub struct UpdateCategory<'a> {
     image_link: Option<Cow<'a, str>>,
     #[validate(range(min = 1, max = 1_000_000))]
     parent_id: Option<i32>,
+    #[serde(default)]
+    clear_parent: bool,
     #[validate(length(max = 1000, message = "Description must be under 1000 characters"))]
     description: Option<Cow<'a, str>>,
     #[serde(default)]
@@ -119,6 +121,7 @@ impl<'a> UpdateCategory<'a> {
             slug,
             image_link,
             parent_id,
+            clear_parent: false,
             description,
             media_asset_pid: None,
         }
@@ -141,6 +144,11 @@ impl<'a> UpdateCategory<'a> {
     #[must_use]
     pub const fn parent_id(&self) -> Option<i32> {
         self.parent_id
+    }
+
+    #[must_use]
+    pub const fn clear_parent(&self) -> bool {
+        self.clear_parent
     }
 
     #[must_use]

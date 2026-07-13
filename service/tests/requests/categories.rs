@@ -9,6 +9,7 @@ use crate::utils;
 
 const TSHIRTS_PID: &str = "f63b79c9-4753-40c3-bc78-8c4fd38abd5b";
 const TROUSERS_PID: &str = "00b92bcb-cc7a-4a2b-bd80-e9c1b40d1c46";
+const SNEAKERS_PID: &str = "9a4a662b-2d78-4697-8469-e0b58c7bc4d2";
 const MISSING_PID: &str = "00000000-0000-0000-0000-000000000000";
 
 macro_rules! configure_insta {
@@ -406,6 +407,13 @@ async fn can_create_category(#[case] test_name: &str, #[case] params: serde_json
     })
 )]
 #[case(
+    "can_clear_category_parent",
+    SNEAKERS_PID,
+    serde_json::json!({
+        "clearParent": true
+    })
+)]
+#[case(
     "can_update_category_name",
     TROUSERS_PID,
     serde_json::json!({
@@ -488,6 +496,9 @@ async fn can_update_category(
         crate::seed_data(ctx.db())
             .await
             .expect("Failed to seed data");
+        if pid == SNEAKERS_PID {
+            create_child_category(ctx.db()).await;
+        }
         allow_category_writes(ctx.db()).await;
 
         let token = access_token(&server).await;

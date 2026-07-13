@@ -160,16 +160,17 @@ impl Category {
                     name = COALESCE($1, name),
                     slug = COALESCE($2, slug),
                     image_link = COALESCE($3, image_link),
-                    parent_id = COALESCE($4, parent_id),
-                    description = COALESCE($5, description),
-                    media_asset_id = COALESCE((SELECT id FROM media_assets WHERE pid = $6), media_asset_id)
-                WHERE pid = $7
+                    parent_id = CASE WHEN $4 THEN NULL ELSE COALESCE($5, parent_id) END,
+                    description = COALESCE($6, description),
+                    media_asset_id = COALESCE((SELECT id FROM media_assets WHERE pid = $7), media_asset_id)
+                WHERE pid = $8
                 RETURNING *
         ",
         )
         .bind(params.name().map(|s| s.trim().to_lowercase()))
         .bind(slug)
         .bind(params.image_link().map(|s| s.trim()))
+        .bind(params.clear_parent())
         .bind(params.parent_id())
         .bind(params.description().map(|s| s.trim()))
         .bind(params.media_asset_pid())

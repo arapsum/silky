@@ -1,0 +1,8 @@
+---
+source: tests/requests/users.rs
+expression: snapshot
+---
+(
+    409,
+    "{\"error\":\"User has already been assigned that role\",\"code\":\"entity_already_exists\"}",
+)

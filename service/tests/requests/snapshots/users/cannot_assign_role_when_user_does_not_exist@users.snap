@@ -1,0 +1,8 @@
+---
+source: tests/requests/users.rs
+expression: "(response.status_code(), response.text())"
+---
+(
+    404,
+    "{\"error\":\"A referenced record does not exist. Constraint: users_roles_user_id_fkey.\",\"code\":\"invalid_reference\"}",
+)

@@ -120,6 +120,33 @@ async fn cannot_assign_duplicate_role_to_user(
 }
 
 #[rstest]
+#[case("can_revoke_role_from_user", 11, 11)]
+#[case("cannot_revoke_role_that_is_not_assigned", 33, 11)]
+#[tokio::test]
+#[serial]
+async fn can_revoke_role_from_user(
+    #[case] test_name: &str,
+    #[case] user_id: i32,
+    #[case] role_id: i32,
+) {
+    configure_insta!();
+
+    let ctx = boot_test().await.unwrap();
+
+    seed_user_roles(ctx.db()).await;
+
+    let params = assign_role(user_id, role_id);
+    let revoked = UserRole::revoke_role(ctx.db(), &params).await;
+    let remaining = UserRole::find_by_user(ctx.db(), user_id).await;
+
+    with_settings!({
+        filters => redactions()
+    }, {
+        assert_debug_snapshot!(test_name, (revoked, remaining))
+    })
+}
+
+#[rstest]
 #[case("can_find_user_roles_by_user", 11)]
 #[case("can_find_customer_role_by_user", 22)]
 #[case("can_find_user_roles_by_user_when_none_exist", 33)]

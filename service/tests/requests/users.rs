@@ -17,30 +17,30 @@ macro_rules! configure_insta {
 }
 
 async fn access_token(server: &TestServer) -> HeaderValue {
+    access_token_for(server, "john.doe@acme.com").await
+}
+
+async fn access_token_for(server: &TestServer, email: &str) -> HeaderValue {
     let params = serde_json::json!({
-        "email": "john.doe@acme.com",
+        "email": email,
         "password": "Password"
     });
 
     utils::login_users(server, &params).await.access_token
 }
 
-async fn revoke_role(db: &sqlx::PgPool, email: &str, role: &str) {
+async fn revoke_user_role(db: &sqlx::PgPool, user_id: i32, role_id: i32) {
     sqlx::query(
         r"
         DELETE FROM users_roles
-        USING users, roles
-        WHERE users_roles.user_id = users.id
-            AND users_roles.role_id = roles.id
-            AND users.email = $1
-            AND roles.name = $2
+        WHERE user_id = $1 AND role_id = $2
     ",
     )
-    .bind(email)
-    .bind(role)
+    .bind(user_id)
+    .bind(role_id)
     .execute(db)
     .await
-    .expect("Failed to revoke role");
+    .expect("Failed to revoke user role");
 }
 
 fn response_filters() -> Vec<(&'static str, &'static str)> {
@@ -82,10 +82,74 @@ async fn can_list_users(#[case] test_name: &str, #[case] path: &str) {
 }
 
 #[rstest]
-#[case("cannot_list_users_without_credentials", "/users")]
+#[case(
+    "can_assign_role_to_user",
+    serde_json::json!({ "userId": 22, "roleId": 11 })
+)]
+#[case(
+    "cannot_assign_role_when_user_already_has_role",
+    serde_json::json!({ "userId": 11, "roleId": 22 })
+)]
+#[case(
+    "cannot_assign_role_when_user_does_not_exist",
+    serde_json::json!({ "userId": 999, "roleId": 11 })
+)]
+#[case(
+    "cannot_assign_role_when_role_does_not_exist",
+    serde_json::json!({ "userId": 22, "roleId": 999 })
+)]
+#[case(
+    "cannot_assign_role_when_payload_is_invalid",
+    serde_json::json!({ "userId": 0, "roleId": 0 })
+)]
 #[tokio::test]
 #[serial]
-async fn cannot_access_users_without_credentials(#[case] test_name: &str, #[case] path: &str) {
+async fn can_assign_role_to_user(#[case] test_name: &str, #[case] params: serde_json::Value) {
+    crate::request(|server, ctx| async move {
+        configure_insta!();
+
+        revoke_user_role(ctx.db(), 22, 11).await;
+        crate::seed_data(ctx.db())
+            .await
+            .expect("Failed to seed data");
+
+        let token = access_token(&server).await;
+        let (auth_header, auth_value) = utils::auth_header(token);
+
+        let response = server
+            .post("/users/roles")
+            .add_header(auth_header, auth_value)
+            .json(&params)
+            .await;
+
+        let snapshot = (response.status_code(), response.text());
+        revoke_user_role(ctx.db(), 22, 11).await;
+
+        with_settings!({
+            filters => response_filters()
+        }, {
+            assert_debug_snapshot!(test_name, snapshot)
+        })
+    })
+    .await;
+}
+
+#[rstest]
+#[case(
+    "can_revoke_role_from_user",
+    serde_json::json!({ "userId": 11, "roleId": 11 })
+)]
+#[case(
+    "cannot_revoke_role_that_is_not_assigned",
+    serde_json::json!({ "userId": 33, "roleId": 11 })
+)]
+#[case(
+    "cannot_revoke_role_when_payload_is_invalid",
+    serde_json::json!({ "userId": 0, "roleId": 0 })
+)]
+#[tokio::test]
+#[serial]
+async fn can_revoke_role_from_user(#[case] test_name: &str, #[case] params: serde_json::Value) {
     crate::request(|server, ctx| async move {
         configure_insta!();
 
@@ -93,7 +157,14 @@ async fn cannot_access_users_without_credentials(#[case] test_name: &str, #[case
             .await
             .expect("Failed to seed data");
 
-        let response = server.get(path).await;
+        let token = access_token(&server).await;
+        let (auth_header, auth_value) = utils::auth_header(token);
+
+        let response = server
+            .delete("/users/roles")
+            .add_header(auth_header, auth_value)
+            .json(&params)
+            .await;
 
         with_settings!({
             filters => response_filters()
@@ -105,25 +176,96 @@ async fn cannot_access_users_without_credentials(#[case] test_name: &str, #[case
 }
 
 #[rstest]
-#[case("cannot_list_users_without_permission")]
+#[case("cannot_list_users_without_credentials", "GET", "/users")]
+#[case(
+    "cannot_assign_role_to_user_without_credentials",
+    "POST",
+    "/users/roles"
+)]
+#[case(
+    "cannot_revoke_role_from_user_without_credentials",
+    "DELETE",
+    "/users/roles"
+)]
 #[tokio::test]
 #[serial]
-async fn cannot_list_users_without_permission(#[case] test_name: &str) {
+async fn cannot_access_users_without_credentials(
+    #[case] test_name: &str,
+    #[case] method: &str,
+    #[case] path: &str,
+) {
     crate::request(|server, ctx| async move {
         configure_insta!();
 
         crate::seed_data(ctx.db())
             .await
             .expect("Failed to seed data");
-        revoke_role(ctx.db(), "john.doe@acme.com", "administrator").await;
 
-        let token = access_token(&server).await;
+        let response = match method {
+            "GET" => server.get(path).await,
+            "POST" => {
+                server
+                    .post(path)
+                    .json(&serde_json::json!({ "userId": 22, "roleId": 11 }))
+                    .await
+            }
+            "DELETE" => {
+                server
+                    .delete(path)
+                    .json(&serde_json::json!({ "userId": 11, "roleId": 11 }))
+                    .await
+            }
+            _ => unreachable!("unsupported request method"),
+        };
+
+        with_settings!({
+            filters => response_filters()
+        }, {
+            assert_debug_snapshot!(test_name, (response.status_code(), response.text()))
+        })
+    })
+    .await;
+}
+
+#[rstest]
+#[case("cannot_list_users_without_permission", "GET")]
+#[case("cannot_assign_role_to_user_without_permission", "POST")]
+#[case("cannot_revoke_role_from_user_without_permission", "DELETE")]
+#[tokio::test]
+#[serial]
+async fn cannot_modify_users_without_permission(#[case] test_name: &str, #[case] method: &str) {
+    crate::request(|server, ctx| async move {
+        configure_insta!();
+
+        crate::seed_data(ctx.db())
+            .await
+            .expect("Failed to seed data");
+        let token = access_token_for(&server, "james.moriaty@continental.org").await;
         let (auth_header, auth_value) = utils::auth_header(token);
 
-        let response = server
-            .get("/users")
-            .add_header(auth_header, auth_value)
-            .await;
+        let response = match method {
+            "GET" => {
+                server
+                    .get("/users")
+                    .add_header(auth_header, auth_value)
+                    .await
+            }
+            "POST" => {
+                server
+                    .post("/users/roles")
+                    .add_header(auth_header, auth_value)
+                    .json(&serde_json::json!({ "userId": 22, "roleId": 11 }))
+                    .await
+            }
+            "DELETE" => {
+                server
+                    .delete("/users/roles")
+                    .add_header(auth_header, auth_value)
+                    .json(&serde_json::json!({ "userId": 11, "roleId": 11 }))
+                    .await
+            }
+            _ => unreachable!("unsupported request method"),
+        };
 
         with_settings!({
             filters => response_filters()

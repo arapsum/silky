@@ -71,6 +71,30 @@ impl UserRole {
         Ok(role)
     }
 
+    /// Revokes a role from a user.
+    ///
+    /// # Errors
+    ///
+    /// Returns [`ModelError::EntityNotFound`] when the user does not have the
+    /// role assigned. Returns a database error if the removal fails.
+    pub async fn revoke_role(db: &PgPool, params: &AssignRole) -> ModelResult<Self> {
+        let user_role = sqlx::query_as::<_, Self>(
+            r"
+            DELETE FROM users_roles
+            WHERE
+                user_id = $1
+                AND role_id = $2
+            RETURNING *
+        ",
+        )
+        .bind(params.user_id())
+        .bind(params.role_id())
+        .fetch_optional(db)
+        .await?;
+
+        user_role.ok_or(ModelError::EntityNotFound)
+    }
+
     /// Finds all role assignments for a user.
     ///
     /// # Errors

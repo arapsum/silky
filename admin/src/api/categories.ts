@@ -27,6 +27,16 @@ export type CategoryInput = {
   description?: string;
 };
 
+export type UpdateCategoryInput = {
+  name?: string;
+  slug?: string;
+  imageLink?: string;
+  mediaAssetPid?: string;
+  parentId?: number;
+  clearParent?: boolean;
+  description?: string;
+};
+
 export type CategoryChild = Pick<Category, "id" | "pid" | "name" | "slug" | "imageLink"> & {
   productCount: number;
 };
@@ -104,6 +114,20 @@ export function createCategory(input: CategoryInput) {
     method: "POST",
     body: JSON.stringify(input),
     fallback: "Unable to create category",
+  });
+}
+
+export function getCategory(pid: string) {
+  return apiRequest<Category>(`/categories/${pid}`, {
+    fallback: "Unable to load category",
+  });
+}
+
+export function updateCategory(pid: string, input: UpdateCategoryInput) {
+  return apiRequest<Category>(`/categories/${pid}`, {
+    method: "PATCH",
+    body: JSON.stringify(input),
+    fallback: "Unable to update category",
   });
 }
 

@@ -8,6 +8,7 @@ import {
   CubeIcon,
   ImagesIcon,
   PackageIcon,
+  PencilSimpleIcon,
   PlusIcon,
   StackIcon,
   TagIcon,
@@ -179,9 +180,12 @@ export default function CategoryDetailPage({ pid }: { pid: string }) {
               <ArrowLeftIcon className="size-4" />
               Back
             </Button>
-            <Button className="rounded-lg" render={<Link to="/categories/create" />}>
-              <PlusIcon className="size-4" />
-              Add category
+            <Button
+              className="rounded-lg"
+              render={<Link to="/categories/$pid/edit" params={{ pid }} />}
+            >
+              <PencilSimpleIcon className="size-4" />
+              Edit category
             </Button>
           </>
         }

@@ -26,6 +26,7 @@ import { Route as MainCategoriesPidIndexRouteImport } from './routes/_main/categ
 import { Route as MainAccessControlRolesIndexRouteImport } from './routes/_main/access-control/roles/index'
 import { Route as MainAccessControlPermissionsIndexRouteImport } from './routes/_main/access-control/permissions/index'
 import { Route as MainProductsPidEditIndexRouteImport } from './routes/_main/products/$pid/edit/index'
+import { Route as MainCategoriesPidEditIndexRouteImport } from './routes/_main/categories/$pid/edit/index'
 
 const MainRouteRoute = MainRouteRouteImport.update({
   id: '/_main',
@@ -116,6 +117,12 @@ const MainProductsPidEditIndexRoute =
     path: '/products/$pid/edit/',
     getParentRoute: () => MainRouteRoute,
   } as any)
+const MainCategoriesPidEditIndexRoute =
+  MainCategoriesPidEditIndexRouteImport.update({
+    id: '/categories/$pid/edit/',
+    path: '/categories/$pid/edit/',
+    getParentRoute: () => MainRouteRoute,
+  } as any)
 
 export interface FileRoutesByFullPath {
   '/': typeof MainIndexRoute
@@ -133,6 +140,7 @@ export interface FileRoutesByFullPath {
   '/people/staff/': typeof MainPeopleStaffIndexRoute
   '/products/$pid/': typeof MainProductsPidIndexRoute
   '/products/create/': typeof MainProductsCreateIndexRoute
+  '/categories/$pid/edit/': typeof MainCategoriesPidEditIndexRoute
   '/products/$pid/edit/': typeof MainProductsPidEditIndexRoute
 }
 export interface FileRoutesByTo {
@@ -151,6 +159,7 @@ export interface FileRoutesByTo {
   '/people/staff': typeof MainPeopleStaffIndexRoute
   '/products/$pid': typeof MainProductsPidIndexRoute
   '/products/create': typeof MainProductsCreateIndexRoute
+  '/categories/$pid/edit': typeof MainCategoriesPidEditIndexRoute
   '/products/$pid/edit': typeof MainProductsPidEditIndexRoute
 }
 export interface FileRoutesById {
@@ -171,6 +180,7 @@ export interface FileRoutesById {
   '/_main/people/staff/': typeof MainPeopleStaffIndexRoute
   '/_main/products/$pid/': typeof MainProductsPidIndexRoute
   '/_main/products/create/': typeof MainProductsCreateIndexRoute
+  '/_main/categories/$pid/edit/': typeof MainCategoriesPidEditIndexRoute
   '/_main/products/$pid/edit/': typeof MainProductsPidEditIndexRoute
 }
 export interface FileRouteTypes {
@@ -191,6 +201,7 @@ export interface FileRouteTypes {
     | '/people/staff/'
     | '/products/$pid/'
     | '/products/create/'
+    | '/categories/$pid/edit/'
     | '/products/$pid/edit/'
   fileRoutesByTo: FileRoutesByTo
   to:
@@ -209,6 +220,7 @@ export interface FileRouteTypes {
     | '/people/staff'
     | '/products/$pid'
     | '/products/create'
+    | '/categories/$pid/edit'
     | '/products/$pid/edit'
   id:
     | '__root__'
@@ -228,6 +240,7 @@ export interface FileRouteTypes {
     | '/_main/people/staff/'
     | '/_main/products/$pid/'
     | '/_main/products/create/'
+    | '/_main/categories/$pid/edit/'
     | '/_main/products/$pid/edit/'
   fileRoutesById: FileRoutesById
 }
@@ -357,6 +370,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof MainProductsPidEditIndexRouteImport
       parentRoute: typeof MainRouteRoute
     }
+    '/_main/categories/$pid/edit/': {
+      id: '/_main/categories/$pid/edit/'
+      path: '/categories/$pid/edit'
+      fullPath: '/categories/$pid/edit/'
+      preLoaderRoute: typeof MainCategoriesPidEditIndexRouteImport
+      parentRoute: typeof MainRouteRoute
+    }
   }
 }
 
@@ -375,6 +395,7 @@ interface MainRouteRouteChildren {
   MainPeopleStaffIndexRoute: typeof MainPeopleStaffIndexRoute
   MainProductsPidIndexRoute: typeof MainProductsPidIndexRoute
   MainProductsCreateIndexRoute: typeof MainProductsCreateIndexRoute
+  MainCategoriesPidEditIndexRoute: typeof MainCategoriesPidEditIndexRoute
   MainProductsPidEditIndexRoute: typeof MainProductsPidEditIndexRoute
 }
 
@@ -394,6 +415,7 @@ const MainRouteRouteChildren: MainRouteRouteChildren = {
   MainPeopleStaffIndexRoute: MainPeopleStaffIndexRoute,
   MainProductsPidIndexRoute: MainProductsPidIndexRoute,
   MainProductsCreateIndexRoute: MainProductsCreateIndexRoute,
+  MainCategoriesPidEditIndexRoute: MainCategoriesPidEditIndexRoute,
   MainProductsPidEditIndexRoute: MainProductsPidEditIndexRoute,
 }
 

@@ -6,19 +6,43 @@ import {
   CaretLeftIcon,
   CaretRightIcon,
   MagnifyingGlassIcon,
+  UserPlusIcon,
   XIcon,
 } from "@phosphor-icons/react";
-import { useQuery } from "@tanstack/react-query";
-import { useMemo, useState, type FormEvent } from "react";
+import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
+import { useEffect, useMemo, useState, type FormEvent } from "react";
+import { toast } from "sonner";
 
-import { listUsers, usersQueryKey, type User } from "#/api/users.ts";
+import { listRoles, rolesQueryKey, type Role } from "#/api/roles.ts";
+import {
+  assignRoleToUser,
+  listUsers,
+  revokeRoleFromUser,
+  usersQueryKey,
+  type User,
+} from "#/api/users.ts";
 import { SummaryGrid } from "#/components/catalogue/summary-grid";
 import { DataTable } from "#/components/data-table";
 import { PageHeader } from "#/components/page-header";
 import { Avatar, AvatarFallback, AvatarImage } from "#/components/ui/avatar";
 import { Badge } from "#/components/ui/badge";
 import { Button } from "#/components/ui/button";
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogFooter,
+  DialogHeader,
+  DialogTitle,
+} from "#/components/ui/dialog";
 import { Input } from "#/components/ui/input";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "#/components/ui/select";
 import { cn } from "#/lib/utils";
 
 type PeopleTablePageProps = {
@@ -83,7 +107,7 @@ function hasStaffRole(user: User) {
   return user.roles.some((role) => role.name.toLowerCase() !== "customer");
 }
 
-function userColumns(): ColumnDef<User>[] {
+function userColumns(onAssignRole: (user: User) => void): ColumnDef<User>[] {
   return [
     {
       id: "person",
@@ -164,6 +188,23 @@ function userColumns(): ColumnDef<User>[] {
       ),
       size: 160,
     },
+    {
+      id: "actions",
+      header: "",
+      cell: ({ row }) => (
+        <Button
+          type="button"
+          variant="outline"
+          size="sm"
+          className="rounded-lg"
+          onClick={() => onAssignRole(row.original)}
+        >
+          <UserPlusIcon />
+          Manage roles
+        </Button>
+      ),
+      size: 160,
+    },
   ];
 }
 
@@ -171,9 +212,14 @@ export default function PeopleTablePage({ title, description, category }: People
   const [searchInput, setSearchInput] = useState("");
   const [search, setSearch] = useState("");
   const [page, setPage] = useState(1);
+  const [selectedUser, setSelectedUser] = useState<User>();
   const usersQuery = useQuery({
     queryKey: [...usersQueryKey, category],
     queryFn: () => listUsers(),
+  });
+  const rolesQuery = useQuery({
+    queryKey: rolesQueryKey,
+    queryFn: listRoles,
   });
 
   const users = useMemo(() => {
@@ -197,7 +243,7 @@ export default function PeopleTablePage({ title, description, category }: People
     });
   }, [search, users]);
 
-  const columns = useMemo(() => userColumns(), []);
+  const columns = useMemo(() => userColumns(setSelectedUser), []);
   const totalPages = Math.max(Math.ceil(filteredUsers.length / PAGE_SIZE), 1);
   const paginatedUsers = filteredUsers.slice((page - 1) * PAGE_SIZE, page * PAGE_SIZE);
   const activeFilters = Boolean(search);
@@ -327,6 +373,188 @@ export default function PeopleTablePage({ title, description, category }: People
           </div>
         )}
       </div>
+
+      <AssignUserRoleDialog
+        user={selectedUser}
+        roles={rolesQuery.data ?? []}
+        isLoading={rolesQuery.isLoading}
+        onOpenChange={(open) => !open && setSelectedUser(undefined)}
+        onRoleRevoked={(roleId) =>
+          setSelectedUser((current) =>
+            current
+              ? { ...current, roles: current.roles.filter((role) => role.id !== roleId) }
+              : undefined,
+          )
+        }
+      />
     </div>
+  );
+}
+
+function AssignUserRoleDialog({
+  user,
+  roles,
+  isLoading,
+  onOpenChange,
+  onRoleRevoked,
+}: {
+  user?: User;
+  roles: Role[];
+  isLoading: boolean;
+  onOpenChange: (open: boolean) => void;
+  onRoleRevoked: (roleId: number) => void;
+}) {
+  const queryClient = useQueryClient();
+  const [roleId, setRoleId] = useState("");
+  const assignableRoles = roles.filter(
+    (role) => !user?.roles.some((assignedRole) => assignedRole.id === role.id),
+  );
+  const selectedRole = roles.find((role) => role.id === Number(roleId));
+
+  useEffect(() => {
+    setRoleId("");
+  }, [user]);
+
+  const mutation = useMutation({
+    mutationFn: () => {
+      if (!user || !roleId) {
+        throw new Error("Choose a role to assign");
+      }
+
+      return assignRoleToUser({ userId: user.id, roleId: Number(roleId) });
+    },
+    onSuccess: async () => {
+      await Promise.all([
+        queryClient.invalidateQueries({ queryKey: usersQueryKey }),
+        queryClient.invalidateQueries({ queryKey: rolesQueryKey }),
+      ]);
+      toast.success(
+        `Assigned ${titleCase(roles.find((role) => role.id === Number(roleId))?.name ?? "role")} to ${user?.name}`,
+        {
+          id: "user-role-assigned",
+        },
+      );
+      onOpenChange(false);
+    },
+    onError: (error) => toast.error(error.message, { id: "user-role-assignment-error" }),
+  });
+
+  const revokeMutation = useMutation({
+    mutationFn: (role: User["roles"][number]) => {
+      if (!user) {
+        throw new Error("Select a user before revoking a role");
+      }
+
+      return revokeRoleFromUser({ userId: user.id, roleId: role.id });
+    },
+    onSuccess: async (_, role) => {
+      await Promise.all([
+        queryClient.invalidateQueries({ queryKey: usersQueryKey }),
+        queryClient.invalidateQueries({ queryKey: rolesQueryKey }),
+      ]);
+      onRoleRevoked(role.id);
+      toast.success(`Revoked ${titleCase(role.name)} from ${user?.name}`, {
+        id: "user-role-revoked",
+      });
+    },
+    onError: (error) => toast.error(error.message, { id: "user-role-revoke-error" }),
+  });
+
+  return (
+    <Dialog open={Boolean(user)} onOpenChange={onOpenChange}>
+      <DialogContent className="rounded-lg sm:max-w-md">
+        <DialogHeader>
+          <DialogTitle>Manage roles</DialogTitle>
+          <DialogDescription>
+            Assign or revoke the access roles held by {user?.name ?? "this user"}.
+          </DialogDescription>
+        </DialogHeader>
+
+        <div className="space-y-3">
+          <div className="space-y-2">
+            <p className="text-sm font-medium">Current roles</p>
+            {user?.roles.length ? (
+              <div className="flex flex-wrap gap-2">
+                {user.roles.map((role) => (
+                  <div
+                    key={role.pid}
+                    className="flex items-center gap-1 rounded-lg border px-1.5 py-1"
+                  >
+                    <Badge variant="outline" className={roleBadgeClass(role.name)}>
+                      {titleCase(role.name)}
+                    </Badge>
+                    <Button
+                      type="button"
+                      variant="ghost"
+                      size="icon-sm"
+                      className="rounded-md text-destructive hover:bg-destructive/10 hover:text-destructive"
+                      aria-label={`Revoke ${titleCase(role.name)} from ${user.name}`}
+                      disabled={revokeMutation.isPending}
+                      onClick={() => revokeMutation.mutate(role)}
+                    >
+                      <XIcon />
+                    </Button>
+                  </div>
+                ))}
+              </div>
+            ) : (
+              <p className="text-sm text-muted-foreground">No roles assigned.</p>
+            )}
+          </div>
+
+          <div className="border-t" />
+
+          <div className="space-y-2">
+            <label htmlFor="user-role" className="text-sm font-medium">
+              Assign another role
+            </label>
+            <Select value={roleId} onValueChange={(value) => setRoleId(value ?? "")}>
+              <SelectTrigger id="user-role" className="w-full rounded-lg bg-background">
+                <SelectValue placeholder={isLoading ? "Loading roles..." : "Select a role"}>
+                  {selectedRole ? titleCase(selectedRole.name) : undefined}
+                </SelectValue>
+              </SelectTrigger>
+              <SelectContent className="rounded-lg">
+                {assignableRoles.map((role) => (
+                  <SelectItem key={role.pid} value={String(role.id)}>
+                    <span>{titleCase(role.name)}</span>
+                    {role.description && (
+                      <span className="text-xs font-normal text-muted-foreground">
+                        {role.description}
+                      </span>
+                    )}
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+            {!isLoading && !assignableRoles.length && (
+              <p className="text-sm text-muted-foreground">
+                This user already has every available role.
+              </p>
+            )}
+          </div>
+        </div>
+
+        <DialogFooter>
+          <Button
+            type="button"
+            variant="outline"
+            className="rounded-lg"
+            onClick={() => onOpenChange(false)}
+          >
+            Cancel
+          </Button>
+          <Button
+            type="button"
+            className="rounded-lg"
+            disabled={!roleId || mutation.isPending}
+            onClick={() => mutation.mutate()}
+          >
+            <UserPlusIcon />
+            {mutation.isPending ? "Assigning..." : "Assign role"}
+          </Button>
+        </DialogFooter>
+      </DialogContent>
+    </Dialog>
   );
 }

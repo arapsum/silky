@@ -4,5 +4,5 @@ expression: "(response.status_code(), response.text())"
 ---
 (
     400,
-    "{\"error\":\"{\\\"image_link\\\":\\\"Field error\\\"}\"}",
+    "{\"error\":\"One or more fields failed validation\",\"code\":\"validation_error\",\"details\":{\"image_link\":\"Field error\"}}",
 )

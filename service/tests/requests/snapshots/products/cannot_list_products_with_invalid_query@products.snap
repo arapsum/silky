@@ -4,5 +4,5 @@ expression: "(response.status_code(), response.text())"
 ---
 (
     400,
-    "{\"error\":\"{\\\"limit\\\":\\\"Limit must be a positive integer\\\"}\"}",
+    "{\"error\":\"One or more fields failed validation\",\"code\":\"validation_error\",\"details\":{\"limit\":\"Limit must be a positive integer\"}}",
 )

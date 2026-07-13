@@ -5,6 +5,7 @@ use service::{App, AppContext, AppState, Config, Result, config::Environment, co
 use sqlx::PgPool;
 
 mod config;
+mod error;
 mod middlewares;
 mod models;
 mod requests;

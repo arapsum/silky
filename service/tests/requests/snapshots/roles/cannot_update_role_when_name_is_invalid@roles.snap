@@ -4,5 +4,5 @@ expression: "(response.status_code(), response.text())"
 ---
 (
     400,
-    "{\"error\":\"{\\\"name\\\":\\\"Only letters, numbers and underscores can be used.\\\"}\"}",
+    "{\"error\":\"One or more fields failed validation\",\"code\":\"validation_error\",\"details\":{\"name\":\"Only letters, numbers and underscores can be used.\"}}",
 )

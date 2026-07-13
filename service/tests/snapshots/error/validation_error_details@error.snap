@@ -1,0 +1,12 @@
+---
+source: tests/error.rs
+expression: body
+---
+Object {
+    "error": String("One or more fields failed validation"),
+    "code": String("validation_error"),
+    "details": Object {
+        "email": String("Invalid email address"),
+        "items[0].quantity": String("Quantity must be at least one"),
+    },
+}

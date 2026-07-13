@@ -240,7 +240,10 @@ async fn refresh_token_reuse_is_rejected() {
             .do_not_save_cookies()
             .await;
         assert_eq!(second_response.status_code(), 401);
-        assert_eq!(second_response.text(), "{\"error\":\"Invalid token\"}");
+        assert_eq!(
+            second_response.text(),
+            "{\"error\":\"Invalid token\",\"code\":\"invalid_token\"}"
+        );
     })
     .await;
 }
@@ -293,7 +296,10 @@ async fn logout_revokes_refresh_token_and_clears_cookies() {
             .await;
 
         assert_eq!(refresh_response.status_code(), 401);
-        assert_eq!(refresh_response.text(), "{\"error\":\"Invalid token\"}");
+        assert_eq!(
+            refresh_response.text(),
+            "{\"error\":\"Invalid token\",\"code\":\"invalid_token\"}"
+        );
     })
     .await;
 }
@@ -404,7 +410,10 @@ async fn cannot_change_password_without_credentials() {
             .await;
 
         assert_eq!(response.status_code(), 401);
-        assert_eq!(response.text(), "{\"error\":\"Missing credentials\"}");
+        assert_eq!(
+            response.text(),
+            "{\"error\":\"Missing credentials\",\"code\":\"missing_credentials\"}"
+        );
     })
     .await;
 }

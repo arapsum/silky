@@ -8,6 +8,8 @@ use serde_json::json;
 use sqlx::error::{DatabaseError, ErrorKind as SqlxErrorKind};
 use uuid::Uuid;
 
+use crate::error::ErrorResponse;
+
 #[derive(Debug, thiserror::Error)]
 pub enum ModelError {
     #[error("Categories with products cannot be deleted")]
@@ -353,16 +355,12 @@ impl ModelError {
     #[must_use]
     pub fn response(&self) -> Response {
         let (status, message) = self.response_body();
-        let mut body = json!({
-            "error": message,
-            "code": self.code(),
-        });
-        if let Some(field) = self.field() {
-            body["field"] = json!(field);
-        }
-        if let Some(details) = self.details() {
-            body["details"] = details;
-        }
+        let body = ErrorResponse {
+            error: message,
+            code: self.code(),
+            field: self.field(),
+            details: self.details(),
+        };
         (status, Json(body)).into_response()
     }
 }

@@ -1,10 +1,40 @@
 use std::fmt::{self, Display};
 
 use jsonwebtoken::errors::{Error as JwtError, ErrorKind as JwtErrorKind};
+use serde::Serialize;
+use serde_json::Value;
 
 use crate::models::ModelError;
 
 mod response;
+
+/// JSON body returned when an API request cannot be completed.
+///
+/// `error` is intended for people, while `code` is a stable identifier that
+/// clients can use without matching display text. `field` and `details` are
+/// included only when the error has actionable, structured context.
+#[derive(Debug, Serialize)]
+#[serde(rename_all = "camelCase")]
+pub struct ErrorResponse {
+    pub error: String,
+    pub code: &'static str,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub field: Option<&'static str>,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub details: Option<Value>,
+}
+
+impl ErrorResponse {
+    #[must_use]
+    pub fn new(error: impl Into<String>, code: &'static str) -> Self {
+        Self {
+            error: error.into(),
+            code,
+            field: None,
+            details: None,
+        }
+    }
+}
 
 #[derive(Debug, thiserror::Error)]
 pub enum Error {
@@ -83,6 +113,51 @@ impl From<JwtError> for Error {
         match err.kind() {
             JwtErrorKind::ExpiredSignature => Self::ExpiredSession,
             _ => Self::InvalidToken,
+        }
+    }
+}
+
+impl Error {
+    /// Returns a stable machine-readable code for API consumers and logs.
+    #[must_use]
+    pub const fn code(&self) -> &'static str {
+        match self {
+            Self::ExpiredSession => "session_expired",
+            Self::Forbidden => "forbidden",
+            Self::InvalidCredentials => "invalid_credentials",
+            Self::InvalidToken | Self::Jwt(_) => "invalid_token",
+            Self::MissingCredentials => "missing_credentials",
+            Self::Model(error) => error.code(),
+            Self::ValidationError(_) => "validation_error",
+            Self::JsonRejection(_) => "invalid_json",
+            Self::PathRejection(_) => "invalid_path_parameter",
+            Self::QueryRejection(_) => "invalid_query_parameter",
+            Self::ExtensionRejection(_)
+            | Self::AppenderInit(_)
+            | Self::Config(_)
+            | Self::DirectiveParseError(_)
+            | Self::EnvFilter(_)
+            | Self::FromEnv(_)
+            | Self::IO(_)
+            | Self::Mailer(_)
+            | Self::Migrate(_)
+            | Self::NonBlockingWorkGuardAlreadySet
+            | Self::Redis(_)
+            | Self::Sqlx(_)
+            | Self::TryInit(_) => "internal_error",
+        }
+    }
+
+    /// Extracts structured validation fields when the validation error contains
+    /// the JSON object produced by [`crate::schemas::validator::Validator`].
+    #[must_use]
+    pub fn details(&self) -> Option<Value> {
+        match self {
+            Self::ValidationError(error) => serde_json::from_str(error)
+                .ok()
+                .filter(|details: &Value| details.is_object()),
+            Self::Model(error) => error.details(),
+            _ => None,
         }
     }
 }

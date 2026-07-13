@@ -1,0 +1,8 @@
+---
+source: tests/error.rs
+expression: body
+---
+Object {
+    "error": String("Invalid token"),
+    "code": String("invalid_token"),
+}

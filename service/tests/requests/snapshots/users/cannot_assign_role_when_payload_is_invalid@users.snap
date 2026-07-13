@@ -1,8 +1,8 @@
 ---
 source: tests/requests/users.rs
-expression: "(response.status_code(), response.text())"
+expression: snapshot
 ---
 (
     400,
-    "{\"error\":\"{\\\"role_id\\\":\\\"Role ID must be a positive integer\\\",\\\"user_id\\\":\\\"User ID must be a positive integer\\\"}\"}",
+    "{\"error\":\"One or more fields failed validation\",\"code\":\"validation_error\",\"details\":{\"role_id\":\"Role ID must be a positive integer\",\"user_id\":\"User ID must be a positive integer\"}}",
 )

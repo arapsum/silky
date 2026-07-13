@@ -4,6 +4,6 @@ expression: "(response.status_code(), response.text(), assigned_roles,)"
 ---
 (
     400,
-    "{\"error\":\"{\\\"confirm_password\\\":\\\"Passwords do not match\\\"}\"}",
+    "{\"error\":\"One or more fields failed validation\",\"code\":\"validation_error\",\"details\":{\"confirm_password\":\"Passwords do not match\"}}",
     0,
 )

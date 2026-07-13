@@ -1,31 +1,47 @@
+use crate::models::ModelError;
 use axum::{
     Json,
     http::StatusCode,
     response::{IntoResponse, Response},
 };
-use serde_json::json;
 
-use crate::models::ModelError;
-
-use super::{Error, Report};
+use super::{Error, ErrorResponse, Report};
 
 impl IntoResponse for Report {
     fn into_response(self) -> Response {
-        let err = self.0;
-        let err_string = format!("{err}");
+        let report = self.0;
 
-        tracing::error!("[error]: {}", &err_string);
-
-        if let Some(error) = err.downcast_ref::<Error>() {
+        if let Some(error) = report.downcast_ref::<Error>() {
+            let status = error.response_body().0;
+            log_report(&report, status, error.code());
             return error.response();
-        } else if let Some(error) = err.downcast_ref::<ModelError>() {
+        } else if let Some(error) = report.downcast_ref::<ModelError>() {
+            let status = error.response_body().0;
+            log_report(&report, status, error.code());
             return error.response();
         }
 
-        // fallback error
-        let body = Json(json!({"error": "An internal server error has occurred!"}));
+        log_report(&report, StatusCode::INTERNAL_SERVER_ERROR, "internal_error");
+        let body = Json(ErrorResponse::new(
+            "An internal server error has occurred",
+            "internal_error",
+        ));
 
         (StatusCode::INTERNAL_SERVER_ERROR, body).into_response()
+    }
+}
+
+fn log_report(report: &color_eyre::Report, status: StatusCode, code: &'static str) {
+    if status.is_server_error() {
+        tracing::error!(
+            error = %report,
+            error_debug = ?report,
+            %status,
+            code,
+            "Request failed"
+        );
+    } else {
+        tracing::warn!(error = %report, %status, code, "Request rejected");
     }
 }
 
@@ -33,7 +49,9 @@ impl Error {
     #[must_use]
     pub fn response_body(&self) -> (StatusCode, String) {
         let (status, message) = match self {
-            Self::InvalidToken => (StatusCode::UNAUTHORIZED, "Invalid token".to_string()),
+            Self::InvalidToken | Self::Jwt(_) => {
+                (StatusCode::UNAUTHORIZED, "Invalid token".to_string())
+            }
             Self::ExpiredSession => (StatusCode::UNAUTHORIZED, "Expired session".to_string()),
             Self::MissingCredentials => {
                 (StatusCode::UNAUTHORIZED, "Missing credentials".to_string())
@@ -72,7 +90,16 @@ impl Error {
         if let Self::Model(model_error) = self {
             return model_error.response();
         }
-        let (status, message) = self.response_body();
-        (status, Json(json!({ "error": message }))).into_response()
+
+        let (status, mut message) = self.response_body();
+        let details = self.details();
+        if details.is_some() && matches!(self, Self::ValidationError(_)) {
+            message = "One or more fields failed validation".to_string();
+        }
+
+        let mut body = ErrorResponse::new(message, self.code());
+        body.details = details;
+
+        (status, Json(body)).into_response()
     }
 }

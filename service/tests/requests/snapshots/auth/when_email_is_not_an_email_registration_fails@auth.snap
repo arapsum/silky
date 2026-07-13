@@ -1,9 +1,8 @@
 ---
 source: tests/requests/auth.rs
-assertion_line: 110
 expression: "(response.status_code(), response.text())"
 ---
 (
     400,
-    "{\"error\":\"{\\\"email\\\":\\\"Invalid email address\\\"}\"}",
+    "{\"error\":\"One or more fields failed validation\",\"code\":\"validation_error\",\"details\":{\"email\":\"Invalid email address\"}}",
 )

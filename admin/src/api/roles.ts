@@ -67,3 +67,11 @@ export function assignPermissionToRole(input: AssignPermissionInput) {
     fallback: "Unable to assign permission",
   });
 }
+
+export function revokePermissionFromRole(input: AssignPermissionInput) {
+  return apiRequest<void>("/roles/permissions", {
+    method: "DELETE",
+    body: JSON.stringify(input),
+    fallback: "Unable to revoke permission",
+  });
+}

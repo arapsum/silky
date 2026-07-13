@@ -21,7 +21,13 @@ import { useEffect, useMemo, useState } from "react";
 import { toast } from "sonner";
 
 import { listPermissions, permissionsQueryKey, type Permission } from "#/api/permissions.ts";
-import { assignPermissionToRole, listRoles, rolesQueryKey, type Role } from "#/api/roles.ts";
+import {
+  assignPermissionToRole,
+  listRoles,
+  revokePermissionFromRole,
+  rolesQueryKey,
+  type Role,
+} from "#/api/roles.ts";
 import { EmptyState } from "#/components/empty-state";
 import { ErrorState } from "#/components/error-state";
 import { PageHeader } from "#/components/page-header";
@@ -142,9 +148,13 @@ export default function PermissionsPage() {
     [rolePermissionQueries, roles],
   );
   const assignedPermissionIds = assignedByRole.get(roleFilter ?? "") ?? new Set<number>();
-  const pendingPermissionIds = [...selectedPermissionIds].filter(
+  const permissionsToAssign = [...selectedPermissionIds].filter(
     (permissionId) => !assignedPermissionIds.has(permissionId),
   );
+  const permissionsToRevoke = [...selectedPermissionIds].filter((permissionId) =>
+    assignedPermissionIds.has(permissionId),
+  );
+  const pendingPermissionCount = permissionsToAssign.length + permissionsToRevoke.length;
   const filteredPermissions = useMemo(() => {
     const needle = query.trim().toLowerCase();
     if (!needle) return permissions;
@@ -172,25 +182,38 @@ export default function PermissionsPage() {
     setSelectedPermissionIds(new Set());
   }, [selectedRole]);
 
-  const assignmentMutation = useMutation({
+  const permissionsMutation = useMutation({
     mutationFn: async () => {
       if (!selectedRoleModel) return [];
 
-      return Promise.all(
-        pendingPermissionIds.map((permissionId) =>
+      const assignments = await Promise.all(
+        permissionsToAssign.map((permissionId) =>
           assignPermissionToRole({ roleId: selectedRoleModel.id, permissionId }),
         ),
       );
+
+      await Promise.all(
+        permissionsToRevoke.map((permissionId) =>
+          revokePermissionFromRole({ roleId: selectedRoleModel.id, permissionId }),
+        ),
+      );
+
+      return assignments;
     },
-    onSuccess: async (assignments) => {
+    onSuccess: async () => {
       await queryClient.invalidateQueries({ queryKey: permissionsQueryKey });
       setSelectedPermissionIds(new Set());
-      toast.success(
-        `${assignments.length} ${assignments.length === 1 ? "permission" : "permissions"} assigned to ${selectedRoleModel ? roleLabel(selectedRoleModel) : "role"}`,
-        { id: "role-permissions-assigned" },
-      );
+      const changes = [
+        permissionsToAssign.length && `${permissionsToAssign.length} assigned`,
+        permissionsToRevoke.length && `${permissionsToRevoke.length} revoked`,
+      ]
+        .filter(Boolean)
+        .join(", ");
+      toast.success(`${changes} for ${selectedRoleModel ? roleLabel(selectedRoleModel) : "role"}`, {
+        id: "role-permissions-updated",
+      });
     },
-    onError: (error) => toast.error(error.message, { id: "role-permissions-assign-error" }),
+    onError: (error) => toast.error(error.message, { id: "role-permissions-update-error" }),
   });
 
   function togglePermission(permissionId: number, checked: boolean) {
@@ -287,15 +310,15 @@ export default function PermissionsPage() {
               <Button
                 type="button"
                 className="rounded-lg"
-                disabled={!pendingPermissionIds.length || assignmentMutation.isPending}
-                onClick={() => assignmentMutation.mutate()}
+                disabled={!pendingPermissionCount || permissionsMutation.isPending}
+                onClick={() => permissionsMutation.mutate()}
               >
                 <PlusIcon />
-                {assignmentMutation.isPending
-                  ? "Assigning..."
-                  : pendingPermissionIds.length
-                    ? `Assign ${pendingPermissionIds.length}`
-                    : "Assign permissions"}
+                {permissionsMutation.isPending
+                  ? "Saving..."
+                  : pendingPermissionCount
+                    ? `Save ${pendingPermissionCount} changes`
+                    : "Manage permissions"}
               </Button>
             )}
           </div>
@@ -321,9 +344,12 @@ export default function PermissionsPage() {
               {filteredPermissions.length} permissions
             </p>
             {isAssignmentMode && selectedRoleModel && (
-              <p>
-                {assignedPermissionIds.size} assigned to {roleLabel(selectedRoleModel)}
-              </p>
+              <div className="flex flex-wrap gap-x-3 gap-y-1">
+                <p>
+                  {assignedPermissionIds.size} assigned to {roleLabel(selectedRoleModel)}
+                </p>
+                <p>Click a granted action to mark it for removal.</p>
+              </div>
             )}
           </footer>
         )}
@@ -463,6 +489,7 @@ function PermissionAction({
 }) {
   const { action } = splitPermissionName(permission.name);
   const isActive = isGranted || isSelected;
+  const isMarkedForRemoval = isGranted && isSelected;
 
   return (
     <Button
@@ -471,14 +498,16 @@ function PermissionAction({
       size="icon-sm"
       className={cn(
         "rounded-lg disabled:opacity-100",
-        isActive
-          ? "border-primary/30 bg-primary/10 text-primary hover:bg-primary/15"
-          : "border-border bg-background text-muted-foreground hover:bg-muted",
+        isMarkedForRemoval
+          ? "border-destructive/30 bg-destructive/10 text-destructive hover:bg-destructive/15"
+          : isActive
+            ? "border-primary/30 bg-primary/10 text-primary hover:bg-primary/15"
+            : "border-border bg-background text-muted-foreground hover:bg-muted",
       )}
       title={permissionLabel(permission)}
       aria-label={permissionLabel(permission)}
       aria-pressed={isActive}
-      disabled={!isAssignable || isGranted}
+      disabled={!isAssignable}
       onClick={() => onToggle(permission.id, !isSelected)}
     >
       {actionIcon(action)}

@@ -1,0 +1,12 @@
+---
+source: tests/models/roles_permissions.rs
+expression: "(revoked, remaining)"
+---
+(
+    Err(
+        EntityNotFound,
+    ),
+    Ok(
+        [],
+    ),
+)

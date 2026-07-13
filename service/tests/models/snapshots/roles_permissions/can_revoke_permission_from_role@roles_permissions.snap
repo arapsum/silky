@@ -1,0 +1,19 @@
+---
+source: tests/models/roles_permissions.rs
+expression: "(revoked, remaining)"
+---
+(
+    Ok(
+        RolePermission {
+            id: ID,
+            pid: PID,
+            role_id: ID,
+            permission_id: ID,
+            created_at: DATE,
+            updated_at: DATE,
+        },
+    ),
+    Ok(
+        [],
+    ),
+)

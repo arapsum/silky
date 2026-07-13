@@ -339,10 +339,68 @@ async fn can_assign_permission_to_role(#[case] test_name: &str, #[case] params: 
 }
 
 #[rstest]
+#[case(
+    "can_revoke_permission_from_role",
+    serde_json::json!({
+        "roleId": 22,
+        "permissionId": 113
+    })
+)]
+#[case(
+    "cannot_revoke_permission_that_is_not_assigned",
+    serde_json::json!({
+        "roleId": 22,
+        "permissionId": 114
+    })
+)]
+#[case(
+    "cannot_revoke_permission_when_payload_is_invalid",
+    serde_json::json!({
+        "roleId": 0,
+        "permissionId": 0
+    })
+)]
+#[tokio::test]
+#[serial]
+async fn can_revoke_permission_from_role(
+    #[case] test_name: &str,
+    #[case] params: serde_json::Value,
+) {
+    crate::request(|server, ctx| async move {
+        configure_insta!();
+
+        crate::seed_data(ctx.db())
+            .await
+            .expect("Failed to seed data");
+
+        let token = access_token(&server).await;
+        let (auth_header, auth_value) = utils::auth_header(token);
+
+        let response = server
+            .delete("/roles/permissions")
+            .add_header(auth_header, auth_value)
+            .json(&params)
+            .await;
+
+        with_settings!({
+            filters => response_filters()
+        }, {
+            assert_debug_snapshot!(test_name, (response.status_code(), response.text()))
+        })
+    })
+    .await;
+}
+
+#[rstest]
 #[case("cannot_create_role_without_credentials", "POST", "/roles")]
 #[case(
     "cannot_assign_permission_to_role_without_credentials",
     "POST",
+    "/roles/permissions"
+)]
+#[case(
+    "cannot_revoke_permission_from_role_without_credentials",
+    "DELETE",
     "/roles/permissions"
 )]
 #[case("cannot_list_roles_without_credentials", "GET", "/roles")]
@@ -377,6 +435,7 @@ async fn cannot_access_roles_without_credentials(
 
         let response = match method {
             "POST" => server.post(path).json(&body).await,
+            "DELETE" => server.delete(path).json(&body).await,
             "PATCH" => server.patch(path).json(&body).await,
             "GET" => server.get(path).await,
             _ => unreachable!("unsupported request method"),
@@ -392,10 +451,14 @@ async fn cannot_access_roles_without_credentials(
 }
 
 #[rstest]
-#[case("cannot_assign_permission_to_role_without_permission")]
+#[case("cannot_assign_permission_to_role_without_permission", "POST")]
+#[case("cannot_revoke_permission_from_role_without_permission", "DELETE")]
 #[tokio::test]
 #[serial]
-async fn cannot_assign_permission_to_role_without_permission(#[case] test_name: &str) {
+async fn cannot_modify_role_permissions_without_permission(
+    #[case] test_name: &str,
+    #[case] method: &str,
+) {
     crate::request(|server, ctx| async move {
         configure_insta!();
 
@@ -411,11 +474,23 @@ async fn cannot_assign_permission_to_role_without_permission(#[case] test_name: 
             "permissionId": 114
         });
 
-        let response = server
-            .post("/roles/permissions")
-            .add_header(auth_header, auth_value)
-            .json(&body)
-            .await;
+        let response = match method {
+            "POST" => {
+                server
+                    .post("/roles/permissions")
+                    .add_header(auth_header, auth_value)
+                    .json(&body)
+                    .await
+            }
+            "DELETE" => {
+                server
+                    .delete("/roles/permissions")
+                    .add_header(auth_header, auth_value)
+                    .json(&body)
+                    .await
+            }
+            _ => unreachable!("unsupported request method"),
+        };
 
         with_settings!({
             filters => response_filters()

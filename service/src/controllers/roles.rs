@@ -77,13 +77,29 @@ async fn assign_permission(
     Ok((StatusCode::CREATED, Json(role_permission)).into_response())
 }
 
+#[tracing::instrument(skip(ctx))]
+#[debug_handler]
+async fn revoke_permission(
+    State(ctx): State<AppState>,
+    AppJson(params): AppJson<AssignPermission>,
+) -> Result<Response> {
+    let validator = Validator::new(params);
+    let validated = validator.validate()?;
+
+    RolePermission::revoke_permission(ctx.db(), validated).await?;
+
+    Ok(StatusCode::NO_CONTENT.into_response())
+}
+
 pub fn router(ctx: &AppState) -> Router {
     Router::new()
         .route("/", post(create))
         .route("/", get(list))
         .route(
             "/permissions",
-            post(assign_permission).layer(RbacLayer::new(ctx.clone(), permissions::roles::UPDATE)),
+            post(assign_permission)
+                .delete(revoke_permission)
+                .layer(RbacLayer::new(ctx.clone(), permissions::roles::UPDATE)),
         )
         .route("/{pid}", patch(update))
         .route("/{pid}", get(one))

@@ -67,6 +67,30 @@ impl RolePermission {
         Ok(role_permission)
     }
 
+    /// Revokes a permission from a role.
+    ///
+    /// # Errors
+    ///
+    /// Returns [`ModelError::EntityNotFound`] when the role does not have the
+    /// permission assigned. Returns a database error if the removal fails.
+    pub async fn revoke_permission(db: &PgPool, params: &AssignPermission) -> ModelResult<Self> {
+        let role_permission = sqlx::query_as::<_, Self>(
+            r"
+            DELETE FROM roles_permissions
+            WHERE
+                role_id = $1
+                AND permission_id = $2
+            RETURNING *
+        ",
+        )
+        .bind(params.role_id())
+        .bind(params.permission_id())
+        .fetch_optional(db)
+        .await?;
+
+        role_permission.ok_or(ModelError::EntityNotFound)
+    }
+
     /// Finds role-permission assignments, optionally filtered by role or permission.
     ///
     /// # Errors

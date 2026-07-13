@@ -155,6 +155,37 @@ async fn cannot_assign_duplicate_permission_to_role(
 }
 
 #[rstest]
+#[case("can_revoke_permission_from_role", 22, 113)]
+#[case("cannot_revoke_permission_that_is_not_assigned", 22, 114)]
+#[tokio::test]
+#[serial]
+async fn can_revoke_permission_from_role(
+    #[case] test_name: &str,
+    #[case] role_id: i32,
+    #[case] permission_id: i32,
+) {
+    configure_insta!();
+
+    let ctx = boot_test().await.unwrap();
+
+    seed_role_permissions(ctx.db()).await;
+
+    let params = assign_permission(role_id, permission_id);
+    let revoked = RolePermission::revoke_permission(ctx.db(), &params).await;
+    let remaining = RolePermission::find_all(
+        ctx.db(),
+        permission_role_query(Some(role_id), Some(permission_id)),
+    )
+    .await;
+
+    with_settings!({
+        filters => redactions()
+    }, {
+        assert_debug_snapshot!(test_name, (revoked, remaining))
+    })
+}
+
+#[rstest]
 #[case("can_find_all_role_permissions", None, None)]
 #[case("can_find_role_permissions_by_role", Some(11), None)]
 #[case("can_find_role_permissions_by_permission", None, Some(113))]

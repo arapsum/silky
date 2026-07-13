@@ -157,10 +157,10 @@ export default function PermissionsPage() {
         .includes(needle);
     });
   }, [permissions, query]);
-  const groups = useMemo(
+  const groups = useMemo<[string, Permission[]][]>(
     () =>
       Object.entries(groupPermissions(filteredPermissions))
-        .map(([resource, entries]) => [
+        .map(([resource, entries]): [string, Permission[]] => [
           resource,
           [...entries].sort((a, b) => a.name.localeCompare(b.name)),
         ])

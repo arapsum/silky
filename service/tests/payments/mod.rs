@@ -16,7 +16,7 @@ macro_rules! configure_insta {
     ($(expr:expr),*) => {
         let mut settings = Settings::clone_current();
         settings.set_prepend_module_to_snapshot(false);
-        settings.set_snapshot_path("snapshots/payments");
+        settings.set_snapshot_path("../snapshots/payments");
         settings.set_snapshot_suffix("payments");
         let _guard = settings.bind_to_scope();
     };

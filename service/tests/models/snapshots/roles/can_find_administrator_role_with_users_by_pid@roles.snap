@@ -12,14 +12,6 @@ Ok(
         ),
         users: [
             RoleUser {
-                pid: bd6f7c26-d2c9-487e-b837-8f77be468033,
-                name: "John Doe",
-                email: "john.doe@acme.com",
-                image: Some(
-                    "https://randomuser.me/api/portraits/men/32.jpg",
-                ),
-            },
-            RoleUser {
                 pid: 57456da3-37b0-473e-8f37-0d74547ebf80,
                 name: "System Administrator",
                 email: "admin@silk.com",

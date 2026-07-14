@@ -99,7 +99,7 @@ async fn can_assign_role_to_user(
 }
 
 #[rstest]
-#[case("cannot_assign_role_when_user_already_has_role", 11, 22)]
+#[case("cannot_assign_role_when_user_already_has_role", 11, 44)]
 #[tokio::test]
 #[serial]
 async fn cannot_assign_duplicate_role_to_user(
@@ -120,7 +120,7 @@ async fn cannot_assign_duplicate_role_to_user(
 }
 
 #[rstest]
-#[case("can_revoke_role_from_user", 11, 11)]
+#[case("can_revoke_role_from_user", 11, 44)]
 #[case("cannot_revoke_role_that_is_not_assigned", 33, 11)]
 #[tokio::test]
 #[serial]
@@ -149,7 +149,7 @@ async fn can_revoke_role_from_user(
 #[rstest]
 #[case("can_find_user_roles_by_user", 11)]
 #[case("can_find_customer_role_by_user", 22)]
-#[case("can_find_user_roles_by_user_when_none_exist", 33)]
+#[case("can_find_user_roles_by_user_when_none_exist", 999)]
 #[tokio::test]
 #[serial]
 async fn can_find_user_roles_by_user(#[case] test_name: &str, #[case] user_id: i32) {

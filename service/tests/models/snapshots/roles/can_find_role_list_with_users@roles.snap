@@ -5,6 +5,46 @@ expression: result
 Ok(
     [
         RoleWithUsers {
+            id: 33,
+            pid: a14f47c4-aa29-4e36-a49c-63a72a33b46c,
+            name: "manager",
+            description: Some(
+                "Departmental heads",
+            ),
+            users: [
+                RoleUser {
+                    pid: 69768c35-da6d-46cf-bc17-ea78f7e21a6f,
+                    name: "Department Manager",
+                    email: "manager1@silk.com",
+                    image: Some(
+                        "https://randomuser.me/api/portraits/men/77.jpg",
+                    ),
+                },
+            ],
+            created_at: 2026-07-14T09:00:00+00:00,
+            updated_at: 2026-07-14T09:02:00+00:00,
+        },
+        RoleWithUsers {
+            id: 44,
+            pid: 6f3612e1-7c75-403d-8b71-d1c8b4c7eb97,
+            name: "support",
+            description: Some(
+                "Customer support",
+            ),
+            users: [
+                RoleUser {
+                    pid: bd6f7c26-d2c9-487e-b837-8f77be468033,
+                    name: "John Doe",
+                    email: "john.doe@silk.com",
+                    image: Some(
+                        "https://randomuser.me/api/portraits/men/32.jpg",
+                    ),
+                },
+            ],
+            created_at: 2026-07-14T09:00:00+00:00,
+            updated_at: 2026-07-14T09:02:00+00:00,
+        },
+        RoleWithUsers {
             id: 22,
             pid: f028f910-1a4f-4b79-8619-71a8c185e221,
             name: "customer",
@@ -12,6 +52,14 @@ Ok(
                 "Regular shoppers",
             ),
             users: [
+                RoleUser {
+                    pid: 3c008e68-88fa-4072-808e-6888fa60724c,
+                    name: "James Moriaty",
+                    email: "james.moriaty@continental.org",
+                    image: Some(
+                        "https://randomuser.me/api/portraits/men/46.jpg",
+                    ),
+                },
                 RoleUser {
                     pid: e761d8e3-fc3e-4a2e-a6c9-7c7a4f2130e8,
                     name: "Jane Smith",
@@ -21,17 +69,9 @@ Ok(
                     ),
                 },
                 RoleUser {
-                    pid: bd6f7c26-d2c9-487e-b837-8f77be468033,
-                    name: "John Doe",
-                    email: "john.doe@acme.com",
-                    image: Some(
-                        "https://randomuser.me/api/portraits/men/32.jpg",
-                    ),
-                },
-                RoleUser {
                     pid: 4c008e68-88fa-4072-808e-6888fa60724c,
                     name: "Morgan Grimes",
-                    email: "morgan@silk.io",
+                    email: "morgan@mail.io",
                     image: Some(
                         "https://randomuser.me/api/portraits/women/65.jpg",
                     ),
@@ -48,14 +88,6 @@ Ok(
                 "System administrator",
             ),
             users: [
-                RoleUser {
-                    pid: bd6f7c26-d2c9-487e-b837-8f77be468033,
-                    name: "John Doe",
-                    email: "john.doe@acme.com",
-                    image: Some(
-                        "https://randomuser.me/api/portraits/men/32.jpg",
-                    ),
-                },
                 RoleUser {
                     pid: 57456da3-37b0-473e-8f37-0d74547ebf80,
                     name: "System Administrator",

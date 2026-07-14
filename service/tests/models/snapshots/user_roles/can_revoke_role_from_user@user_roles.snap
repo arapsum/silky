@@ -14,15 +14,6 @@ expression: "(revoked, remaining)"
         },
     ),
     Ok(
-        [
-            UserRole {
-                id: ID,
-                pid: PID,
-                user_id: ID,
-                role_id: ID,
-                created_at: DATE,
-                updated_at: DATE,
-            },
-        ],
+        [],
     ),
 )

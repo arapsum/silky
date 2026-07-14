@@ -2,7 +2,7 @@
   {
     "id": 11,
     "pid": "bd6f7c26-d2c9-487e-b837-8f77be468033",
-    "email": "john.doe@acme.com",
+    "email": "john.doe@silk.com",
     "passwordHash": "$argon2d$v=19$m=12,t=3,p=1$dzhsemJycHJ4bTAwMDAwMA$gwggLXNwI8OgJmMXSP3Wdg",
     "name": "John Doe",
     "image": "https://randomuser.me/api/portraits/men/32.jpg",
@@ -41,7 +41,7 @@
   {
     "id": 44,
     "pid": "4c008e68-88fa-4072-808e-6888fa60724c",
-    "email": "morgan@silk.io",
+    "email": "morgan@mail.io",
     "passwordHash": "$argon2d$v=19$m=16,t=2,p=1$cTZhOHVtY2dJTzBqYTBudw$/704JvCsW23pidisyXK+Tw",
     "name": "Morgan Grimes",
     "image": "https://randomuser.me/api/portraits/women/65.jpg",
@@ -58,6 +58,19 @@
     "passwordHash": "$argon2d$v=19$m=12,t=3,p=1$dzhsemJycHJ4bTAwMDAwMA$gwggLXNwI8OgJmMXSP3Wdg",
     "name": "System Administrator",
     "image": "https://randomuser.me/api/portraits/men/75.jpg",
+    "verifiedAt": "2026-06-27T09:00:00+00:00",
+    "verificationTokenHash": null,
+    "verificationTokenExpiresAt": null,
+    "createdAt": "2026-06-27T09:00:00+00:00",
+    "updatedAt": "2026-06-21T09:00:00+00:00"
+  },
+  {
+    "id": 66,
+    "pid": "69768c35-da6d-46cf-bc17-ea78f7e21a6f",
+    "email": "manager1@silk.com",
+    "passwordHash": "$argon2d$v=19$m=12,t=3,p=1$dzhsemJycHJ4bTAwMDAwMA$gwggLXNwI8OgJmMXSP3Wdg",
+    "name": "Department Manager",
+    "image": "https://randomuser.me/api/portraits/men/77.jpg",
     "verifiedAt": "2026-06-27T09:00:00+00:00",
     "verificationTokenHash": null,
     "verificationTokenExpiresAt": null,

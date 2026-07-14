@@ -14,5 +14,21 @@
     "description": "Regular shoppers",
     "createdAt": "2026-06-21T09:01:00+00:00",
     "updatedAt": "2026-06-21T09:02:00+00:00"
+  },
+  {
+    "id": 33,
+    "pid": "a14f47c4-aa29-4e36-a49c-63a72a33b46c",
+    "name": "Manager",
+    "description": "Departmental heads",
+    "createdAt": "2026-07-14T09:00:00+00:00",
+    "updatedAt": "2026-07-14T09:02:00+00:00"
+  },
+  {
+    "id": 44,
+    "pid": "6f3612e1-7c75-403d-8b71-d1c8b4c7eb97",
+    "name": "Support",
+    "description": "Customer support",
+    "createdAt": "2026-07-14T09:00:00+00:00",
+    "updatedAt": "2026-07-14T09:02:00+00:00"
   }
 ]

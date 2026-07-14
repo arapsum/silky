@@ -21,6 +21,8 @@ pub struct StripeConfig {
     checkout_cancel_url: String,
     #[serde(default = "default_checkout_ttl_seconds")]
     checkout_ttl_seconds: i64,
+    #[serde(default)]
+    live_mode: bool,
 }
 
 impl StripeConfig {
@@ -41,6 +43,11 @@ impl StripeConfig {
             && let Ok(value) = value.parse()
         {
             self.checkout_ttl_seconds = value;
+        }
+        if let Ok(value) = std::env::var("APP_STRIPE_LIVE_MODE")
+            && let Ok(value) = value.parse()
+        {
+            self.live_mode = value;
         }
     }
 
@@ -75,6 +82,11 @@ impl StripeConfig {
     pub const fn checkout_ttl_seconds(&self) -> i64 {
         self.checkout_ttl_seconds
     }
+
+    #[must_use]
+    pub const fn live_mode(&self) -> bool {
+        self.live_mode
+    }
 }
 
 impl fmt::Debug for StripeConfig {
@@ -86,6 +98,7 @@ impl fmt::Debug for StripeConfig {
             .field("checkout_success_url", &self.checkout_success_url)
             .field("checkout_cancel_url", &self.checkout_cancel_url)
             .field("checkout_ttl_seconds", &self.checkout_ttl_seconds)
+            .field("live_mode", &self.live_mode)
             .finish()
     }
 }

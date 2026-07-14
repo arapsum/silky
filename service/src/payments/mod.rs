@@ -6,14 +6,14 @@ use serde::Serialize;
 use stripe::{
     CheckoutSession, CheckoutSessionMode, CreateCheckoutSession, CreateCheckoutSessionLineItems,
     CreateCheckoutSessionLineItemsPriceData, CreateCheckoutSessionLineItemsPriceDataProductData,
-    Currency, RequestStrategy,
+    Currency, Event, EventObject, EventType, RequestStrategy,
 };
 
 use crate::{
     config::StripeConfig,
     context::StripeContext,
     error::PaymentError,
-    models::{OrderWithItems, PaymentAttempt},
+    models::{OrderWithItems, PaymentAttempt, StripeWebhookEvent},
 };
 
 #[derive(Debug, Clone, Serialize)]
@@ -154,4 +154,184 @@ fn hosted_session(session: CheckoutSession) -> Result<HostedCheckoutSession, Pay
         checkout_url,
         expires_at,
     })
+}
+
+/// Applies a verified Stripe event once inside a database transaction.
+///
+/// Supported Checkout Session events are reconciled against Silk's persisted
+/// attempt, order, amount, currency, and runtime mode before state changes.
+///
+/// # Errors
+/// Returns a retryable webhook error when persistence or reconciliation fails.
+pub async fn process_stripe_event(
+    db: &sqlx::PgPool,
+    config: &StripeConfig,
+    event: Event,
+    payload: &serde_json::Value,
+) -> Result<(), PaymentError> {
+    if event.livemode != config.live_mode() {
+        return Err(PaymentError::WebhookReconciliation("event mode mismatch"));
+    }
+
+    let mut txn = db
+        .begin()
+        .await
+        .map_err(|error| PaymentError::WebhookProcessing(error.to_string()))?;
+    let event_id = event.id.to_string();
+    let event_type = event.type_.to_string();
+    let is_new = StripeWebhookEvent::record_once(
+        &mut txn,
+        &event_id,
+        &event_type,
+        event.api_version.as_deref(),
+        payload,
+    )
+    .await
+    .map_err(|error| PaymentError::WebhookProcessing(error.to_string()))?;
+    if !is_new {
+        txn.commit()
+            .await
+            .map_err(|error| PaymentError::WebhookProcessing(error.to_string()))?;
+        return Ok(());
+    }
+
+    match (event.type_, event.data.object) {
+        (
+            EventType::CheckoutSessionCompleted | EventType::CheckoutSessionAsyncPaymentSucceeded,
+            EventObject::CheckoutSession(session),
+        ) => process_completed(&mut txn, config, &session).await?,
+        (EventType::CheckoutSessionExpired, EventObject::CheckoutSession(session)) => {
+            reconcile_session(&mut txn, config, &session).await?;
+            PaymentAttempt::expire_and_release_inventory(&mut txn, session.id.as_ref())
+                .await
+                .map_err(|error| PaymentError::WebhookProcessing(error.to_string()))?;
+        }
+        (EventType::CheckoutSessionAsyncPaymentFailed, EventObject::CheckoutSession(session)) => {
+            reconcile_session(&mut txn, config, &session).await?;
+            PaymentAttempt::mark_failed(
+                &mut txn,
+                session.id.as_ref(),
+                Some("async_payment_failed"),
+                None,
+            )
+            .await
+            .map_err(|error| PaymentError::WebhookProcessing(error.to_string()))?;
+        }
+        _ => {}
+    }
+
+    txn.commit()
+        .await
+        .map_err(|error| PaymentError::WebhookProcessing(error.to_string()))
+}
+
+async fn process_completed(
+    txn: &mut sqlx::Transaction<'_, sqlx::Postgres>,
+    config: &StripeConfig,
+    session: &CheckoutSession,
+) -> Result<(), PaymentError> {
+    reconcile_session(txn, config, session).await?;
+    let session_id = session.id.to_string();
+    if session.payment_status == stripe::CheckoutSessionPaymentStatus::Paid {
+        let payment_intent_id = session
+            .payment_intent
+            .as_ref()
+            .map(stripe::Expandable::id)
+            .map(|id| id.to_string());
+        PaymentAttempt::mark_succeeded(txn, &session_id, payment_intent_id.as_deref())
+            .await
+            .map_err(|error| PaymentError::WebhookProcessing(error.to_string()))?;
+    } else {
+        PaymentAttempt::mark_processing(txn, &session_id)
+            .await
+            .map_err(|error| PaymentError::WebhookProcessing(error.to_string()))?;
+    }
+    Ok(())
+}
+
+async fn reconcile_session(
+    txn: &mut sqlx::Transaction<'_, sqlx::Postgres>,
+    config: &StripeConfig,
+    session: &CheckoutSession,
+) -> Result<(), PaymentError> {
+    if session.livemode != config.live_mode() {
+        return Err(PaymentError::WebhookReconciliation("session mode mismatch"));
+    }
+    if session.mode != CheckoutSessionMode::Payment {
+        return Err(PaymentError::WebhookReconciliation(
+            "checkout mode mismatch",
+        ));
+    }
+
+    let metadata = session
+        .metadata
+        .as_ref()
+        .ok_or(PaymentError::WebhookReconciliation("missing metadata"))?;
+    let attempt_pid = parse_metadata_pid(metadata, "payment_attempt_pid")?;
+    let order_pid = parse_metadata_pid(metadata, "order_pid")?;
+    let expires_at = DateTime::from_timestamp(session.expires_at, 0)
+        .ok_or(PaymentError::WebhookReconciliation(
+            "invalid session expiry",
+        ))?
+        .fixed_offset();
+    let session_id = session.id.to_string();
+    PaymentAttempt::recover_checkout_session(
+        txn,
+        attempt_pid,
+        &session_id,
+        session.url.as_deref(),
+        expires_at,
+    )
+    .await
+    .map_err(|error| PaymentError::WebhookProcessing(error.to_string()))?;
+
+    let stored = PaymentAttempt::reconciliation_for_session(txn, &session_id)
+        .await
+        .map_err(|error| PaymentError::WebhookProcessing(error.to_string()))?;
+    if stored.attempt_pid != attempt_pid || stored.order_pid != order_pid {
+        return Err(PaymentError::WebhookReconciliation("metadata mismatch"));
+    }
+    let order_reference = order_pid.to_string();
+    if session.client_reference_id.as_deref() != Some(order_reference.as_str()) {
+        return Err(PaymentError::WebhookReconciliation(
+            "client reference mismatch",
+        ));
+    }
+    if session.amount_total != Some(to_minor_units(stored.amount, &stored.currency)?) {
+        return Err(PaymentError::WebhookReconciliation("amount mismatch"));
+    }
+    let session_currency = session.currency.map(|currency| currency.to_string());
+    if session_currency
+        .as_deref()
+        .map(str::to_uppercase)
+        .as_deref()
+        != Some(stored.currency.as_str())
+    {
+        return Err(PaymentError::WebhookReconciliation("currency mismatch"));
+    }
+    Ok(())
+}
+
+fn parse_metadata_pid(
+    metadata: &HashMap<String, String>,
+    key: &'static str,
+) -> Result<uuid::Uuid, PaymentError> {
+    metadata
+        .get(key)
+        .and_then(|value| uuid::Uuid::parse_str(value).ok())
+        .ok_or(PaymentError::WebhookReconciliation(key))
+}
+
+/// Verifies a Stripe signature against the exact raw request payload.
+///
+/// # Errors
+/// Returns a stable invalid-signature error for malformed, expired, or
+/// mismatched signatures.
+pub fn verify_stripe_event(
+    payload: &str,
+    signature: &str,
+    webhook_secret: &str,
+) -> Result<Event, PaymentError> {
+    stripe::Webhook::construct_event(payload, signature, webhook_secret)
+        .map_err(|_| PaymentError::InvalidWebhookSignature)
 }

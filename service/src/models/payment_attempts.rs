@@ -36,6 +36,14 @@ pub struct CheckoutSessionDetails<'a> {
     pub expires_at: DateTime<FixedOffset>,
 }
 
+#[derive(Debug, Clone)]
+pub struct PaymentReconciliation {
+    pub attempt_pid: Uuid,
+    pub order_pid: Uuid,
+    pub amount: Decimal,
+    pub currency: String,
+}
+
 impl PaymentAttempt {
     /// Creates the sole active payment attempt for an order.
     ///
@@ -284,6 +292,76 @@ impl PaymentAttempt {
             .fetch_optional(db)
             .await?
             .ok_or(ModelError::PaymentAttemptNotFound)
+    }
+
+    /// Recovers the Session link when Stripe succeeded after the application
+    /// committed its attempt but before it stored Stripe's response.
+    ///
+    /// Replaying the same link is idempotent. A different Session or a terminal
+    /// attempt is rejected before any order state changes.
+    ///
+    /// # Errors
+    /// Returns an attempt-not-found or invalid-transition error, or a database
+    /// error when the attempt cannot be locked or updated.
+    pub async fn recover_checkout_session(
+        txn: &mut Transaction<'_, Postgres>,
+        attempt_pid: Uuid,
+        session_id: &str,
+        checkout_url: Option<&str>,
+        expires_at: DateTime<FixedOffset>,
+    ) -> ModelResult<Self> {
+        let attempt = Self::lock_by_pid(txn, attempt_pid).await?;
+        if attempt.stripe_checkout_session_id.as_deref() == Some(session_id) {
+            return Ok(attempt);
+        }
+        attempt.require_status(&["initiated"], "session_created")?;
+
+        Ok(sqlx::query_as::<_, Self>(
+            r"UPDATE payment_attempts
+              SET status = 'session_created',
+                  stripe_checkout_session_id = $2,
+                  checkout_url = COALESCE($3, checkout_url),
+                  expires_at = $4
+              WHERE pid = $1
+              RETURNING *",
+        )
+        .bind(attempt_pid)
+        .bind(session_id)
+        .bind(checkout_url)
+        .bind(expires_at)
+        .fetch_one(&mut **txn)
+        .await?)
+    }
+
+    /// Locks and returns the identifiers and monetary values needed to
+    /// reconcile a verified Stripe Session against Silk's persisted records.
+    ///
+    /// # Errors
+    /// Returns an attempt-not-found error when the Session is unknown, or a
+    /// database error when the linked rows cannot be locked.
+    pub async fn reconciliation_for_session(
+        txn: &mut Transaction<'_, Postgres>,
+        session_id: &str,
+    ) -> ModelResult<PaymentReconciliation> {
+        sqlx::query_as::<_, (Uuid, Uuid, Decimal, String)>(
+            r"SELECT attempt.pid, orders.pid, attempt.amount, attempt.currency
+              FROM payment_attempts attempt
+              JOIN orders ON orders.id = attempt.order_id
+              WHERE attempt.stripe_checkout_session_id = $1
+              FOR UPDATE OF attempt, orders",
+        )
+        .bind(session_id)
+        .fetch_optional(&mut **txn)
+        .await?
+        .map(
+            |(attempt_pid, order_pid, amount, currency)| PaymentReconciliation {
+                attempt_pid,
+                order_pid,
+                amount,
+                currency,
+            },
+        )
+        .ok_or(ModelError::PaymentAttemptNotFound)
     }
 
     #[must_use]

@@ -25,7 +25,7 @@ pub use self::{
     media_assets::{FinalizeMediaAsset, MediaAsset},
     order_items::OrderItem,
     orders::{Order, OrderWithItems},
-    payment_attempts::{CheckoutSessionDetails, PaymentAttempt},
+    payment_attempts::{CheckoutSessionDetails, PaymentAttempt, PaymentReconciliation},
     permissions::Permission,
     products::{
         Attribute, AttributeValue, NewPicture, NewProductOption, NewVariant,

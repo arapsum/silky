@@ -15,6 +15,16 @@ pub enum PaymentError {
     ProviderUnavailable(#[source] stripe::StripeError),
     #[error("Stripe returned a checkout session without a redirect URL")]
     InvalidProviderResponse,
+    #[error("the Stripe signature header is missing")]
+    MissingWebhookSignature,
+    #[error("the Stripe webhook signature is invalid")]
+    InvalidWebhookSignature,
+    #[error("the Stripe webhook payload is invalid")]
+    InvalidWebhookPayload,
+    #[error("Stripe webhook reconciliation failed: {0}")]
+    WebhookReconciliation(&'static str),
+    #[error("Stripe webhook processing failed: {0}")]
+    WebhookProcessing(String),
 }
 
 impl PaymentError {
@@ -27,6 +37,12 @@ impl PaymentError {
             Self::ProviderRejected(_) => "checkout_session_rejected",
             Self::ProviderUnavailable(_) => "payment_provider_unavailable",
             Self::InvalidProviderResponse => "invalid_payment_provider_response",
+            Self::MissingWebhookSignature | Self::InvalidWebhookSignature => {
+                "invalid_stripe_signature"
+            }
+            Self::InvalidWebhookPayload => "invalid_stripe_payload",
+            Self::WebhookReconciliation(_) => "webhook_reconciliation_failed",
+            Self::WebhookProcessing(_) => "webhook_processing_failed",
         }
     }
 
@@ -52,6 +68,18 @@ impl PaymentError {
             Self::ProviderUnavailable(_) => (
                 StatusCode::SERVICE_UNAVAILABLE,
                 "The payment provider is temporarily unavailable. Please try again.",
+            ),
+            Self::MissingWebhookSignature | Self::InvalidWebhookSignature => (
+                StatusCode::BAD_REQUEST,
+                "The Stripe webhook signature is missing or invalid.",
+            ),
+            Self::InvalidWebhookPayload => (
+                StatusCode::BAD_REQUEST,
+                "The Stripe webhook payload could not be verified.",
+            ),
+            Self::WebhookReconciliation(_) | Self::WebhookProcessing(_) => (
+                StatusCode::INTERNAL_SERVER_ERROR,
+                "The Stripe event could not be processed and will be retried.",
             ),
         }
     }

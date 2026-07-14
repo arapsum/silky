@@ -46,6 +46,15 @@ pub enum ModelError {
     },
     #[error("Order items can only be changed while an order is pending")]
     OrderNotEditable,
+    #[error("This order already has a payment in progress")]
+    PaymentInProgress,
+    #[error("Payment attempt does not exist")]
+    PaymentAttemptNotFound,
+    #[error("Payment cannot transition from {current} to {target}")]
+    InvalidPaymentTransition {
+        current: String,
+        target: &'static str,
+    },
     #[error("Invalid claims key")]
     InvalidClaimsKey,
     #[error("Invalid credentials provided")]
@@ -94,6 +103,10 @@ impl ModelError {
     fn from_database_error(error: &(dyn DatabaseError + 'static)) -> Option<Self> {
         if let Some(order_error) = Self::from_order_constraint(error) {
             return Some(order_error);
+        }
+
+        if error.constraint() == Some("one_active_payment_attempt_per_order") {
+            return Some(Self::PaymentInProgress);
         }
 
         match error.kind() {
@@ -238,7 +251,6 @@ impl ModelError {
     #[must_use]
     pub fn response_body(&self) -> (StatusCode, String) {
         let (status, message) = match self {
-            Self::CategoryHasProducts => (StatusCode::CONFLICT, self.to_string()),
             Self::EntityAlreadyExists(message) => (StatusCode::CONFLICT, message.clone()),
             Self::EntityNotFound => (StatusCode::NOT_FOUND, "Entity not found".to_string()),
             Self::InvalidInput(message) => (StatusCode::BAD_REQUEST, message.clone()),
@@ -266,9 +278,12 @@ impl ModelError {
                 StatusCode::NOT_FOUND,
                 "One or more product variants do not exist".to_string(),
             ),
-            Self::InsufficientStock { .. } | Self::OrderNotEditable => {
-                (StatusCode::CONFLICT, self.to_string())
-            }
+            Self::CategoryHasProducts
+            | Self::InsufficientStock { .. }
+            | Self::OrderNotEditable
+            | Self::PaymentInProgress
+            | Self::InvalidPaymentTransition { .. } => (StatusCode::CONFLICT, self.to_string()),
+            Self::PaymentAttemptNotFound => (StatusCode::NOT_FOUND, self.to_string()),
             Self::InvalidClaimsKey => (StatusCode::UNAUTHORIZED, "Invalid claims key".to_string()),
             Self::InvalidCredentials => (
                 StatusCode::UNAUTHORIZED,
@@ -301,6 +316,9 @@ impl ModelError {
             Self::ProductVariantUnavailable => "product_variant_unavailable",
             Self::InsufficientStock { .. } => "insufficient_stock",
             Self::OrderNotEditable => "order_not_editable",
+            Self::PaymentInProgress => "payment_in_progress",
+            Self::PaymentAttemptNotFound => "payment_attempt_not_found",
+            Self::InvalidPaymentTransition { .. } => "invalid_payment_transition",
             Self::EntityAlreadyExists(_) => "entity_already_exists",
             Self::EntityNotFound => "entity_not_found",
             Self::InvalidInput(_) => "invalid_input",

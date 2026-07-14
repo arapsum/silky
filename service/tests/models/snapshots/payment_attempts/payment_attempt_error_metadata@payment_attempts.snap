@@ -1,0 +1,24 @@
+---
+source: tests/models/payment_attempts.rs
+expression: metadata
+---
+[
+    (
+        "payment_in_progress",
+        None,
+        409,
+        "This order already has a payment in progress",
+    ),
+    (
+        "payment_attempt_not_found",
+        None,
+        404,
+        "Payment attempt does not exist",
+    ),
+    (
+        "invalid_payment_transition",
+        None,
+        409,
+        "Payment cannot transition from succeeded to expired",
+    ),
+]

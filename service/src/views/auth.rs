@@ -2,7 +2,7 @@ use chrono::{DateTime, FixedOffset};
 use serde::{Deserialize, Serialize};
 use uuid::Uuid;
 
-use crate::models::User;
+use crate::models::{User, UserAccess};
 
 #[derive(Debug, Deserialize, Serialize, Clone)]
 pub struct LoginResponse {
@@ -48,19 +48,23 @@ pub struct UserResponse {
     pub name: String,
     pub image: Option<String>,
     pub verified: bool,
+    pub roles: Vec<String>,
+    pub permissions: Vec<String>,
     pub created_at: DateTime<FixedOffset>,
     pub updated_at: DateTime<FixedOffset>,
 }
 
 impl UserResponse {
     #[must_use]
-    pub fn new(user: &User) -> Self {
+    pub fn new(user: &User, access: &UserAccess) -> Self {
         Self {
             pid: user.pid(),
             email: user.email().to_string(),
             name: user.name().to_string(),
             image: user.image().cloned(),
             verified: user.verified_at().is_some(),
+            roles: access.roles().to_vec(),
+            permissions: access.permissions().to_vec(),
             created_at: user.created_at(),
             updated_at: user.updated_at(),
         }

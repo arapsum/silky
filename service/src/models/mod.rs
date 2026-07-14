@@ -32,7 +32,7 @@ pub use self::{
     roles::Role,
     roles_permissions::RolePermission,
     seed::Seedable,
-    user::User,
+    user::{User, UserAccess},
     user_roles::UserRole,
 };
 

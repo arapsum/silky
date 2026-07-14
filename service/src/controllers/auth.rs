@@ -263,8 +263,9 @@ async fn current(
     AppExtension(claims): AppExtension<Claims>,
 ) -> Result<Response> {
     let user = User::find_by_claims_key(ctx.db(), claims.sub()).await?;
+    let access = User::find_access(ctx.db(), user.pid()).await?;
 
-    Ok((StatusCode::OK, Json(UserResponse::new(&user))).into_response())
+    Ok((StatusCode::OK, Json(UserResponse::new(&user, &access))).into_response())
 }
 
 #[debug_handler]
@@ -278,8 +279,9 @@ async fn update_current(
     let validated = validator.validate()?;
 
     let user = User::update_profile(ctx.db(), claims.sub(), validated).await?;
+    let access = User::find_access(ctx.db(), user.pid()).await?;
 
-    Ok((StatusCode::OK, Json(UserResponse::new(&user))).into_response())
+    Ok((StatusCode::OK, Json(UserResponse::new(&user, &access))).into_response())
 }
 
 async fn issue_login_response(ctx: &AppState, user: &User, sub: &str) -> Result<Response> {

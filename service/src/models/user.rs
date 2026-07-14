@@ -60,7 +60,59 @@ pub struct UserWithRoles {
     updated_at: DateTime<FixedOffset>,
 }
 
+#[derive(Debug, Deserialize, Serialize, Clone, FromRow)]
+#[serde(rename_all = "camelCase")]
+pub struct UserAccess {
+    roles: Vec<String>,
+    permissions: Vec<String>,
+}
+
 impl User {
+    /// Returns the effective roles and permissions assigned to a user.
+    ///
+    /// Permissions are combined across every assigned role and returned once,
+    /// in a stable alphabetical order suitable for authorization clients.
+    ///
+    /// # Errors
+    ///
+    /// Returns [`ModelError::EntityNotFound`] when the user does not exist, or
+    /// a database error when the access lookup fails.
+    pub async fn find_access<'e, E>(db: E, pid: Uuid) -> ModelResult<UserAccess>
+    where
+        E: Executor<'e, Database = Postgres>,
+    {
+        sqlx::query_as::<_, UserAccess>(
+            r"
+            SELECT
+                COALESCE(
+                    ARRAY_AGG(DISTINCT roles.name ORDER BY roles.name)
+                        FILTER (WHERE roles.id IS NOT NULL),
+                    ARRAY[]::TEXT[]
+                ) AS roles,
+                COALESCE(
+                    ARRAY_AGG(DISTINCT permissions.name ORDER BY permissions.name)
+                        FILTER (WHERE permissions.id IS NOT NULL),
+                    ARRAY[]::TEXT[]
+                ) AS permissions
+            FROM users
+            LEFT JOIN users_roles
+                ON users_roles.user_id = users.id
+            LEFT JOIN roles
+                ON roles.id = users_roles.role_id
+            LEFT JOIN roles_permissions
+                ON roles_permissions.role_id = roles.id
+            LEFT JOIN permissions
+                ON permissions.id = roles_permissions.permission_id
+            WHERE users.pid = $1
+            GROUP BY users.id
+        ",
+        )
+        .bind(pid)
+        .fetch_optional(db)
+        .await?
+        .ok_or_else(|| ModelError::EntityNotFound)
+    }
+
     /// Returns whether the user is assigned the customer role.
     ///
     /// # Errors
@@ -779,6 +831,18 @@ impl User {
     #[must_use]
     pub const fn image(&self) -> Option<&String> {
         self.image.as_ref()
+    }
+}
+
+impl UserAccess {
+    #[must_use]
+    pub fn roles(&self) -> &[String] {
+        &self.roles
+    }
+
+    #[must_use]
+    pub fn permissions(&self) -> &[String] {
+        &self.permissions
     }
 }
 

@@ -385,9 +385,8 @@ impl Order {
         sqlx::query_as::<_, Self>(
             r"UPDATE orders o
               SET status = COALESCE($2, status),
-                  payment_status = COALESCE($3, payment_status),
-                  fulfillment_status = COALESCE($4, fulfillment_status),
-                  staff_note = COALESCE($5, staff_note),
+                  fulfillment_status = COALESCE($3, fulfillment_status),
+                  staff_note = COALESCE($4, staff_note),
                   updated_at = now()
               FROM users u
               WHERE o.pid = $1
@@ -396,7 +395,6 @@ impl Order {
         )
         .bind(pid)
         .bind(params.status())
-        .bind(params.payment_status())
         .bind(params.fulfillment_status())
         .bind(params.staff_note())
         .fetch_optional(db)

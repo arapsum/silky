@@ -310,6 +310,28 @@ async fn staff_with_order_permission_can_update_an_order(
     .await;
 }
 
+#[tokio::test]
+#[serial]
+async fn staff_cannot_set_payment_status_directly() {
+    crate::request(|server, ctx| async move {
+        configure_insta!();
+        seed_data(ctx.db()).await.expect("seed should complete");
+        let response = with_auth(
+            server
+                .patch(&format!("/orders/{ORDER_PID}"))
+                .json(&serde_json::json!({ "paymentStatus": "paid" })),
+            access_token(&server, "admin@silk.com").await,
+        )
+        .await;
+
+        assert_debug_snapshot!(
+            "staff_cannot_set_payment_status_directly",
+            (response.status_code(), response.text())
+        );
+    })
+    .await;
+}
+
 #[rstest]
 #[case("customer_can_view_owned_order", "john.doe@silk.com", true, false, 200)]
 #[case(

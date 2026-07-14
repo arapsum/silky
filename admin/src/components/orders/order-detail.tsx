@@ -31,7 +31,6 @@ import {
   FULFILLMENT_STATUSES,
   ORDER_STATUSES,
   OrderStatusBadge,
-  PAYMENT_STATUSES,
 } from "#/components/orders/order-status";
 import { EmptyState } from "#/components/empty-state";
 import { ErrorState } from "#/components/error-state";
@@ -273,7 +272,6 @@ function UpdateOrderDialog({ order, pid }: { order: OrderDetail; pid: string }) 
   const queryClient = useQueryClient();
   const [isOpen, setIsOpen] = useState(false);
   const [status, setStatus] = useState(order.status);
-  const [paymentStatus, setPaymentStatus] = useState(order.paymentStatus);
   const [fulfillmentStatus, setFulfillmentStatus] = useState(order.fulfillmentStatus);
   const [staffNote, setStaffNote] = useState(order.staffNote ?? "");
   const mutation = useMutation({
@@ -293,7 +291,6 @@ function UpdateOrderDialog({ order, pid }: { order: OrderDetail; pid: string }) 
 
   function resetForm() {
     setStatus(order.status);
-    setPaymentStatus(order.paymentStatus);
     setFulfillmentStatus(order.fulfillmentStatus);
     setStaffNote(order.staffNote ?? "");
   }
@@ -307,7 +304,6 @@ function UpdateOrderDialog({ order, pid }: { order: OrderDetail; pid: string }) 
     event.preventDefault();
     mutation.mutate({
       status,
-      paymentStatus,
       fulfillmentStatus,
       staffNote,
     });
@@ -344,16 +340,19 @@ function UpdateOrderDialog({ order, pid }: { order: OrderDetail; pid: string }) 
                 </Select>
               </div>
               <div className="grid gap-2">
-                <Label htmlFor="payment-status">Payment status</Label>
+                <Label htmlFor="fulfillment-status">Fulfillment status</Label>
                 <Select
-                  value={paymentStatus}
-                  onValueChange={(value) => value && setPaymentStatus(value)}
+                  value={fulfillmentStatus}
+                  onValueChange={(value) => value && setFulfillmentStatus(value)}
                 >
-                  <SelectTrigger id="payment-status" className="w-full rounded-lg bg-background">
+                  <SelectTrigger
+                    id="fulfillment-status"
+                    className="w-full rounded-lg bg-background"
+                  >
                     <SelectValue />
                   </SelectTrigger>
                   <SelectContent className="rounded-lg">
-                    {PAYMENT_STATUSES.map((value) => (
+                    {FULFILLMENT_STATUSES.map((value) => (
                       <SelectItem key={value} value={value}>
                         {titleCase(value)}
                       </SelectItem>
@@ -361,24 +360,6 @@ function UpdateOrderDialog({ order, pid }: { order: OrderDetail; pid: string }) 
                   </SelectContent>
                 </Select>
               </div>
-            </div>
-            <div className="grid gap-2">
-              <Label htmlFor="fulfillment-status">Fulfillment status</Label>
-              <Select
-                value={fulfillmentStatus}
-                onValueChange={(value) => value && setFulfillmentStatus(value)}
-              >
-                <SelectTrigger id="fulfillment-status" className="w-full rounded-lg bg-background">
-                  <SelectValue />
-                </SelectTrigger>
-                <SelectContent className="rounded-lg">
-                  {FULFILLMENT_STATUSES.map((value) => (
-                    <SelectItem key={value} value={value}>
-                      {titleCase(value)}
-                    </SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
             </div>
             <div className="grid gap-2">
               <Label htmlFor="staff-note">Staff note</Label>

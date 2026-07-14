@@ -18,6 +18,7 @@ Rust backend API for the Silk fashion e-commerce project.
 - PostgreSQL
 - Redis
 - Local SMTP server for development emails
+- A Stripe test account and Stripe CLI for payment development
 
 The root `compose.yaml` starts PostgreSQL, Redis, and Mailtutan:
 
@@ -55,6 +56,34 @@ APP_SERVER_PORT=8080 cargo run
 
 JWT key paths are configured in YAML. Development keys live under
 `secrets/keys/dev/`; test keys live under `secrets/keys/test/`.
+
+### Stripe Checkout
+
+Stripe is optional. The service enables Checkout only when all required
+settings are present. Keep these values in `service/.env`; never commit them:
+
+```bash
+APP_STRIPE_SECRET_KEY=sk_test_...
+APP_STRIPE_WEBHOOK_SECRET=whsec_...
+APP_STRIPE_CHECKOUT_SUCCESS_URL=http://localhost:3000/checkout/success?session_id={CHECKOUT_SESSION_ID}
+APP_STRIPE_CHECKOUT_CANCEL_URL=http://localhost:3000/checkout/cancel
+APP_STRIPE_CHECKOUT_TTL_SECONDS=1800
+APP_STRIPE_LIVE_MODE=false
+```
+
+Authenticate the Stripe CLI and forward only the events Silk handles:
+
+```bash
+stripe login
+stripe listen \
+  --events checkout.session.completed,checkout.session.expired,checkout.session.async_payment_succeeded,checkout.session.async_payment_failed \
+  --forward-to http://127.0.0.1:7150/api/payments/stripe/webhook
+```
+
+Copy the command's `whsec_...` signing secret into
+`APP_STRIPE_WEBHOOK_SECRET`, then restart the service. Development should use
+Stripe test keys with `APP_STRIPE_LIVE_MODE=false`; production must use live
+keys, an HTTPS webhook destination, and `APP_STRIPE_LIVE_MODE=true`.
 
 ## Development
 
@@ -130,6 +159,11 @@ Routes are mounted under `/api` when the binary starts the full application.
 | `POST` | `/api/products/{pid}/variants/{variant_pid}/pictures` | Add a variant picture; requires `products:update` |
 | `PATCH` | `/api/products/{pid}/variants/{variant_pid}/pictures/{picture_pid}` | Update variant picture order; requires `products:update` |
 | `DELETE` | `/api/products/{pid}/variants/{variant_pid}/pictures/{picture_pid}` | Delete a variant picture; requires `products:delete` |
+| `GET` | `/api/orders` | List orders; customers are restricted to their own orders |
+| `GET` | `/api/orders/{pid}` | Return an order and its immutable line snapshots |
+| `POST` | `/api/orders/checkout` | Reserve stock and create Stripe Checkout; requires the `customer` role |
+| `PATCH` | `/api/orders/{pid}` | Update staff-managed order and fulfillment state; requires `orders:update` |
+| `POST` | `/api/payments/stripe/webhook` | Receive and verify Stripe lifecycle events |
 | `GET` | `/api/users` | List users, optionally by role; requires `users:read` |
 | `GET` | `/api/roles` | List roles; requires authentication |
 | `GET` | `/api/roles/{pid}` | Return a role by public ID; requires authentication |

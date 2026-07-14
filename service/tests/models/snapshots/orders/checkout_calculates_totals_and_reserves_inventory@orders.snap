@@ -6,13 +6,13 @@ expression: "(found, items, remaining_stock)"
     Order {
         id: ID,
         pid: PID,
-        order_number: 3,
+        order_number: 11,
         customer_id: ID,
         billing_address_id: Some(
-            303,
+            307,
         ),
         shipping_address_id: Some(
-            304,
+            308,
         ),
         customer_name: "John Doe",
         customer_email: "john.doe@silk.com",

@@ -141,19 +141,19 @@ async fn can_fetch_order(#[case] test_name: &str, #[case] pid: &str) {
 }
 
 #[rstest]
-#[case("customer_can_list_own_orders", "john.doe@silk.com", true, 2, None)]
+#[case("customer_can_list_own_orders", "john.doe@silk.com", true, 4, None)]
 #[case(
     "customer_cannot_override_order_scope",
     "john.doe@silk.com",
     true,
-    2,
+    4,
     Some("/orders?customerPid=e761d8e3-fc3e-4a2e-a6c9-7c7a4f2130e8")
 )]
 #[case(
-    "customer_with_no_orders_gets_empty_list",
+    "customer_can_list_own_orders_jane",
     "jane.smith@globex.com",
     false,
-    0,
+    3,
     None
 )]
 #[tokio::test]

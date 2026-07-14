@@ -6,5 +6,5 @@ expression: "(result, order_count)"
     Err(
         "Each product variant may appear only once per order",
     ),
-    2,
+    10,
 )

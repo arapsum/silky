@@ -54,7 +54,7 @@ impl Drop for CloudinaryEnvGuard {
 async fn access_token(server: &TestServer) -> HeaderValue {
     utils::login_users(
         server,
-        &json!({"email": "john.doe@acme.com", "password": "Password"}),
+        &json!({"email": "admin@silk.com", "password": "Password"}),
     )
     .await
     .access_token

@@ -17,7 +17,7 @@ macro_rules! configure_insta {
 }
 
 async fn access_token(server: &TestServer) -> HeaderValue {
-    access_token_for(server, "john.doe@acme.com").await
+    access_token_for(server, "admin@silk.com").await
 }
 
 async fn access_token_for(server: &TestServer, email: &str) -> HeaderValue {
@@ -105,12 +105,12 @@ async fn can_list_users(#[case] test_name: &str, #[case] path: &str) {
     "cannot_create_staff_user_when_email_already_exists",
     serde_json::json!({
         "name": "John Doe",
-        "email": "john.doe@acme.com",
+        "email": "john.doe@silk.com",
         "password": "Password123",
         "confirmPassword": "Password123",
         "roleId": 11
     }),
-    2
+    1
 )]
 #[case(
     "cannot_create_staff_user_with_customer_role",
@@ -160,7 +160,7 @@ async fn can_create_staff_user(
             .expect("Failed to seed data");
 
         let email = params["email"].as_str().expect("Email should be present");
-        let is_seeded_email = email == "john.doe@acme.com";
+        let is_seeded_email = email == "john.doe@silk.com";
         if !is_seeded_email {
             remove_user(ctx.db(), email).await;
         }
@@ -213,7 +213,7 @@ async fn can_create_staff_user(
 )]
 #[case(
     "cannot_assign_role_when_user_already_has_role",
-    serde_json::json!({ "userId": 11, "roleId": 22 })
+    serde_json::json!({ "userId": 11, "roleId": 44 })
 )]
 #[case(
     "cannot_assign_role_when_user_does_not_exist",
@@ -262,7 +262,7 @@ async fn can_assign_role_to_user(#[case] test_name: &str, #[case] params: serde_
 #[rstest]
 #[case(
     "can_revoke_role_from_user",
-    serde_json::json!({ "userId": 11, "roleId": 11 })
+    serde_json::json!({ "userId": 11, "roleId": 44 })
 )]
 #[case(
     "cannot_revoke_role_that_is_not_assigned",

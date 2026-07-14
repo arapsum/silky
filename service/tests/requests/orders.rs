@@ -43,6 +43,41 @@ fn with_auth(request: axum_test::TestRequest, token: HeaderValue) -> axum_test::
     request.add_header(name, value)
 }
 
+async fn assign_customer_role(db: &sqlx::PgPool, email: &str) {
+    sqlx::query(
+        r"
+        INSERT INTO users_roles (user_id, role_id)
+        SELECT users.id, roles.id
+        FROM users
+        CROSS JOIN roles
+        WHERE users.email = $1
+            AND roles.name = 'customer'
+        ON CONFLICT (user_id, role_id) DO NOTHING
+    ",
+    )
+    .bind(email)
+    .execute(db)
+    .await
+    .expect("customer role should be assigned");
+}
+
+async fn revoke_customer_role(db: &sqlx::PgPool, email: &str) {
+    sqlx::query(
+        r"
+        DELETE FROM users_roles
+        USING users, roles
+        WHERE users_roles.user_id = users.id
+            AND users_roles.role_id = roles.id
+            AND users.email = $1
+            AND roles.name = 'customer'
+    ",
+    )
+    .bind(email)
+    .execute(db)
+    .await
+    .expect("customer role should be revoked");
+}
+
 #[rstest]
 #[case("can_list_orders", "/orders")]
 #[case(
@@ -106,16 +141,18 @@ async fn can_fetch_order(#[case] test_name: &str, #[case] pid: &str) {
 }
 
 #[rstest]
-#[case("customer_can_list_own_orders", "john.doe@acme.com", 2, None)]
+#[case("customer_can_list_own_orders", "john.doe@silk.com", true, 2, None)]
 #[case(
     "customer_cannot_override_order_scope",
-    "john.doe@acme.com",
+    "john.doe@silk.com",
+    true,
     2,
     Some("/orders?customerPid=e761d8e3-fc3e-4a2e-a6c9-7c7a4f2130e8")
 )]
 #[case(
     "customer_with_no_orders_gets_empty_list",
     "jane.smith@globex.com",
+    false,
     0,
     None
 )]
@@ -124,12 +161,16 @@ async fn can_fetch_order(#[case] test_name: &str, #[case] pid: &str) {
 async fn customer_can_list_only_their_orders(
     #[case] test_name: &str,
     #[case] email: &str,
+    #[case] needs_customer_role: bool,
     #[case] expected_total: i64,
     #[case] path: Option<&str>,
 ) {
     crate::request(|server, ctx| async move {
         configure_insta!();
         seed_data(ctx.db()).await.expect("seed should complete");
+        if needs_customer_role {
+            assign_customer_role(ctx.db(), email).await;
+        }
         let response = with_auth(
             server.get(path.unwrap_or("/orders")),
             access_token(&server, email).await,
@@ -148,11 +189,25 @@ async fn customer_can_list_only_their_orders(
 }
 
 #[rstest]
-#[case("customer_cannot_update_order_john", "john.doe@acme.com", 403)]
-#[case("customer_cannot_update_order_jane", "jane.smith@globex.com", 403)]
 #[case(
-    "staff_without_update_permission_cannot_update_order",
+    "customer_cannot_update_order_john",
+    "john.doe@silk.com",
+    true,
+    false,
+    403
+)]
+#[case(
+    "customer_cannot_update_order_jane",
+    "jane.smith@globex.com",
+    false,
+    false,
+    403
+)]
+#[case(
+    "user_without_update_permission_cannot_update_order",
     "james.moriaty@continental.org",
+    false,
+    true,
     403
 )]
 #[tokio::test]
@@ -160,11 +215,19 @@ async fn customer_can_list_only_their_orders(
 async fn customer_cannot_update_an_order(
     #[case] test_name: &str,
     #[case] email: &str,
+    #[case] needs_customer_role: bool,
+    #[case] remove_customer_role: bool,
     #[case] expected_status: u16,
 ) {
     crate::request(|server, ctx| async move {
         configure_insta!();
         seed_data(ctx.db()).await.expect("seed should complete");
+        if needs_customer_role {
+            assign_customer_role(ctx.db(), email).await;
+        }
+        if remove_customer_role {
+            revoke_customer_role(ctx.db(), email).await;
+        }
         let response = with_auth(
             server
                 .patch(&format!("/orders/{ORDER_PID}"))
@@ -207,15 +270,19 @@ async fn staff_with_order_permission_can_update_an_order(
 }
 
 #[rstest]
-#[case("customer_can_view_owned_order", "john.doe@acme.com", 200)]
+#[case("customer_can_view_owned_order", "john.doe@silk.com", true, false, 200)]
 #[case(
     "customer_cannot_view_another_customers_order",
     "jane.smith@globex.com",
+    false,
+    false,
     404
 )]
 #[case(
-    "staff_without_read_permission_cannot_view_orders",
+    "user_without_read_permission_cannot_view_orders",
     "james.moriaty@continental.org",
+    false,
+    true,
     403
 )]
 #[tokio::test]
@@ -223,11 +290,19 @@ async fn staff_with_order_permission_can_update_an_order(
 async fn can_read_order_with_customer_and_staff_access_rules(
     #[case] test_name: &str,
     #[case] email: &str,
+    #[case] needs_customer_role: bool,
+    #[case] remove_customer_role: bool,
     #[case] expected_status: u16,
 ) {
     crate::request(|server, ctx| async move {
         configure_insta!();
         seed_data(ctx.db()).await.expect("seed should complete");
+        if needs_customer_role {
+            assign_customer_role(ctx.db(), email).await;
+        }
+        if remove_customer_role {
+            revoke_customer_role(ctx.db(), email).await;
+        }
         let response = with_auth(
             server.get(&format!("/orders/{ORDER_PID}")),
             access_token(&server, email).await,

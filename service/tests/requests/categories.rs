@@ -25,7 +25,7 @@ macro_rules! configure_insta {
 
 async fn access_token(server: &TestServer) -> HeaderValue {
     let params = serde_json::json!({
-        "email": "john.doe@acme.com",
+        "email": "john.doe@silk.com",
         "password": "Password"
     });
 
@@ -89,7 +89,7 @@ async fn revoke_role(db: &sqlx::PgPool, email: &str, role: &str) {
 }
 
 async fn allow_category_writes(db: &sqlx::PgPool) {
-    assign_role(db, "john.doe@acme.com", "administrator").await;
+    assign_role(db, "john.doe@silk.com", "administrator").await;
     grant_permission(
         db,
         "administrator",
@@ -643,7 +643,7 @@ async fn cannot_write_category_without_permission(#[case] test_name: &str) {
         crate::seed_data(ctx.db())
             .await
             .expect("Failed to seed data");
-        revoke_role(ctx.db(), "john.doe@acme.com", "administrator").await;
+        revoke_role(ctx.db(), "john.doe@silk.com", "administrator").await;
 
         let token = access_token(&server).await;
         let (auth_header, auth_value) = utils::auth_header(token);

@@ -495,7 +495,6 @@ async fn cannot_access_roles_without_permission(
             .await
             .expect("Failed to seed data");
         revoke_role(ctx.db(), "admin@silk.com", "administrator").await;
-
         let permission = match (method, path) {
             ("POST", "/roles") => "roles:create",
             ("GET", _) => "roles:read",

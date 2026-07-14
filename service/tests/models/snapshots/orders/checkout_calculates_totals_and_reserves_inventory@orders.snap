@@ -15,7 +15,7 @@ expression: "(found, items, remaining_stock)"
             304,
         ),
         customer_name: "John Doe",
-        customer_email: "john.doe@acme.com",
+        customer_email: "john.doe@silk.com",
         customer_image: Some(
             "https://randomuser.me/api/portraits/men/32.jpg",
         ),

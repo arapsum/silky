@@ -22,6 +22,7 @@ import {
   MagnifyingGlassIcon,
   MoonIcon,
   PackageIcon,
+  ShoppingBagIcon,
   ShieldCheckIcon,
   SunIcon,
   UsersIcon,
@@ -29,6 +30,8 @@ import {
 import { useNavigate, useRouterState } from "@tanstack/react-router";
 import { useTheme } from "next-themes";
 import { useEffect, useState } from "react";
+import { useAccess } from "#/hooks/use-access.ts";
+import { hasEveryPermission, PERMISSIONS } from "#/lib/access.ts";
 
 const commandSuggestions = [
   {
@@ -44,6 +47,7 @@ const commandSuggestions = [
     description: "Manage catalogue products",
     to: "/products",
     icon: PackageIcon,
+    permissions: [PERMISSIONS.products.read],
   },
   {
     id: "categories",
@@ -51,6 +55,7 @@ const commandSuggestions = [
     description: "Organise the catalogue",
     to: "/categories",
     icon: ChartPieIcon,
+    permissions: [PERMISSIONS.categories.read],
   },
   {
     id: "customers",
@@ -58,6 +63,15 @@ const commandSuggestions = [
     description: "Review customer accounts",
     to: "/people/customers",
     icon: UsersIcon,
+    permissions: [PERMISSIONS.users.read],
+  },
+  {
+    id: "orders",
+    title: "Orders",
+    description: "Review and fulfil customer orders",
+    to: "/orders",
+    icon: ShoppingBagIcon,
+    permissions: [PERMISSIONS.orders.read],
   },
   {
     id: "roles",
@@ -65,6 +79,7 @@ const commandSuggestions = [
     description: "Manage access roles",
     to: "/access-control/roles",
     icon: ShieldCheckIcon,
+    permissions: [PERMISSIONS.roles.read],
   },
   {
     id: "permissions",
@@ -72,6 +87,7 @@ const commandSuggestions = [
     description: "Review role permissions",
     to: "/access-control/permissions",
     icon: KeyIcon,
+    permissions: [PERMISSIONS.roles.read, PERMISSIONS.permissions.read],
   },
   {
     id: "settings",
@@ -152,6 +168,11 @@ function CommandSearchDialog({
   onOpenChange: (open: boolean) => void;
 }) {
   const navigate = useNavigate();
+  const { currentUser } = useAccess();
+  const accessibleSuggestions = commandSuggestions.filter(
+    (suggestion) =>
+      !("permissions" in suggestion) || hasEveryPermission(currentUser, suggestion.permissions),
+  );
 
   return (
     <CommandDialog
@@ -166,7 +187,7 @@ function CommandSearchDialog({
         <CommandList>
           <CommandEmpty>No results found.</CommandEmpty>
           <CommandGroup heading="Suggestions">
-            {commandSuggestions.map((suggestion) => (
+            {accessibleSuggestions.map((suggestion) => (
               <CommandItem
                 key={suggestion.id}
                 className="rounded-lg!"

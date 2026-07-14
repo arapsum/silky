@@ -32,6 +32,8 @@ import {
 import { Skeleton } from "@/components/ui/skeleton";
 import { initials } from "@/utils/formatters";
 import { cn } from "@/lib/utils";
+import { PERMISSIONS } from "@/lib/access";
+import { useAccess } from "@/hooks/use-access";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { Link, useNavigate } from "@tanstack/react-router";
 import {
@@ -55,7 +57,7 @@ import { useState } from "react";
 import { toast } from "sonner";
 import { Logo } from "./logo";
 import type { Route } from "./nav-main";
-import DashboardNavigation from "./nav-main";
+import DashboardNavigation, { filterRoutesByAccess } from "./nav-main";
 
 const dashboardRoutes: Route[] = [
   {
@@ -74,26 +76,31 @@ const dashboardRoutes: Route[] = [
         title: "Products",
         link: "/products",
         icon: <PackageIcon className="size-4" />,
+        permissions: [PERMISSIONS.products.read],
       },
       {
         title: "Variants & SKUs",
         link: "#",
         icon: <LinkIcon className="size-4" />,
+        permissions: [PERMISSIONS.products.read],
       },
       {
         title: "Attributes",
         link: "#",
         icon: <SparkleIcon className="size-4" />,
+        permissions: [PERMISSIONS.products.read],
       },
       {
         title: "Product Options",
         link: "#",
         icon: <ChartPieIcon className="size-4" />,
+        permissions: [PERMISSIONS.products.read],
       },
       {
         title: "Media Library",
         link: "#",
         icon: <StorefrontIcon className="size-4" />,
+        permissions: [PERMISSIONS.media.read],
       },
     ],
   },
@@ -102,21 +109,25 @@ const dashboardRoutes: Route[] = [
     title: "Categories",
     icon: <ChartPieIcon className="size-4" />,
     link: "#",
+    permissions: [PERMISSIONS.categories.read],
     subs: [
       {
         title: "Category List",
         link: "/categories",
         icon: <ChartPieIcon className="size-4" />,
+        permissions: [PERMISSIONS.categories.read],
       },
       {
         title: "Create Category",
         link: "/categories/create",
         icon: <StorefrontIcon className="size-4" />,
+        permissions: [PERMISSIONS.categories.create],
       },
       {
         title: "Category Tree",
         link: "#",
         icon: <PulseIcon className="size-4" />,
+        permissions: [PERMISSIONS.categories.read],
       },
     ],
   },
@@ -125,16 +136,19 @@ const dashboardRoutes: Route[] = [
     title: "People",
     icon: <UsersIcon className="size-4" />,
     link: "#",
+    permissions: [PERMISSIONS.users.read],
     subs: [
       {
         title: "Customers",
         link: "/people/customers",
         icon: <UsersIcon className="size-4" />,
+        permissions: [PERMISSIONS.users.read],
       },
       {
         title: "Staff",
         link: "/people/staff",
         icon: <GearIcon className="size-4" />,
+        permissions: [PERMISSIONS.users.read],
       },
     ],
   },
@@ -148,11 +162,13 @@ const dashboardRoutes: Route[] = [
         title: "Roles",
         link: "/access-control/roles",
         icon: <GearIcon className="size-4" />,
+        permissions: [PERMISSIONS.roles.read],
       },
       {
         title: "Permissions",
         link: "/access-control/permissions",
         icon: <LinkIcon className="size-4" />,
+        permissions: [PERMISSIONS.roles.read, PERMISSIONS.permissions.read],
       },
     ],
   },
@@ -161,26 +177,31 @@ const dashboardRoutes: Route[] = [
     title: "Orders",
     icon: <ShoppingBagIcon className="size-4" />,
     link: "#",
+    permissions: [PERMISSIONS.orders.read],
     subs: [
       {
         title: "Orders",
         link: "/orders",
         icon: <ShoppingBagIcon className="size-4" />,
+        permissions: [PERMISSIONS.orders.read],
       },
       {
         title: "Subscriptions",
         link: "#",
         icon: <InfinityIcon className="size-4" />,
+        permissions: [PERMISSIONS.orders.read],
       },
       {
         title: "Fulfillment",
         link: "#",
         icon: <PackageIcon className="size-4" />,
+        permissions: [PERMISSIONS.orders.read],
       },
       {
         title: "Returns",
         link: "#",
         icon: <LinkIcon className="size-4" />,
+        permissions: [PERMISSIONS.orders.read],
       },
     ],
   },
@@ -303,7 +324,9 @@ const dashboardRoutes: Route[] = [
 
 export function AppSidebar() {
   const { state } = useSidebar();
+  const { currentUser } = useAccess();
   const isCollapsed = state === "collapsed";
+  const accessibleRoutes = filterRoutesByAccess(dashboardRoutes, currentUser);
 
   return (
     <Sidebar variant="sidebar" collapsible="icon">
@@ -323,7 +346,7 @@ export function AppSidebar() {
         </Link>
       </SidebarHeader>
       <SidebarContent className="gap-0 px-2 py-3">
-        <DashboardNavigation routes={dashboardRoutes} />
+        <DashboardNavigation routes={accessibleRoutes} />
       </SidebarContent>
       <SidebarFooter className="border-t px-2 py-2">
         <UserAccountMenu isCollapsed={isCollapsed} />

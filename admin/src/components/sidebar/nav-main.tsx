@@ -11,6 +11,7 @@ import {
   useSidebar,
 } from "@/components/ui/sidebar";
 import { cn } from "@/lib/utils";
+import { hasEveryPermission, type AccessSubject, type PermissionName } from "@/lib/access";
 import { Link, useRouterState } from "@tanstack/react-router";
 import { CaretDownIcon, CaretUpIcon } from "@phosphor-icons/react";
 import type React from "react";
@@ -21,12 +22,28 @@ export type Route = {
   title: string;
   icon?: React.ReactNode;
   link: string;
+  permissions?: readonly PermissionName[];
   subs?: {
     title: string;
     link: string;
     icon?: React.ReactNode;
+    permissions?: readonly PermissionName[];
   }[];
 };
+
+export function filterRoutesByAccess(routes: Route[], subject: AccessSubject | undefined) {
+  return routes.flatMap((route) => {
+    if (route.permissions && !hasEveryPermission(subject, route.permissions)) return [];
+
+    const subs = route.subs?.filter(
+      (subRoute) => !subRoute.permissions || hasEveryPermission(subject, subRoute.permissions),
+    );
+
+    if (route.subs && !subs?.length) return [];
+
+    return [{ ...route, subs }];
+  });
+}
 
 export default function DashboardNavigation({ routes }: { routes: Route[] }) {
   const { state } = useSidebar();

@@ -35,6 +35,8 @@ import {
 } from "#/components/ui/select";
 import { titleCase } from "#/utils/formatters";
 import { cn } from "#/lib/utils";
+import { useAccess } from "#/hooks/use-access";
+import { PERMISSIONS } from "#/lib/access";
 
 const PAGE_SIZE = 20;
 const hierarchyOptions = [
@@ -52,9 +54,13 @@ function productLabel(category: Category) {
 function categoryColumns({
   onDelete,
   isDeleting,
+  canEdit,
+  canDelete,
 }: {
   onDelete: (category: Category) => void;
   isDeleting: boolean;
+  canEdit: boolean;
+  canDelete: boolean;
 }): ColumnDef<Category>[] {
   return [
     {
@@ -125,6 +131,8 @@ function categoryColumns({
               itemType="Category"
               view={<Link to="/categories/$pid" params={{ pid: category.pid }} />}
               edit={<Link to="/categories/$pid/edit" params={{ pid: category.pid }} />}
+              canEdit={canEdit}
+              canDelete={canDelete}
               isDeleting={isDeleting}
               deleteDisabled={(category.productCount ?? 0) > 0}
               deleteDisabledReason="Categories with products cannot be deleted."
@@ -141,6 +149,10 @@ function categoryColumns({
 
 export default function CategoryCatalogue() {
   const queryClient = useQueryClient();
+  const { can } = useAccess();
+  const canCreate = can(PERMISSIONS.categories.create);
+  const canEdit = can(PERMISSIONS.categories.update);
+  const canDelete = can(PERMISSIONS.categories.delete);
   const [searchInput, setSearchInput] = useState("");
   const [search, setSearch] = useState("");
   const [page, setPage] = useState(1);
@@ -203,8 +215,10 @@ export default function CategoryCatalogue() {
       categoryColumns({
         onDelete: (category) => deleteMutation.mutate(category.pid),
         isDeleting: deleteMutation.isPending,
+        canEdit,
+        canDelete,
       }),
-    [deleteMutation],
+    [canDelete, canEdit, deleteMutation],
   );
 
   const canGoPrevious = Boolean(pagination?.hasPrev);
@@ -216,10 +230,12 @@ export default function CategoryCatalogue() {
         title="Categories"
         subtitle="Manage storefront category navigation and product grouping."
         actions={
-          <Button className="rounded-lg" render={<Link to="/categories/create" />}>
-            <PlusIcon className="size-4" />
-            Add Category
-          </Button>
+          canCreate ? (
+            <Button className="rounded-lg" render={<Link to="/categories/create" />}>
+              <PlusIcon className="size-4" />
+              Add Category
+            </Button>
+          ) : undefined
         }
       />
 

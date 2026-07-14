@@ -8,6 +8,8 @@ export type CurrentUser = {
   name: string;
   image: string | null;
   verified: boolean;
+  roles: string[];
+  permissions: string[];
   createdAt: string;
   updatedAt: string;
 };

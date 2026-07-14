@@ -49,6 +49,8 @@ import {
   SelectTrigger,
   SelectValue,
 } from "#/components/ui/select";
+import { useAccess } from "#/hooks/use-access";
+import { PERMISSIONS } from "#/lib/access";
 
 type PeopleTablePageProps = {
   title: string;
@@ -108,7 +110,10 @@ function hasStaffRole(user: User) {
   return user.roles.some((role) => role.name.toLowerCase() !== "customer");
 }
 
-function userColumns(onAssignRole: (user: User) => void): ColumnDef<User>[] {
+function userColumns(
+  onAssignRole: (user: User) => void,
+  canManageRoles: boolean,
+): ColumnDef<User>[] {
   return [
     {
       id: "person",
@@ -192,24 +197,28 @@ function userColumns(onAssignRole: (user: User) => void): ColumnDef<User>[] {
     {
       id: "actions",
       header: "",
-      cell: ({ row }) => (
-        <Button
-          type="button"
-          variant="outline"
-          size="sm"
-          className="rounded-lg"
-          onClick={() => onAssignRole(row.original)}
-        >
-          <UserPlusIcon />
-          Manage roles
-        </Button>
-      ),
+      cell: ({ row }) =>
+        canManageRoles ? (
+          <Button
+            type="button"
+            variant="outline"
+            size="sm"
+            className="rounded-lg"
+            onClick={() => onAssignRole(row.original)}
+          >
+            <UserPlusIcon />
+            Manage roles
+          </Button>
+        ) : null,
       size: 160,
     },
   ];
 }
 
 export default function PeopleTablePage({ title, description, category }: PeopleTablePageProps) {
+  const { canEvery } = useAccess();
+  const canCreateStaff = canEvery([PERMISSIONS.users.create, PERMISSIONS.roles.read]);
+  const canManageRoles = canEvery([PERMISSIONS.users.update, PERMISSIONS.roles.read]);
   const [searchInput, setSearchInput] = useState("");
   const [search, setSearch] = useState("");
   const [page, setPage] = useState(1);
@@ -222,6 +231,7 @@ export default function PeopleTablePage({ title, description, category }: People
   const rolesQuery = useQuery({
     queryKey: rolesQueryKey,
     queryFn: listRoles,
+    enabled: canCreateStaff || canManageRoles,
   });
 
   const users = useMemo(() => {
@@ -245,7 +255,7 @@ export default function PeopleTablePage({ title, description, category }: People
     });
   }, [search, users]);
 
-  const columns = useMemo(() => userColumns(setSelectedUser), []);
+  const columns = useMemo(() => userColumns(setSelectedUser, canManageRoles), [canManageRoles]);
   const totalPages = Math.max(Math.ceil(filteredUsers.length / PAGE_SIZE), 1);
   const paginatedUsers = filteredUsers.slice((page - 1) * PAGE_SIZE, page * PAGE_SIZE);
   const activeFilters = Boolean(search);
@@ -278,7 +288,7 @@ export default function PeopleTablePage({ title, description, category }: People
               onRefresh={() => void usersQuery.refetch()}
               isRefreshing={usersQuery.isFetching}
             />
-            {category === "staff" && (
+            {category === "staff" && canCreateStaff && (
               <Button
                 type="button"
                 className="rounded-lg"
@@ -382,25 +392,29 @@ export default function PeopleTablePage({ title, description, category }: People
         )}
       </div>
 
-      <AssignUserRoleDialog
-        user={selectedUser}
-        roles={rolesQuery.data ?? []}
-        isLoading={rolesQuery.isLoading}
-        onOpenChange={(open) => !open && setSelectedUser(undefined)}
-        onRoleRevoked={(roleId) =>
-          setSelectedUser((current) =>
-            current
-              ? { ...current, roles: current.roles.filter((role) => role.id !== roleId) }
-              : undefined,
-          )
-        }
-      />
-      <CreateStaffUserDialog
-        open={isCreateStaffDialogOpen}
-        roles={rolesQuery.data ?? []}
-        isLoadingRoles={rolesQuery.isLoading}
-        onOpenChange={setIsCreateStaffDialogOpen}
-      />
+      {canManageRoles && (
+        <AssignUserRoleDialog
+          user={selectedUser}
+          roles={rolesQuery.data ?? []}
+          isLoading={rolesQuery.isLoading}
+          onOpenChange={(open) => !open && setSelectedUser(undefined)}
+          onRoleRevoked={(roleId) =>
+            setSelectedUser((current) =>
+              current
+                ? { ...current, roles: current.roles.filter((role) => role.id !== roleId) }
+                : undefined,
+            )
+          }
+        />
+      )}
+      {canCreateStaff && (
+        <CreateStaffUserDialog
+          open={isCreateStaffDialogOpen}
+          roles={rolesQuery.data ?? []}
+          isLoadingRoles={rolesQuery.isLoading}
+          onOpenChange={setIsCreateStaffDialogOpen}
+        />
+      )}
     </div>
   );
 }

@@ -37,6 +37,8 @@ import {
   SelectValue,
 } from "#/components/ui/select";
 import { cn } from "#/lib/utils";
+import { useAccess } from "#/hooks/use-access";
+import { PERMISSIONS } from "#/lib/access";
 
 const PAGE_SIZE = 20;
 const stockOptions = [
@@ -48,9 +50,13 @@ const stockOptions = [
 function productColumns({
   onDelete,
   isDeleting,
+  canEdit,
+  canDelete,
 }: {
   onDelete: (product: ProductListItem) => void;
   isDeleting: boolean;
+  canEdit: boolean;
+  canDelete: boolean;
 }): ColumnDef<ProductListItem>[] {
   return [
     {
@@ -159,6 +165,8 @@ function productColumns({
               itemType="Product"
               view={<Link to="/products/$pid" params={{ pid: product.pid }} />}
               edit={<Link to="/products/$pid/edit" params={{ pid: product.pid }} />}
+              canEdit={canEdit}
+              canDelete={canDelete}
               isDeleting={isDeleting}
               onDelete={() => onDelete(product)}
             />
@@ -173,6 +181,10 @@ function productColumns({
 
 export default function ProductCatalogue() {
   const queryClient = useQueryClient();
+  const { can } = useAccess();
+  const canCreate = can(PERMISSIONS.products.create);
+  const canEdit = can(PERMISSIONS.products.update);
+  const canDelete = can(PERMISSIONS.products.delete);
   const [searchInput, setSearchInput] = useState("");
   const [search, setSearch] = useState("");
   const [stockStatus, setStockStatus] = useState<(typeof stockOptions)[number]["value"]>("all");
@@ -213,8 +225,10 @@ export default function ProductCatalogue() {
       productColumns({
         onDelete: (product) => deleteMutation.mutate(product.pid),
         isDeleting: deleteMutation.isPending,
+        canEdit,
+        canDelete,
       }),
-    [deleteMutation],
+    [canDelete, canEdit, deleteMutation],
   );
   const canGoPrevious = Boolean(pagination?.hasPrev);
   const canGoNext = Boolean(pagination?.hasNext);
@@ -246,10 +260,12 @@ export default function ProductCatalogue() {
         title="Products"
         subtitle="Manage product catalogue rows, stock, pricing, and variants."
         actions={
-          <Button className="rounded-lg" render={<Link to="/products/create" />}>
-            <PlusIcon className="size-4" />
-            Add Product
-          </Button>
+          canCreate ? (
+            <Button className="rounded-lg" render={<Link to="/products/create" />}>
+              <PlusIcon className="size-4" />
+              Add Product
+            </Button>
+          ) : undefined
         }
       />
 

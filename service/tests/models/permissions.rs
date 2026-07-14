@@ -70,6 +70,10 @@ async fn can_seed_permissions(#[case] test_name: &str, #[case] file: &str) {
     "can_find_permissions_read_permission_by_pid",
     "a0199d51-0147-477f-8778-070785ee81f3"
 )]
+#[case(
+    "can_find_admin_access_permission_by_pid",
+    "dbd690cc-58dd-471b-93b6-7dbd3896d3da"
+)]
 #[tokio::test]
 #[serial]
 async fn can_find_permission_by_pid(#[case] test_name: &str, #[case] pid: &str) {
@@ -143,7 +147,9 @@ async fn can_find_permission_list_by_role(#[case] test_name: &str) {
 
     let result = Permission::find_list(ctx.db(), Some(" Customer ")).await;
 
-    assert_debug_snapshot!(test_name, result);
+    with_settings!({ filters => cleanup_date().to_vec() }, {
+        assert_debug_snapshot!(test_name, result)
+    });
 }
 
 #[rstest]
@@ -161,7 +167,7 @@ async fn can_find_all_permissions_for_administrator(#[case] test_name: &str) {
 
     let result = Permission::find_list(ctx.db(), Some(" Administrator ")).await;
 
-    assert!(matches!(&result, Ok(permissions) if permissions.len() == 26));
+    assert!(matches!(&result, Ok(permissions) if permissions.len() == 27));
     with_settings!({ filters => cleanup_date().to_vec() }, {
         assert_debug_snapshot!(test_name, result)
     });
@@ -208,6 +214,24 @@ async fn can_find_all_permissions_for_administrator(#[case] test_name: &str) {
     "support_cannot_update_products",
     "bd6f7c26-d2c9-487e-b837-8f77be468033",
     "products:update",
+    false
+)]
+#[case(
+    "manager_can_access_admin_application",
+    "69768c35-da6d-46cf-bc17-ea78f7e21a6f",
+    "admin:access",
+    true
+)]
+#[case(
+    "support_can_access_admin_application",
+    "bd6f7c26-d2c9-487e-b837-8f77be468033",
+    "admin:access",
+    true
+)]
+#[case(
+    "customer_cannot_access_admin_application",
+    "e761d8e3-fc3e-4a2e-a6c9-7c7a4f2130e8",
+    "admin:access",
     false
 )]
 #[tokio::test]

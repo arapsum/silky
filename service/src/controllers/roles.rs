@@ -1,9 +1,9 @@
 use axum::{
     Json, Router, debug_handler,
     extract::State,
-    http::StatusCode,
+    http::{Method, StatusCode},
     response::{IntoResponse, Response},
-    routing::{get, patch, post},
+    routing::{get, post},
 };
 use uuid::Uuid;
 
@@ -93,15 +93,25 @@ async fn revoke_permission(
 
 pub fn router(ctx: &AppState) -> Router {
     Router::new()
-        .route("/", post(create))
-        .route("/", get(list))
+        .route("/", get(list).post(create))
+        .route("/{pid}", get(one).patch(update))
         .route(
             "/permissions",
-            post(assign_permission)
-                .delete(revoke_permission)
-                .layer(RbacLayer::new(ctx.clone(), permissions::roles::UPDATE)),
+            post(assign_permission).delete(revoke_permission),
         )
-        .route("/{pid}", patch(update))
-        .route("/{pid}", get(one))
+        .route_layer(RbacLayer::for_routes(
+            ctx.clone(),
+            [
+                (
+                    Method::POST,
+                    Some("/permissions"),
+                    permissions::roles::UPDATE,
+                ),
+                (Method::DELETE, None, permissions::roles::UPDATE),
+                (Method::PATCH, None, permissions::roles::UPDATE),
+                (Method::GET, None, permissions::roles::READ),
+                (Method::POST, None, permissions::roles::CREATE),
+            ],
+        ))
         .with_state(ctx.clone())
 }

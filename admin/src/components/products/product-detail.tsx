@@ -46,6 +46,8 @@ import { Badge } from "#/components/ui/badge";
 import { Button } from "#/components/ui/button";
 import { Skeleton } from "#/components/ui/skeleton";
 import { cn } from "#/lib/utils";
+import { useAccess } from "#/hooks/use-access";
+import { PERMISSIONS } from "#/lib/access";
 
 function productImages(product: ProductDetail) {
   return [...product.pictures, ...product.variants.flatMap((variant) => variant.pictures)];
@@ -406,6 +408,9 @@ function ProductDetailSkeleton() {
 }
 
 export default function ProductDetailPage({ pid }: { pid: string }) {
+  const { can } = useAccess();
+  const canEdit = can(PERMISSIONS.products.update);
+  const canDelete = can(PERMISSIONS.products.delete);
   const navigate = useNavigate();
   const queryClient = useQueryClient();
   const productQuery = useQuery({
@@ -486,48 +491,52 @@ export default function ProductDetailPage({ pid }: { pid: string }) {
               <ArrowLeftIcon className="size-4" />
               Back
             </Button>
-            <AlertDialog>
-              <AlertDialogTrigger
-                render={
-                  <Button
-                    className="rounded-lg"
-                    variant="outline"
-                    disabled={deleteMutation.isPending || Boolean(product.deletedAt)}
-                  />
-                }
+            {canDelete && (
+              <AlertDialog>
+                <AlertDialogTrigger
+                  render={
+                    <Button
+                      className="rounded-lg"
+                      variant="outline"
+                      disabled={deleteMutation.isPending || Boolean(product.deletedAt)}
+                    />
+                  }
+                >
+                  <TrashIcon className="size-4" />
+                  Delete
+                </AlertDialogTrigger>
+                <AlertDialogContent className="rounded-lg">
+                  <AlertDialogHeader>
+                    <AlertDialogTitle>Delete product?</AlertDialogTitle>
+                    <AlertDialogDescription>
+                      {product.name} will be removed from the active catalogue.
+                    </AlertDialogDescription>
+                  </AlertDialogHeader>
+                  <AlertDialogFooter>
+                    <AlertDialogCancel className="rounded-lg" disabled={deleteMutation.isPending}>
+                      Cancel
+                    </AlertDialogCancel>
+                    <AlertDialogAction
+                      variant="destructive"
+                      className="rounded-lg"
+                      disabled={deleteMutation.isPending}
+                      onClick={() => deleteMutation.mutate()}
+                    >
+                      Delete product
+                    </AlertDialogAction>
+                  </AlertDialogFooter>
+                </AlertDialogContent>
+              </AlertDialog>
+            )}
+            {canEdit && (
+              <Button
+                className="rounded-lg"
+                render={<Link to="/products/$pid/edit" params={{ pid }} />}
               >
-                <TrashIcon className="size-4" />
-                Delete
-              </AlertDialogTrigger>
-              <AlertDialogContent className="rounded-lg">
-                <AlertDialogHeader>
-                  <AlertDialogTitle>Delete product?</AlertDialogTitle>
-                  <AlertDialogDescription>
-                    {product.name} will be removed from the active catalogue.
-                  </AlertDialogDescription>
-                </AlertDialogHeader>
-                <AlertDialogFooter>
-                  <AlertDialogCancel className="rounded-lg" disabled={deleteMutation.isPending}>
-                    Cancel
-                  </AlertDialogCancel>
-                  <AlertDialogAction
-                    variant="destructive"
-                    className="rounded-lg"
-                    disabled={deleteMutation.isPending}
-                    onClick={() => deleteMutation.mutate()}
-                  >
-                    Delete product
-                  </AlertDialogAction>
-                </AlertDialogFooter>
-              </AlertDialogContent>
-            </AlertDialog>
-            <Button
-              className="rounded-lg"
-              render={<Link to="/products/$pid/edit" params={{ pid }} />}
-            >
-              <PencilSimpleIcon className="size-4" />
-              Edit product
-            </Button>
+                <PencilSimpleIcon className="size-4" />
+                Edit product
+              </Button>
+            )}
           </>
         }
       />

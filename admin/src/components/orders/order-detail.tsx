@@ -57,6 +57,8 @@ import {
 import { Skeleton } from "#/components/ui/skeleton";
 import { Textarea } from "#/components/ui/textarea";
 import { cn } from "#/lib/utils";
+import { useAccess } from "#/hooks/use-access";
+import { PERMISSIONS } from "#/lib/access";
 
 function optionSummary(options: Record<string, unknown>) {
   const values = Object.entries(options).filter(([, value]) => value !== null && value !== "");
@@ -433,6 +435,8 @@ function OrderDetailSkeleton() {
 }
 
 export default function OrderDetailPage({ pid }: { pid: string }) {
+  const { can } = useAccess();
+  const canUpdate = can(PERMISSIONS.orders.update);
   const orderQuery = useQuery({
     queryKey: [...ordersQueryKey, pid],
     queryFn: () => getOrder(pid),
@@ -484,7 +488,7 @@ export default function OrderDetailPage({ pid }: { pid: string }) {
             <Button className="rounded-lg" variant="outline" render={<Link to="/orders" />}>
               <ArrowLeftIcon /> Back to orders
             </Button>
-            <UpdateOrderDialog key={order.updatedAt} order={order} pid={pid} />
+            {canUpdate && <UpdateOrderDialog key={order.updatedAt} order={order} pid={pid} />}
           </>
         }
       />

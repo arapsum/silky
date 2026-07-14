@@ -190,8 +190,8 @@
     "description": "Delete media assets",
     "createdAt": "2026-07-10T09:00:00+00:00",
     "updatedAt": "2026-07-10T09:00:00+00:00"
-  }
-  ,{
+  },
+  {
     "id": 125,
     "pid": "af3b7d51-6a4e-4ec4-8e41-2f5f6f1c9001",
     "name": "orders:read",
@@ -206,5 +206,13 @@
     "description": "Update customer orders",
     "createdAt": "2026-07-12T09:00:00+00:00",
     "updatedAt": "2026-07-12T09:00:00+00:00"
+  },
+  {
+    "id": 127,
+    "pid": "dbd690cc-58dd-471b-93b6-7dbd3896d3da",
+    "name": "admin:access",
+    "description": "Access the administrative application",
+    "createdAt": "2026-07-14T10:00:00+00:00",
+    "updatedAt": "2026-07-14T10:00:00+00:00"
   }
 ]

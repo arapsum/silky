@@ -42,6 +42,8 @@ import { Input } from "#/components/ui/input";
 import { Skeleton } from "#/components/ui/skeleton";
 import { cn } from "#/lib/utils";
 import { useEffect, useMemo, useState } from "react";
+import { useAccess } from "#/hooks/use-access";
+import { PERMISSIONS } from "#/lib/access";
 
 const roleSchema = z.object({
   name: z
@@ -67,6 +69,9 @@ function rolePayload(values: RoleValues, preserveEmptyDescription = false): Role
 }
 
 export default function RolesPage() {
+  const { can } = useAccess();
+  const canCreate = can(PERMISSIONS.roles.create);
+  const canEdit = can(PERMISSIONS.roles.update);
   const [query, setQuery] = useState("");
   const [dialogMode, setDialogMode] = useState<RoleDialogMode>();
 
@@ -97,10 +102,12 @@ export default function RolesPage() {
               onRefresh={() => void rolesQuery.refetch()}
               isRefreshing={rolesQuery.isFetching}
             />
-            <Button type="button" onClick={() => setDialogMode({ type: "create" })}>
-              <PlusIcon className="size-4" />
-              New Role
-            </Button>
+            {canCreate && (
+              <Button type="button" onClick={() => setDialogMode({ type: "create" })}>
+                <PlusIcon className="size-4" />
+                New Role
+              </Button>
+            )}
           </>
         }
       />
@@ -129,11 +136,13 @@ export default function RolesPage() {
         isLoading={rolesQuery.isLoading}
         isError={rolesQuery.isError}
         query={query}
-        onEdit={(role) => setDialogMode({ type: "edit", role })}
+        onEdit={canEdit ? (role) => setDialogMode({ type: "edit", role }) : undefined}
         onRetry={() => rolesQuery.refetch()}
       />
 
-      <RoleDialog mode={dialogMode} onOpenChange={(open) => !open && setDialogMode(undefined)} />
+      {(canCreate || canEdit) && (
+        <RoleDialog mode={dialogMode} onOpenChange={(open) => !open && setDialogMode(undefined)} />
+      )}
     </div>
   );
 }
@@ -150,7 +159,7 @@ function RolesGrid({
   isLoading: boolean;
   isError: boolean;
   query: string;
-  onEdit: (role: Role) => void;
+  onEdit?: (role: Role) => void;
   onRetry: () => void;
 }) {
   if (isLoading) {
@@ -198,7 +207,12 @@ function RolesGrid({
   return (
     <div className="grid gap-4 md:grid-cols-2 xl:grid-cols-4">
       {roles.map((role, index) => (
-        <RoleCard key={role.pid} role={role} toneIndex={index} onEdit={() => onEdit(role)} />
+        <RoleCard
+          key={role.pid}
+          role={role}
+          toneIndex={index}
+          onEdit={onEdit ? () => onEdit(role) : undefined}
+        />
       ))}
     </div>
   );
@@ -220,7 +234,7 @@ function RoleCard({
 }: {
   role: Role;
   toneIndex: number;
-  onEdit: () => void;
+  onEdit?: () => void;
 }) {
   const shownUsers = role.users.slice(0, 4);
   const remainingUsers = Math.max(0, role.users.length - shownUsers.length);
@@ -256,10 +270,12 @@ function RoleCard({
         </span>
       </div>
 
-      <Button type="button" variant="outline" className="w-full" onClick={onEdit}>
-        <PencilSimpleIcon className="size-4" />
-        Edit Role
-      </Button>
+      {onEdit && (
+        <Button type="button" variant="outline" className="w-full" onClick={onEdit}>
+          <PencilSimpleIcon className="size-4" />
+          Edit Role
+        </Button>
+      )}
     </div>
   );
 }

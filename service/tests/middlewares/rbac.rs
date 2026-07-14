@@ -113,7 +113,7 @@ async fn can_authorise_with_rbac(
         .expect("Failed to seed data");
     grant_permission(ctx.db(), role, permissions::roles::READ.as_str()).await;
     if assign_user_role {
-        assign_role(ctx.db(), "john.doe@acme.com", role).await;
+        assign_role(ctx.db(), "john.doe@silk.com", role).await;
     }
 
     let protected = Router::new()
@@ -135,7 +135,7 @@ async fn can_authorise_with_rbac(
 
     if let Credentials::AuthorizationHeader = credentials {
         let params = serde_json::json!({
-            "email": "john.doe@acme.com",
+            "email": "john.doe@silk.com",
             "password": "Password"
         });
         let user = utils::login_users(&server, &params).await;

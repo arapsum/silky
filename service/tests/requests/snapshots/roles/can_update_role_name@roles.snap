@@ -4,5 +4,5 @@ expression: "(response.status_code(), response.text())"
 ---
 (
     201,
-    "{\"id\":22,\"pid\":\"PID\",\"name\":\"buyer\",\"description\":\"Regular shoppers\",\"users\":[{\"pid\":\"PID\",\"name\":\"Jane Smith\",\"email\":\"jane.smith@globex.com\",\"image\":\"https://randomuser.me/api/portraits/women/44.jpg\"},{\"pid\":\"PID\",\"name\":\"John Doe\",\"email\":\"john.doe@acme.com\",\"image\":\"https://randomuser.me/api/portraits/men/32.jpg\"},{\"pid\":\"PID\",\"name\":\"Morgan Grimes\",\"email\":\"morgan@silk.io\",\"image\":\"https://randomuser.me/api/portraits/women/65.jpg\"}],\"createdAt\":\"DATE\",\"updatedAt\":\"DATE\"}",
+    "{\"id\":22,\"pid\":\"PID\",\"name\":\"buyer\",\"description\":\"Regular shoppers\",\"users\":[{\"pid\":\"PID\",\"name\":\"James Moriaty\",\"email\":\"james.moriaty@continental.org\",\"image\":\"https://randomuser.me/api/portraits/men/46.jpg\"},{\"pid\":\"PID\",\"name\":\"Jane Smith\",\"email\":\"jane.smith@globex.com\",\"image\":\"https://randomuser.me/api/portraits/women/44.jpg\"},{\"pid\":\"PID\",\"name\":\"Morgan Grimes\",\"email\":\"morgan@mail.io\",\"image\":\"https://randomuser.me/api/portraits/women/65.jpg\"}],\"createdAt\":\"DATE\",\"updatedAt\":\"DATE\"}",
 )

@@ -7,13 +7,16 @@ import { currentUserQueryKey, getCurrentUserForAuthGuard } from "#/api/account.t
 import { Navbar } from "#/components/navbar";
 import { AppSidebar } from "#/components/sidebar/app-sidebar";
 import { SidebarInset, SidebarProvider } from "#/components/ui/sidebar";
+import { requireAdminAccess } from "#/lib/route-access.ts";
 
 export const Route = createFileRoute("/_main")({
   // Authenticate in the browser so cookies are available during hard reloads.
   ssr: false,
   beforeLoad: async ({ context, location }) => {
+    let currentUser;
+
     try {
-      await context.queryClient.ensureQueryData({
+      currentUser = await context.queryClient.ensureQueryData({
         queryKey: currentUserQueryKey,
         queryFn: () => getCurrentUserForAuthGuard({ sessionExpiredMode: "throw" }),
       });
@@ -25,6 +28,10 @@ export const Route = createFileRoute("/_main")({
         },
       });
     }
+
+    requireAdminAccess(currentUser);
+
+    return { currentUser };
   },
   component: MainLayout,
 });

@@ -1,0 +1,16 @@
+---
+source: tests/models/permissions.rs
+expression: result
+---
+Ok(
+    Permission {
+        id: 127,
+        pid: dbd690cc-58dd-471b-93b6-7dbd3896d3da,
+        name: "admin:access",
+        description: Some(
+            "Access the administrative application",
+        ),
+        created_at: 2026-07-14T10:00:00+00:00,
+        updated_at: 2026-07-14T10:00:00+00:00,
+    },
+)

@@ -17,6 +17,12 @@ impl AsRef<str> for PermissionName {
 pub mod permissions {
     use super::PermissionName;
 
+    pub mod admin {
+        use super::PermissionName;
+
+        pub const ACCESS: PermissionName = PermissionName("admin:access");
+    }
+
     pub mod roles {
         use super::PermissionName;
 

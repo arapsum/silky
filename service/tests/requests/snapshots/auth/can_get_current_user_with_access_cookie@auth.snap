@@ -8,5 +8,5 @@ expression: "(response.status_code(), response.headers(), response.text())"
         "content-type": "application/json",
         "content-length": "NUMBER",
     },
-    "{\"pid\":\"PID\",\"email\":\"john.doe@acme.com\",\"name\":\"John Doe\",\"image\":\"https://randomuser.me/api/portraits/men/32.jpg\",\"verified\":true,\"createdAt\":\"DATEZ\",\"updatedAt\":\"DATEZ\"}",
+    "{\"pid\":\"PID\",\"email\":\"john.doe@silk.com\",\"name\":\"John Doe\",\"image\":\"https://randomuser.me/api/portraits/men/32.jpg\",\"verified\":true,\"roles\":[\"support\"],\"permissions\":[\"admin:access\",\"categories:read\",\"orders:read\",\"orders:update\",\"products:read\",\"users:read\"],\"createdAt\":\"DATEZ\",\"updatedAt\":\"DATEZ\"}",
 )

@@ -19,7 +19,7 @@ macro_rules! configure_insta {
 }
 
 async fn access_token(server: &TestServer) -> HeaderValue {
-    access_token_for(server, "john.doe@acme.com").await
+    access_token_for(server, "john.doe@silk.com").await
 }
 
 async fn access_token_for(server: &TestServer, email: &str) -> HeaderValue {
@@ -70,22 +70,22 @@ async fn assign_role(db: &sqlx::PgPool, email: &str, role: &str) {
 }
 
 async fn allow_product_writes(db: &sqlx::PgPool) {
-    assign_role(db, "john.doe@acme.com", "administrator").await;
+    assign_role(db, "john.doe@silk.com", "administrator").await;
     grant_permission(db, "administrator", permissions::products::CREATE.as_str()).await;
 }
 
 async fn allow_product_deletes(db: &sqlx::PgPool) {
-    assign_role(db, "john.doe@acme.com", "administrator").await;
+    assign_role(db, "john.doe@silk.com", "administrator").await;
     grant_permission(db, "administrator", permissions::products::DELETE.as_str()).await;
 }
 
 async fn allow_product_updates(db: &sqlx::PgPool) {
-    assign_role(db, "john.doe@acme.com", "administrator").await;
+    assign_role(db, "john.doe@silk.com", "administrator").await;
     grant_permission(db, "administrator", permissions::products::UPDATE.as_str()).await;
 }
 
 async fn allow_product_reads(db: &sqlx::PgPool) {
-    assign_role(db, "john.doe@acme.com", "administrator").await;
+    assign_role(db, "john.doe@silk.com", "administrator").await;
     grant_permission(db, "administrator", permissions::products::READ.as_str()).await;
 }
 

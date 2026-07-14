@@ -31,6 +31,8 @@ import { EmptyState } from "#/components/empty-state";
 import { ErrorState } from "#/components/error-state";
 import { titleCase } from "#/utils/formatters";
 import { PageHeader } from "#/components/page-header";
+import { useAccess } from "#/hooks/use-access";
+import { PERMISSIONS } from "#/lib/access";
 import { RefreshButton } from "#/components/refresh-button";
 import { Button } from "#/components/ui/button";
 import { Input } from "#/components/ui/input";
@@ -104,6 +106,8 @@ function permissionLabel(permission: Permission) {
 }
 
 export default function PermissionsPage() {
+  const { can } = useAccess();
+  const canManage = can(PERMISSIONS.roles.update);
   const queryClient = useQueryClient();
   const [query, setQuery] = useState("");
   const [selectedRole, setSelectedRole] = useState(ALL_ROLES);
@@ -288,7 +292,7 @@ export default function PermissionsPage() {
                 <XIcon /> Clear
               </Button>
             )}
-            {isAssignmentMode && (
+            {isAssignmentMode && canManage && (
               <Button
                 type="button"
                 className="rounded-lg"
@@ -316,6 +320,7 @@ export default function PermissionsPage() {
           isError={isError}
           query={query}
           onTogglePermission={togglePermission}
+          canManage={canManage}
           onRetry={refresh}
         />
 
@@ -325,7 +330,7 @@ export default function PermissionsPage() {
               Showing {groups.length} {groups.length === 1 ? "resource" : "resources"} ·{" "}
               {filteredPermissions.length} permissions
             </p>
-            {isAssignmentMode && selectedRoleModel && (
+            {isAssignmentMode && selectedRoleModel && canManage && (
               <div className="flex flex-wrap gap-x-3 gap-y-1">
                 <p>
                   {assignedPermissionIds.size} assigned to {roleLabel(selectedRoleModel)}
@@ -350,6 +355,7 @@ function PermissionsMatrix({
   isError,
   query,
   onTogglePermission,
+  canManage,
   onRetry,
 }: {
   groups: [string, Permission[]][];
@@ -360,6 +366,7 @@ function PermissionsMatrix({
   isLoading: boolean;
   isError: boolean;
   query: string;
+  canManage: boolean;
   onTogglePermission: (permissionId: number, checked: boolean) => void;
   onRetry: () => void;
 }) {
@@ -441,7 +448,7 @@ function PermissionsMatrix({
                         isSelected={
                           selectedRole === role.name && selectedPermissionIds.has(permission.id)
                         }
-                        isAssignable={selectedRole === role.name}
+                        isAssignable={canManage && selectedRole === role.name}
                         onToggle={onTogglePermission}
                       />
                     ))}

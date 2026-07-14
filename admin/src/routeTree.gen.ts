@@ -9,6 +9,7 @@
 // Additionally, you should also exclude this file from your linter and/or formatter to prevent it from being checked or modified.
 
 import { Route as rootRouteImport } from './routes/__root'
+import { Route as ForbiddenRouteImport } from './routes/forbidden'
 import { Route as MainRouteRouteImport } from './routes/_main/route'
 import { Route as MainIndexRouteImport } from './routes/_main/index'
 import { Route as MainSettingsIndexRouteImport } from './routes/_main/settings/index'
@@ -28,6 +29,11 @@ import { Route as MainAccessControlPermissionsIndexRouteImport } from './routes/
 import { Route as MainProductsPidEditIndexRouteImport } from './routes/_main/products/$pid/edit/index'
 import { Route as MainCategoriesPidEditIndexRouteImport } from './routes/_main/categories/$pid/edit/index'
 
+const ForbiddenRoute = ForbiddenRouteImport.update({
+  id: '/forbidden',
+  path: '/forbidden',
+  getParentRoute: () => rootRouteImport,
+} as any)
 const MainRouteRoute = MainRouteRouteImport.update({
   id: '/_main',
   getParentRoute: () => rootRouteImport,
@@ -126,6 +132,7 @@ const MainCategoriesPidEditIndexRoute =
 
 export interface FileRoutesByFullPath {
   '/': typeof MainIndexRoute
+  '/forbidden': typeof ForbiddenRoute
   '/sign-in/': typeof AuthSignInIndexRoute
   '/categories/': typeof MainCategoriesIndexRoute
   '/orders/': typeof MainOrdersIndexRoute
@@ -144,6 +151,7 @@ export interface FileRoutesByFullPath {
   '/products/$pid/edit/': typeof MainProductsPidEditIndexRoute
 }
 export interface FileRoutesByTo {
+  '/forbidden': typeof ForbiddenRoute
   '/': typeof MainIndexRoute
   '/sign-in': typeof AuthSignInIndexRoute
   '/categories': typeof MainCategoriesIndexRoute
@@ -165,6 +173,7 @@ export interface FileRoutesByTo {
 export interface FileRoutesById {
   __root__: typeof rootRouteImport
   '/_main': typeof MainRouteRouteWithChildren
+  '/forbidden': typeof ForbiddenRoute
   '/_main/': typeof MainIndexRoute
   '/_auth/sign-in/': typeof AuthSignInIndexRoute
   '/_main/categories/': typeof MainCategoriesIndexRoute
@@ -187,6 +196,7 @@ export interface FileRouteTypes {
   fileRoutesByFullPath: FileRoutesByFullPath
   fullPaths:
     | '/'
+    | '/forbidden'
     | '/sign-in/'
     | '/categories/'
     | '/orders/'
@@ -205,6 +215,7 @@ export interface FileRouteTypes {
     | '/products/$pid/edit/'
   fileRoutesByTo: FileRoutesByTo
   to:
+    | '/forbidden'
     | '/'
     | '/sign-in'
     | '/categories'
@@ -225,6 +236,7 @@ export interface FileRouteTypes {
   id:
     | '__root__'
     | '/_main'
+    | '/forbidden'
     | '/_main/'
     | '/_auth/sign-in/'
     | '/_main/categories/'
@@ -246,11 +258,19 @@ export interface FileRouteTypes {
 }
 export interface RootRouteChildren {
   MainRouteRoute: typeof MainRouteRouteWithChildren
+  ForbiddenRoute: typeof ForbiddenRoute
   AuthSignInIndexRoute: typeof AuthSignInIndexRoute
 }
 
 declare module '@tanstack/react-router' {
   interface FileRoutesByPath {
+    '/forbidden': {
+      id: '/forbidden'
+      path: '/forbidden'
+      fullPath: '/forbidden'
+      preLoaderRoute: typeof ForbiddenRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     '/_main': {
       id: '/_main'
       path: ''
@@ -425,6 +445,7 @@ const MainRouteRouteWithChildren = MainRouteRoute._addFileChildren(
 
 const rootRouteChildren: RootRouteChildren = {
   MainRouteRoute: MainRouteRouteWithChildren,
+  ForbiddenRoute: ForbiddenRoute,
   AuthSignInIndexRoute: AuthSignInIndexRoute,
 }
 export const routeTree = rootRouteImport

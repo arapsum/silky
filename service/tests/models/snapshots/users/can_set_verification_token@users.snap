@@ -7,7 +7,7 @@ Ok(
         id: 44,
         pid: 4c008e68-88fa-4072-808e-6888fa60724c,
         name: "Morgan Grimes",
-        email: "morgan@silk.io",
+        email: "morgan@mail.io",
         image: Some(
             "https://randomuser.me/api/portraits/women/65.jpg",
         ),

@@ -22,11 +22,27 @@ macro_rules! configure_insta {
 
 async fn access_token(server: &TestServer) -> HeaderValue {
     let params = serde_json::json!({
-        "email": "john.doe@acme.com",
+        "email": "admin@silk.com",
         "password": "Password"
     });
 
     utils::login_users(server, &params).await.access_token
+}
+
+async fn revoke_administrator_role(db: &sqlx::PgPool) {
+    sqlx::query(
+        r"
+        DELETE FROM users_roles
+        USING users, roles
+        WHERE users_roles.user_id = users.id
+            AND users_roles.role_id = roles.id
+            AND users.email = 'admin@silk.com'
+            AND roles.name = 'administrator'
+    ",
+    )
+    .execute(db)
+    .await
+    .expect("Failed to revoke administrator role");
 }
 
 fn response_filters() -> Vec<(&'static str, &'static str)> {
@@ -120,6 +136,36 @@ async fn cannot_access_permissions_without_credentials(
             .expect("Failed to seed data");
 
         let response = server.get(path).await;
+
+        with_settings!({
+            filters => response_filters()
+        }, {
+            assert_debug_snapshot!(test_name, (response.status_code(), response.text()))
+        })
+    })
+    .await;
+}
+
+#[rstest]
+#[case("cannot_list_permissions_without_permission", "/permissions")]
+#[case(
+    "cannot_get_permission_without_permission",
+    "/permissions/9e230b11-cb47-4fe8-8bc0-5185fd9f9bb2"
+)]
+#[tokio::test]
+#[serial]
+async fn cannot_access_permissions_without_permission(#[case] test_name: &str, #[case] path: &str) {
+    crate::request(|server, ctx| async move {
+        configure_insta!();
+
+        crate::seed_data(ctx.db())
+            .await
+            .expect("Failed to seed data");
+        let token = access_token(&server).await;
+        revoke_administrator_role(ctx.db()).await;
+        let (auth_header, auth_value) = utils::auth_header(token);
+
+        let response = server.get(path).add_header(auth_header, auth_value).await;
 
         with_settings!({
             filters => response_filters()

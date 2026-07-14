@@ -26,6 +26,8 @@ type CatalogueRowActionsProps = {
   itemType: string;
   view: ReactElement;
   edit: ReactElement;
+  canEdit?: boolean;
+  canDelete?: boolean;
   isDeleting: boolean;
   deleteDisabled?: boolean;
   deleteDisabledReason?: string;
@@ -37,6 +39,8 @@ export function CatalogueRowActions({
   itemType,
   view,
   edit,
+  canEdit = true,
+  canDelete = true,
   isDeleting,
   deleteDisabled = false,
   deleteDisabledReason,
@@ -76,15 +80,21 @@ export function CatalogueRowActions({
             <EyeIcon className="size-4" aria-hidden />
             View
           </DropdownMenuItem>
-          <DropdownMenuItem className="rounded-md" render={edit}>
-            <PencilSimpleIcon className="size-4" aria-hidden />
-            Edit
-          </DropdownMenuItem>
-          <DropdownMenuSeparator />
-          {deleteDisabled ? (
-            deleteItem
-          ) : (
-            <AlertDialogTrigger nativeButton={false} render={deleteItem} />
+          {canEdit && (
+            <DropdownMenuItem className="rounded-md" render={edit}>
+              <PencilSimpleIcon className="size-4" aria-hidden />
+              Edit
+            </DropdownMenuItem>
+          )}
+          {canDelete && (
+            <>
+              <DropdownMenuSeparator />
+              {deleteDisabled ? (
+                deleteItem
+              ) : (
+                <AlertDialogTrigger nativeButton={false} render={deleteItem} />
+              )}
+            </>
           )}
         </DropdownMenuContent>
       </DropdownMenu>

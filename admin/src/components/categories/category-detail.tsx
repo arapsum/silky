@@ -38,6 +38,8 @@ import { Badge } from "#/components/ui/badge";
 import { Button } from "#/components/ui/button";
 import { Skeleton } from "#/components/ui/skeleton";
 import { cn } from "#/lib/utils";
+import { useAccess } from "#/hooks/use-access";
+import { PERMISSIONS } from "#/lib/access";
 
 function OverviewField({
   icon,
@@ -124,6 +126,10 @@ function CategoryDetailSkeleton() {
 }
 
 export default function CategoryDetailPage({ pid }: { pid: string }) {
+  const { can } = useAccess();
+  const canCreate = can(PERMISSIONS.categories.create);
+  const canEdit = can(PERMISSIONS.categories.update);
+  const canDelete = can(PERMISSIONS.categories.delete);
   const [failedImage, setFailedImage] = useState<string>();
   const navigate = useNavigate();
   const queryClient = useQueryClient();
@@ -194,49 +200,55 @@ export default function CategoryDetailPage({ pid }: { pid: string }) {
               <ArrowLeftIcon className="size-4" />
               Back
             </Button>
-            <AlertDialog>
-              <AlertDialogTrigger
-                render={
-                  <Button
-                    className="rounded-lg"
-                    variant="outline"
-                    disabled={deleteMutation.isPending || hasProducts}
-                    title={hasProducts ? "Categories with products cannot be deleted." : undefined}
-                  />
-                }
+            {canDelete && (
+              <AlertDialog>
+                <AlertDialogTrigger
+                  render={
+                    <Button
+                      className="rounded-lg"
+                      variant="outline"
+                      disabled={deleteMutation.isPending || hasProducts}
+                      title={
+                        hasProducts ? "Categories with products cannot be deleted." : undefined
+                      }
+                    />
+                  }
+                >
+                  <TrashIcon className="size-4" />
+                  Delete
+                </AlertDialogTrigger>
+                <AlertDialogContent className="rounded-lg">
+                  <AlertDialogHeader>
+                    <AlertDialogTitle>Delete category?</AlertDialogTitle>
+                    <AlertDialogDescription>
+                      {titleCase(category.name)} will be removed from the active catalogue.
+                    </AlertDialogDescription>
+                  </AlertDialogHeader>
+                  <AlertDialogFooter>
+                    <AlertDialogCancel className="rounded-lg" disabled={deleteMutation.isPending}>
+                      Cancel
+                    </AlertDialogCancel>
+                    <AlertDialogAction
+                      variant="destructive"
+                      className="rounded-lg"
+                      disabled={deleteMutation.isPending}
+                      onClick={() => deleteMutation.mutate()}
+                    >
+                      Delete category
+                    </AlertDialogAction>
+                  </AlertDialogFooter>
+                </AlertDialogContent>
+              </AlertDialog>
+            )}
+            {canEdit && (
+              <Button
+                className="rounded-lg"
+                render={<Link to="/categories/$pid/edit" params={{ pid }} />}
               >
-                <TrashIcon className="size-4" />
-                Delete
-              </AlertDialogTrigger>
-              <AlertDialogContent className="rounded-lg">
-                <AlertDialogHeader>
-                  <AlertDialogTitle>Delete category?</AlertDialogTitle>
-                  <AlertDialogDescription>
-                    {titleCase(category.name)} will be removed from the active catalogue.
-                  </AlertDialogDescription>
-                </AlertDialogHeader>
-                <AlertDialogFooter>
-                  <AlertDialogCancel className="rounded-lg" disabled={deleteMutation.isPending}>
-                    Cancel
-                  </AlertDialogCancel>
-                  <AlertDialogAction
-                    variant="destructive"
-                    className="rounded-lg"
-                    disabled={deleteMutation.isPending}
-                    onClick={() => deleteMutation.mutate()}
-                  >
-                    Delete category
-                  </AlertDialogAction>
-                </AlertDialogFooter>
-              </AlertDialogContent>
-            </AlertDialog>
-            <Button
-              className="rounded-lg"
-              render={<Link to="/categories/$pid/edit" params={{ pid }} />}
-            >
-              <PencilSimpleIcon className="size-4" />
-              Edit category
-            </Button>
+                <PencilSimpleIcon className="size-4" />
+                Edit category
+              </Button>
+            )}
           </>
         }
       />
@@ -385,9 +397,11 @@ export default function CategoryDetailPage({ pid }: { pid: string }) {
             title={`Child categories (${detail.children.length})`}
             icon={<StackIcon className="size-4" />}
             action={
-              <Button className="rounded-lg" size="xs" variant="outline" disabled>
-                <PlusIcon /> Add subcategory
-              </Button>
+              canCreate ? (
+                <Button className="rounded-lg" size="xs" variant="outline" disabled>
+                  <PlusIcon /> Add subcategory
+                </Button>
+              ) : undefined
             }
           />
           {detail.children.length ? (

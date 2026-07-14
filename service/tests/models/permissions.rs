@@ -1,10 +1,10 @@
-use insta::{Settings, assert_debug_snapshot};
+use insta::{Settings, assert_debug_snapshot, with_settings};
 use rstest::rstest;
 use serial_test::serial;
 use service::models::Permission;
 use uuid::Uuid;
 
-use crate::boot_test;
+use crate::{boot_test, utils::cleanup_date};
 
 macro_rules! configure_insta {
     ($(expr;expr),*) => {
@@ -162,7 +162,9 @@ async fn can_find_all_permissions_for_administrator(#[case] test_name: &str) {
     let result = Permission::find_list(ctx.db(), Some(" Administrator ")).await;
 
     assert!(matches!(&result, Ok(permissions) if permissions.len() == 26));
-    assert_debug_snapshot!(test_name, result);
+    with_settings!({ filters => cleanup_date().to_vec() }, {
+        assert_debug_snapshot!(test_name, result)
+    });
 }
 
 #[rstest]
@@ -179,9 +181,33 @@ async fn can_find_all_permissions_for_administrator(#[case] test_name: &str) {
     false
 )]
 #[case(
-    "permission_is_not_granted_when_user_has_no_role",
-    "3c008e68-88fa-4072-808e-6888fa60724c",
+    "permission_is_not_granted_when_user_does_not_exist",
+    "00000000-0000-0000-0000-000000000000",
     "categories:read",
+    false
+)]
+#[case(
+    "manager_can_delete_products",
+    "69768c35-da6d-46cf-bc17-ea78f7e21a6f",
+    "products:delete",
+    true
+)]
+#[case(
+    "manager_cannot_update_roles",
+    "69768c35-da6d-46cf-bc17-ea78f7e21a6f",
+    "roles:update",
+    false
+)]
+#[case(
+    "support_can_update_orders",
+    "bd6f7c26-d2c9-487e-b837-8f77be468033",
+    "orders:update",
+    true
+)]
+#[case(
+    "support_cannot_update_products",
+    "bd6f7c26-d2c9-487e-b837-8f77be468033",
+    "products:update",
     false
 )]
 #[tokio::test]

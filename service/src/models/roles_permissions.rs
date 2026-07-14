@@ -106,7 +106,7 @@ impl RolePermission {
             FROM roles_permissions rp
             WHERE ($1::INT IS NULL OR rp.role_id = $1)
                 AND ($2::INT IS NULL OR rp.permission_id = $2)
-            ORDER BY rp.created_at DESC
+            ORDER BY rp.created_at DESC, rp.id DESC
         ",
         )
         .bind(query.role_id())

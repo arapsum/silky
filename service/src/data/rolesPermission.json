@@ -22,8 +22,8 @@
     "permissionId": 106,
     "createdAt": "2026-06-30T10:41:00+03:00",
     "updatedAt": "2026-06-30T10:41:00+03:00"
-  }
-  ,{
+  },
+  {
     "id": 1004,
     "pid": "b7c7d3b5-5e12-4a9b-a221-3c2e4f8b9101",
     "roleId": 11,
@@ -70,5 +70,165 @@
     "permissionId": 112,
     "createdAt": "2026-07-13T09:00:00+00:00",
     "updatedAt": "2026-07-13T09:00:00+00:00"
+  },
+  {
+    "id": 1010,
+    "pid": "98f04223-c7b3-471a-bce0-e8656884ed80",
+    "roleId": 33,
+    "permissionId": 109,
+    "createdAt": "2026-07-14T09:00:00+00:00",
+    "updatedAt": "2026-07-14T09:00:00+00:00"
+  },
+  {
+    "id": 1011,
+    "pid": "f0977052-7ed8-497f-965c-afff8241afdb",
+    "roleId": 33,
+    "permissionId": 113,
+    "createdAt": "2026-07-14T09:00:00+00:00",
+    "updatedAt": "2026-07-14T09:00:00+00:00"
+  },
+  {
+    "id": 1012,
+    "pid": "2578f5ea-5dc3-4cc8-a473-974e61326c5a",
+    "roleId": 33,
+    "permissionId": 114,
+    "createdAt": "2026-07-14T09:00:00+00:00",
+    "updatedAt": "2026-07-14T09:00:00+00:00"
+  },
+  {
+    "id": 1013,
+    "pid": "ddf064ea-cd33-4171-97c5-20c43ed05b9a",
+    "roleId": 33,
+    "permissionId": 115,
+    "createdAt": "2026-07-14T09:00:00+00:00",
+    "updatedAt": "2026-07-14T09:00:00+00:00"
+  },
+  {
+    "id": 1014,
+    "pid": "226a1706-14cd-457b-9987-0da88ffb3bc4",
+    "roleId": 33,
+    "permissionId": 116,
+    "createdAt": "2026-07-14T09:00:00+00:00",
+    "updatedAt": "2026-07-14T09:00:00+00:00"
+  },
+  {
+    "id": 1015,
+    "pid": "bcfc2fd1-96ab-4ba4-a243-d013d4b71d9f",
+    "roleId": 33,
+    "permissionId": 117,
+    "createdAt": "2026-07-14T09:00:00+00:00",
+    "updatedAt": "2026-07-14T09:00:00+00:00"
+  },
+  {
+    "id": 1016,
+    "pid": "683cddd3-7190-4d0e-abc5-36d86ae5cd5a",
+    "roleId": 33,
+    "permissionId": 118,
+    "createdAt": "2026-07-14T09:00:00+00:00",
+    "updatedAt": "2026-07-14T09:00:00+00:00"
+  },
+  {
+    "id": 1017,
+    "pid": "8e758b68-3a50-4c1e-8a72-1e0772d33692",
+    "roleId": 33,
+    "permissionId": 119,
+    "createdAt": "2026-07-14T09:00:00+00:00",
+    "updatedAt": "2026-07-14T09:00:00+00:00"
+  },
+  {
+    "id": 1018,
+    "pid": "ca0664c2-2169-48e1-bac9-a2ecf8f36705",
+    "roleId": 33,
+    "permissionId": 120,
+    "createdAt": "2026-07-14T09:00:00+00:00",
+    "updatedAt": "2026-07-14T09:00:00+00:00"
+  },
+  {
+    "id": 1019,
+    "pid": "a203df63-3d71-4573-8b9b-8b50f6ce2201",
+    "roleId": 33,
+    "permissionId": 121,
+    "createdAt": "2026-07-14T09:00:00+00:00",
+    "updatedAt": "2026-07-14T09:00:00+00:00"
+  },
+  {
+    "id": 1020,
+    "pid": "8719ac56-aa38-4a61-aa26-df33eb3b3cf9",
+    "roleId": 33,
+    "permissionId": 122,
+    "createdAt": "2026-07-14T09:00:00+00:00",
+    "updatedAt": "2026-07-14T09:00:00+00:00"
+  },
+  {
+    "id": 1021,
+    "pid": "0364979c-4ef7-4990-95c1-ca3005cd57b0",
+    "roleId": 33,
+    "permissionId": 123,
+    "createdAt": "2026-07-14T09:00:00+00:00",
+    "updatedAt": "2026-07-14T09:00:00+00:00"
+  },
+  {
+    "id": 1022,
+    "pid": "595a56b4-7762-4add-8793-7897afba6916",
+    "roleId": 33,
+    "permissionId": 124,
+    "createdAt": "2026-07-14T09:00:00+00:00",
+    "updatedAt": "2026-07-14T09:00:00+00:00"
+  },
+  {
+    "id": 1023,
+    "pid": "547195a1-1778-4241-8617-6658ff9dcc0d",
+    "roleId": 33,
+    "permissionId": 125,
+    "createdAt": "2026-07-14T09:00:00+00:00",
+    "updatedAt": "2026-07-14T09:00:00+00:00"
+  },
+  {
+    "id": 1024,
+    "pid": "d91fcc00-897d-406d-8791-4514bdce723d",
+    "roleId": 33,
+    "permissionId": 126,
+    "createdAt": "2026-07-14T09:00:00+00:00",
+    "updatedAt": "2026-07-14T09:00:00+00:00"
+  },
+  {
+    "id": 1025,
+    "pid": "2aa4f871-7a92-4a6b-91df-bd982f07ccfe",
+    "roleId": 44,
+    "permissionId": 109,
+    "createdAt": "2026-07-14T09:00:00+00:00",
+    "updatedAt": "2026-07-14T09:00:00+00:00"
+  },
+  {
+    "id": 1026,
+    "pid": "d719bc34-880c-4cdd-abd1-a5c3b1c74e33",
+    "roleId": 44,
+    "permissionId": 113,
+    "createdAt": "2026-07-14T09:00:00+00:00",
+    "updatedAt": "2026-07-14T09:00:00+00:00"
+  },
+  {
+    "id": 1027,
+    "pid": "5c34edd5-3fc5-4f4a-b0f6-f3bc5312ecb0",
+    "roleId": 44,
+    "permissionId": 117,
+    "createdAt": "2026-07-14T09:00:00+00:00",
+    "updatedAt": "2026-07-14T09:00:00+00:00"
+  },
+  {
+    "id": 1028,
+    "pid": "4efd3302-e7de-40a0-ab16-56e8d2242f83",
+    "roleId": 44,
+    "permissionId": 125,
+    "createdAt": "2026-07-14T09:00:00+00:00",
+    "updatedAt": "2026-07-14T09:00:00+00:00"
+  },
+  {
+    "id": 1029,
+    "pid": "42eef165-f21a-43d1-b276-7b8ac1d5c6e4",
+    "roleId": 44,
+    "permissionId": 126,
+    "createdAt": "2026-07-14T09:00:00+00:00",
+    "updatedAt": "2026-07-14T09:00:00+00:00"
   }
 ]

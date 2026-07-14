@@ -1,5 +1,5 @@
 ---
-source: tests/requests/categories.rs
+source: tests/requests/products.rs
 expression: "(response.status_code(), response.text())"
 ---
 (

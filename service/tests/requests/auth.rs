@@ -217,6 +217,8 @@ async fn can_login_user(#[case] test_name: &str, #[case] params: serde_json::Val
 #[serial]
 async fn refresh_token_reuse_is_rejected() {
     crate::request(|server, context| async move {
+        configure_insta!();
+
         crate::seed_data(context.db())
             .await
             .expect("Failed to seed data");
@@ -239,10 +241,9 @@ async fn refresh_token_reuse_is_rejected() {
             .add_cookie(user.refresh_cookie)
             .do_not_save_cookies()
             .await;
-        assert_eq!(second_response.status_code(), 401);
-        assert_eq!(
-            second_response.text(),
-            "{\"error\":\"Invalid token\",\"code\":\"invalid_token\"}"
+        assert_debug_snapshot!(
+            "refresh_token_reuse_is_rejected",
+            (second_response.status_code(), second_response.text())
         );
     })
     .await;
@@ -252,6 +253,8 @@ async fn refresh_token_reuse_is_rejected() {
 #[serial]
 async fn logout_revokes_refresh_token_and_clears_cookies() {
     crate::request(|server, context| async move {
+        configure_insta!();
+
         crate::seed_data(context.db())
             .await
             .expect("Failed to seed data");
@@ -295,10 +298,9 @@ async fn logout_revokes_refresh_token_and_clears_cookies() {
             .do_not_save_cookies()
             .await;
 
-        assert_eq!(refresh_response.status_code(), 401);
-        assert_eq!(
-            refresh_response.text(),
-            "{\"error\":\"Invalid token\",\"code\":\"invalid_token\"}"
+        assert_debug_snapshot!(
+            "logout_revokes_refresh_token",
+            (refresh_response.status_code(), refresh_response.text())
         );
     })
     .await;
@@ -308,6 +310,8 @@ async fn logout_revokes_refresh_token_and_clears_cookies() {
 #[serial]
 async fn can_change_password_with_authorization_header() {
     crate::request(|server, context| async move {
+        configure_insta!();
+
         crate::seed_data(context.db())
             .await
             .expect("Failed to seed data");
@@ -329,10 +333,9 @@ async fn can_change_password_with_authorization_header() {
             }))
             .await;
 
-        assert_eq!(response.status_code(), 200);
-        assert_eq!(
-            response.text(),
-            "{\"message\":\"Password has been changed successfully.\"}"
+        assert_debug_snapshot!(
+            "can_change_password_with_authorization_header",
+            (response.status_code(), response.text())
         );
 
         let old_password_response = server
@@ -396,6 +399,8 @@ async fn cannot_change_password_when_current_password_is_wrong() {
 #[serial]
 async fn cannot_change_password_without_credentials() {
     crate::request(|server, context| async move {
+        configure_insta!();
+
         crate::seed_data(context.db())
             .await
             .expect("Failed to seed data");
@@ -409,10 +414,9 @@ async fn cannot_change_password_without_credentials() {
             }))
             .await;
 
-        assert_eq!(response.status_code(), 401);
-        assert_eq!(
-            response.text(),
-            "{\"error\":\"Missing credentials\",\"code\":\"missing_credentials\"}"
+        assert_debug_snapshot!(
+            "cannot_change_password_without_credentials",
+            (response.status_code(), response.text())
         );
     })
     .await;

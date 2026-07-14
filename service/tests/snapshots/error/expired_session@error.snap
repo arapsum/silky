@@ -3,6 +3,6 @@ source: tests/error.rs
 expression: body
 ---
 Object {
-    "error": String("Expired session"),
+    "error": String("Your session has expired. Please sign in again."),
     "code": String("session_expired"),
 }

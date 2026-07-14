@@ -74,7 +74,14 @@ async fn app_path_rejection_uses_application_error_shape() {
     let response = server.get("/path/not-a-uuid").await;
 
     assert_eq!(response.status_code(), StatusCode::BAD_REQUEST);
-    assert!(response.text().starts_with("{\"error\":\"Invalid URL:"));
+    assert_eq!(
+        response.json::<serde_json::Value>(),
+        json!({
+            "error": "The supplied resource identifier is invalid.",
+            "code": "invalid_path_parameter",
+            "field": "id",
+        })
+    );
 }
 
 #[tokio::test]

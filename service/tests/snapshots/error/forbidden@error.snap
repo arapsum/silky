@@ -3,6 +3,6 @@ source: tests/error.rs
 expression: body
 ---
 Object {
-    "error": String("Forbidden"),
+    "error": String("You do not have permission to perform this action."),
     "code": String("forbidden"),
 }

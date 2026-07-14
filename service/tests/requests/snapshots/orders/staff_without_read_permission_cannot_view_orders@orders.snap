@@ -4,5 +4,5 @@ expression: "(response.status_code(), response.text())"
 ---
 (
     403,
-    "{\"error\":\"Forbidden\",\"code\":\"forbidden\"}",
+    "{\"error\":\"You do not have permission to perform this action.\",\"code\":\"forbidden\"}",
 )

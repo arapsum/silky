@@ -484,6 +484,22 @@ async fn cannot_get_product_detail_when_pid_does_not_exist() {
 
 #[tokio::test]
 #[serial]
+async fn cannot_get_product_detail_when_pid_is_invalid() {
+    crate::request(|server, _ctx| async move {
+        configure_insta!();
+
+        let response = server.get("/products/12").await;
+
+        assert_debug_snapshot!(
+            "cannot_get_product_detail_when_pid_is_invalid",
+            (response.status_code(), response.text())
+        );
+    })
+    .await;
+}
+
+#[tokio::test]
+#[serial]
 async fn cannot_create_product_without_permission() {
     crate::request(|server, ctx| async move {
         configure_insta!();

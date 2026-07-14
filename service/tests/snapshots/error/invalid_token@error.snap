@@ -3,6 +3,6 @@ source: tests/error.rs
 expression: body
 ---
 Object {
-    "error": String("Invalid token"),
+    "error": String("Your authentication token is invalid. Please sign in again."),
     "code": String("invalid_token"),
 }

@@ -744,7 +744,7 @@ async fn can_get_current_user(
             .expect("Failed to seed data");
 
         let params = serde_json::json!({
-            "email": "john.doe@acme.com",
+            "email": "john.doe@silk.com",
             "password": "Password"
         });
         let user: utils::LoggedInUser = utils::login_users(&server, &params).await;
@@ -845,7 +845,7 @@ async fn can_update_current_user(
             .expect("Failed to seed data");
 
         let params = serde_json::json!({
-            "email": "john.doe@acme.com",
+            "email": "john.doe@silk.com",
             "password": "Password"
         });
         let user: utils::LoggedInUser = utils::login_users(&server, &params).await;
@@ -967,7 +967,7 @@ async fn cannot_update_current_user_with_invalid_payload(
             .expect("Failed to seed data");
 
         let login_params = serde_json::json!({
-            "email": "john.doe@acme.com",
+            "email": "john.doe@silk.com",
             "password": "Password"
         });
         let user: utils::LoggedInUser = utils::login_users(&server, &login_params).await;

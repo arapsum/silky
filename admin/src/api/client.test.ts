@@ -11,11 +11,11 @@ function jsonResponse(status: number, body: unknown) {
 }
 
 function expiredSessionResponse() {
-  return jsonResponse(401, { error: "Expired session" });
+  return jsonResponse(401, { error: "Expired session", code: "session_expired" });
 }
 
 function missingCredentialsResponse() {
-  return jsonResponse(401, { error: "Missing credentials" });
+  return jsonResponse(401, { error: "Missing credentials", code: "missing_credentials" });
 }
 
 describe("apiRequest", () => {

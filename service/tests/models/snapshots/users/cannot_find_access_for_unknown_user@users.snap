@@ -1,0 +1,7 @@
+---
+source: tests/models/user.rs
+expression: result
+---
+Err(
+    EntityNotFound,
+)

@@ -1,0 +1,19 @@
+---
+source: tests/models/user.rs
+expression: result
+---
+Ok(
+    UserAccess {
+        roles: [
+            "support",
+        ],
+        permissions: [
+            "admin:access",
+            "categories:read",
+            "orders:read",
+            "orders:update",
+            "products:read",
+            "users:read",
+        ],
+    },
+)

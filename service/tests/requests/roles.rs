@@ -3,6 +3,8 @@ use axum_test::TestServer;
 use insta::{Settings, assert_debug_snapshot, with_settings};
 use rstest::rstest;
 use serial_test::serial;
+use service::models::Permission;
+use uuid::Uuid;
 
 use crate::utils;
 
@@ -22,7 +24,7 @@ macro_rules! configure_insta {
 
 async fn access_token(server: &TestServer) -> HeaderValue {
     let params = serde_json::json!({
-        "email": "john.doe@acme.com",
+        "email": "admin@silk.com",
         "password": "Password"
     });
 
@@ -30,7 +32,7 @@ async fn access_token(server: &TestServer) -> HeaderValue {
 }
 
 async fn revoke_role(db: &sqlx::PgPool, email: &str, role: &str) {
-    sqlx::query(
+    let result = sqlx::query(
         r"
         DELETE FROM users_roles
         USING users, roles
@@ -45,6 +47,12 @@ async fn revoke_role(db: &sqlx::PgPool, email: &str, role: &str) {
     .execute(db)
     .await
     .expect("Failed to revoke role");
+
+    assert_eq!(
+        result.rows_affected(),
+        1,
+        "Expected one role assignment to be revoked"
+    );
 }
 
 fn response_filters() -> Vec<(&'static str, &'static str)> {
@@ -451,13 +459,34 @@ async fn cannot_access_roles_without_credentials(
 }
 
 #[rstest]
-#[case("cannot_assign_permission_to_role_without_permission", "POST")]
-#[case("cannot_revoke_permission_from_role_without_permission", "DELETE")]
+#[case("cannot_create_role_without_permission", "POST", "/roles")]
+#[case("cannot_list_roles_without_permission", "GET", "/roles")]
+#[case(
+    "cannot_get_role_without_permission",
+    "GET",
+    "/roles/7d416019-34c6-4f25-a39a-fa6752f8b319"
+)]
+#[case(
+    "cannot_update_role_without_permission",
+    "PATCH",
+    "/roles/f028f910-1a4f-4b79-8619-71a8c185e221"
+)]
+#[case(
+    "cannot_assign_permission_to_role_without_permission",
+    "POST",
+    "/roles/permissions"
+)]
+#[case(
+    "cannot_revoke_permission_from_role_without_permission",
+    "DELETE",
+    "/roles/permissions"
+)]
 #[tokio::test]
 #[serial]
-async fn cannot_modify_role_permissions_without_permission(
+async fn cannot_access_roles_without_permission(
     #[case] test_name: &str,
     #[case] method: &str,
+    #[case] path: &str,
 ) {
     crate::request(|server, ctx| async move {
         configure_insta!();
@@ -465,7 +494,20 @@ async fn cannot_modify_role_permissions_without_permission(
         crate::seed_data(ctx.db())
             .await
             .expect("Failed to seed data");
-        revoke_role(ctx.db(), "john.doe@acme.com", "administrator").await;
+        revoke_role(ctx.db(), "admin@silk.com", "administrator").await;
+
+        let permission = match (method, path) {
+            ("POST", "/roles") => "roles:create",
+            ("GET", _) => "roles:read",
+            ("PATCH", _) | ("POST", "/roles/permissions") | ("DELETE", _) => "roles:update",
+            _ => unreachable!("unsupported permission case"),
+        };
+        let user_pid = Uuid::parse_str("57456da3-37b0-473e-8f37-0d74547ebf80").unwrap();
+        assert!(
+            !Permission::is_granted_to_user_role(ctx.db(), user_pid, permission)
+                .await
+                .expect("Failed to check revoked permission")
+        );
 
         let token = access_token(&server).await;
         let (auth_header, auth_value) = utils::auth_header(token);
@@ -477,18 +519,26 @@ async fn cannot_modify_role_permissions_without_permission(
         let response = match method {
             "POST" => {
                 server
-                    .post("/roles/permissions")
+                    .post(path)
                     .add_header(auth_header, auth_value)
                     .json(&body)
                     .await
             }
             "DELETE" => {
                 server
-                    .delete("/roles/permissions")
+                    .delete(path)
                     .add_header(auth_header, auth_value)
                     .json(&body)
                     .await
             }
+            "PATCH" => {
+                server
+                    .patch(path)
+                    .add_header(auth_header, auth_value)
+                    .json(&body)
+                    .await
+            }
+            "GET" => server.get(path).add_header(auth_header, auth_value).await,
             _ => unreachable!("unsupported request method"),
         };
 

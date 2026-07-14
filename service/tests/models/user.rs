@@ -47,6 +47,33 @@ fn staff_user_params(email: &str, role_id: i32) -> CreateStaffUser<'static> {
     )
 }
 
+#[rstest]
+#[case("can_find_support_access", "bd6f7c26-d2c9-487e-b837-8f77be468033")]
+#[case("can_find_manager_access", "69768c35-da6d-46cf-bc17-ea78f7e21a6f")]
+#[case("can_find_customer_access", "e761d8e3-fc3e-4a2e-a6c9-7c7a4f2130e8")]
+#[case(
+    "cannot_find_access_for_unknown_user",
+    "00000000-0000-0000-0000-000000000000"
+)]
+#[tokio::test]
+#[serial]
+async fn can_find_user_access(#[case] test_name: &str, #[case] user_pid: &str) {
+    configure_insta!();
+
+    let ctx = boot_test().await.unwrap();
+    crate::seed_data(ctx.db())
+        .await
+        .expect("Failed to seed data");
+
+    let result = User::find_access(
+        ctx.db(),
+        Uuid::parse_str(user_pid).expect("Test user PID must be a UUID"),
+    )
+    .await;
+
+    assert_debug_snapshot!(test_name, result);
+}
+
 #[tokio::test]
 #[serial]
 async fn can_create_user() {

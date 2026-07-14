@@ -22,7 +22,7 @@ macro_rules! configure_insta {
 
 async fn access_token(server: &TestServer) -> HeaderValue {
     let params = serde_json::json!({
-        "email": "john.doe@acme.com",
+        "email": "admin@silk.com",
         "password": "Password"
     });
 

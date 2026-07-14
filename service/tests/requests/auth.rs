@@ -167,11 +167,11 @@ async fn can_register_user(#[case] test_name: &str, #[case] params: serde_json::
 
 #[rstest]
 #[case("can_successfully_login_user", serde_json::json!({
-    "email": "john.doe@acme.com",
+    "email": "john.doe@silk.com",
     "password": "Password"
 }))]
 #[case("when_password_is_wrong_login_fails", serde_json::json!({
-    "email": "john.doe@acme.com",
+    "email": "john.doe@silk.com",
     "password": "Password1"
 }))]
 #[case("when_email_is_wrong_login_fails", serde_json::json!({
@@ -224,7 +224,7 @@ async fn refresh_token_reuse_is_rejected() {
             .expect("Failed to seed data");
 
         let params = serde_json::json!({
-            "email": "john.doe@acme.com",
+            "email": "john.doe@silk.com",
             "password": "Password"
         });
         let user = utils::login_users(&server, &params).await;
@@ -260,7 +260,7 @@ async fn logout_revokes_refresh_token_and_clears_cookies() {
             .expect("Failed to seed data");
 
         let params = serde_json::json!({
-            "email": "john.doe@acme.com",
+            "email": "john.doe@silk.com",
             "password": "Password"
         });
         let user = utils::login_users(&server, &params).await;
@@ -317,7 +317,7 @@ async fn can_change_password_with_authorization_header() {
             .expect("Failed to seed data");
 
         let params = serde_json::json!({
-            "email": "john.doe@acme.com",
+            "email": "john.doe@silk.com",
             "password": "Password"
         });
         let user = utils::login_users(&server, &params).await;
@@ -348,7 +348,7 @@ async fn can_change_password_with_authorization_header() {
         let new_password_response = server
             .post("/auth/login")
             .json(&serde_json::json!({
-                "email": "john.doe@acme.com",
+                "email": "john.doe@silk.com",
                 "password": "NewPassword123"
             }))
             .do_not_save_cookies()
@@ -367,7 +367,7 @@ async fn cannot_change_password_when_current_password_is_wrong() {
             .expect("Failed to seed data");
 
         let params = serde_json::json!({
-            "email": "john.doe@acme.com",
+            "email": "john.doe@silk.com",
             "password": "Password"
         });
         let user = utils::login_users(&server, &params).await;
@@ -459,7 +459,7 @@ async fn cannot_change_password_with_invalid_payload(
             .expect("Failed to seed data");
 
         let login_params = serde_json::json!({
-            "email": "john.doe@acme.com",
+            "email": "john.doe@silk.com",
             "password": "Password"
         });
         let user = utils::login_users(&server, &login_params).await;
@@ -478,7 +478,7 @@ async fn cannot_change_password_with_invalid_payload(
 }
 
 #[rstest]
-#[case("when_email_is_valid_reset_token_is_sent", serde_json::json!({ "email": "john.doe@acme.com" }))]
+#[case("when_email_is_valid_reset_token_is_sent", serde_json::json!({ "email": "john.doe@silk.com" }))]
 #[case("when_email_is_invalid_validation_fails_and_no_reset_token_is_sent", serde_json::json!({ "email": "johndoe:acme.com" }))]
 #[case("when_email_does_not_exist_no_reset_token_is_sent", serde_json::json!({ "email": "fake@acme.com" }))]
 #[tokio::test]
@@ -528,7 +528,7 @@ async fn can_verify_email(#[case] test_name: &str, #[case] token_case: Verificat
 
         App::seed(ctx.db()).await.expect("Failed to seed data");
 
-        let mut user = User::find_by_email(ctx.db(), "john.doe@acme.com")
+        let mut user = User::find_by_email(ctx.db(), "john.doe@silk.com")
             .await
             .unwrap();
 
@@ -655,7 +655,7 @@ async fn can_reset_password(
 
         App::seed(ctx.db()).await.expect("Failed to seed data");
 
-        let mut user = User::find_by_email(ctx.db(), "john.doe@acme.com")
+        let mut user = User::find_by_email(ctx.db(), "john.doe@silk.com")
             .await
             .unwrap();
 
@@ -744,7 +744,7 @@ async fn can_get_current_user(
             .expect("Failed to seed data");
 
         let params = serde_json::json!({
-            "email": "john.doe@acme.com",
+            "email": "john.doe@silk.com",
             "password": "Password"
         });
         let user: utils::LoggedInUser = utils::login_users(&server, &params).await;
@@ -845,7 +845,7 @@ async fn can_update_current_user(
             .expect("Failed to seed data");
 
         let params = serde_json::json!({
-            "email": "john.doe@acme.com",
+            "email": "john.doe@silk.com",
             "password": "Password"
         });
         let user: utils::LoggedInUser = utils::login_users(&server, &params).await;
@@ -967,7 +967,7 @@ async fn cannot_update_current_user_with_invalid_payload(
             .expect("Failed to seed data");
 
         let login_params = serde_json::json!({
-            "email": "john.doe@acme.com",
+            "email": "john.doe@silk.com",
             "password": "Password"
         });
         let user: utils::LoggedInUser = utils::login_users(&server, &login_params).await;

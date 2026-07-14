@@ -5,5 +5,5 @@ expression: "(response.status_code(), response.text(), assigned_roles,)"
 (
     409,
     "{\"error\":\"User with email already exists\",\"code\":\"entity_already_exists\"}",
-    2,
+    1,
 )

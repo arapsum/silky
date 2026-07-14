@@ -22,7 +22,7 @@ macro_rules! configure_insta {
 
 async fn access_token(server: &TestServer) -> HeaderValue {
     let params = serde_json::json!({
-        "email": "john.doe@acme.com",
+        "email": "admin@silk.com",
         "password": "Password"
     });
 
@@ -465,7 +465,7 @@ async fn cannot_modify_role_permissions_without_permission(
         crate::seed_data(ctx.db())
             .await
             .expect("Failed to seed data");
-        revoke_role(ctx.db(), "john.doe@acme.com", "administrator").await;
+        revoke_role(ctx.db(), "admin@silk.com", "administrator").await;
 
         let token = access_token(&server).await;
         let (auth_header, auth_value) = utils::auth_header(token);

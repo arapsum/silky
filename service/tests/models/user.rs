@@ -116,7 +116,7 @@ async fn cannot_create_user_when_email_already_exists() {
     App::seed(ctx.db()).await.unwrap();
 
     let params = RegisterUser::new(
-        Cow::Owned("john.doe@acme.com".to_string()),
+        Cow::Owned("john.doe@silk.com".to_string()),
         Cow::Owned("John Doe".to_string()),
         Cow::Owned("password".to_string()),
         Cow::Owned("password".to_string()),
@@ -132,7 +132,7 @@ async fn cannot_create_user_when_email_already_exists() {
 #[case("can_create_staff_user", "warehouse.manager@silk.com", 11, true)]
 #[case(
     "cannot_create_staff_user_when_email_already_exists",
-    "john.doe@acme.com",
+    "john.doe@silk.com",
     11,
     false
 )]
@@ -243,7 +243,7 @@ async fn can_find_user_by_email() {
 
     App::seed(ctx.db()).await.unwrap();
 
-    let result = User::find_by_email(ctx.db(), "john.doe@acme.com").await;
+    let result = User::find_by_email(ctx.db(), "john.doe@silk.com").await;
 
     with_settings!({
         filters => {
@@ -315,7 +315,7 @@ async fn can_set_reset_token() {
 
     App::seed(ctx.db()).await.unwrap();
 
-    let mut user = User::find_by_email(ctx.db(), "john.doe@acme.com")
+    let mut user = User::find_by_email(ctx.db(), "john.doe@silk.com")
         .await
         .unwrap();
 
@@ -345,7 +345,7 @@ async fn can_reset_password() {
 
     App::seed(ctx.db()).await.unwrap();
 
-    let mut user = User::find_by_email(ctx.db(), "john.doe@acme.com")
+    let mut user = User::find_by_email(ctx.db(), "john.doe@silk.com")
         .await
         .unwrap();
 
@@ -382,7 +382,7 @@ async fn can_reset_password() {
 #[case(
     "can_update_profile_with_same_email",
     "bd6f7c26-d2c9-487e-b837-8f77be468033",
-    update_profile("John Renamed", "john.doe@acme.com", None)
+    update_profile("John Renamed", "john.doe@silk.com", None)
 )]
 #[case(
     "cannot_update_profile_when_email_already_exists",
@@ -433,7 +433,7 @@ async fn can_change_password() {
 
     App::seed(ctx.db()).await.unwrap();
 
-    let mut user = User::find_by_email(ctx.db(), "john.doe@acme.com")
+    let mut user = User::find_by_email(ctx.db(), "john.doe@silk.com")
         .await
         .unwrap();
     let token = Uuid::new_v4().to_string();
@@ -469,7 +469,7 @@ async fn cannot_change_password_when_current_password_is_wrong() {
 
     App::seed(ctx.db()).await.unwrap();
 
-    let user = User::find_by_email(ctx.db(), "john.doe@acme.com")
+    let user = User::find_by_email(ctx.db(), "john.doe@silk.com")
         .await
         .unwrap();
 
@@ -482,7 +482,7 @@ async fn cannot_change_password_when_current_password_is_wrong() {
 
     assert!(matches!(result, Err(ModelError::InvalidCredentials)));
 
-    let unchanged = User::find_by_email(ctx.db(), "john.doe@acme.com")
+    let unchanged = User::find_by_email(ctx.db(), "john.doe@silk.com")
         .await
         .unwrap();
 

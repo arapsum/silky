@@ -1,0 +1,7 @@
+---
+source: tests/payments.rs
+expression: "to_minor_units(amount, currency)"
+---
+Err(
+    InvalidAmount,
+)

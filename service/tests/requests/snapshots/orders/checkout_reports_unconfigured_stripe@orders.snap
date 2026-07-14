@@ -1,0 +1,8 @@
+---
+source: tests/requests/orders.rs
+expression: "(response.status_code(), response.text())"
+---
+(
+    503,
+    "{\"error\":\"Payments are temporarily unavailable. Please try again later.\",\"code\":\"stripe_not_configured\"}",
+)

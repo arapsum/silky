@@ -22,6 +22,7 @@ pub struct RbacLayer {
     required_permission: Option<PermissionName>,
     route_permissions: Vec<(Method, Option<&'static str>, PermissionName)>,
     allow_customers: bool,
+    customers_only: bool,
     deny_customers: bool,
 }
 
@@ -33,6 +34,7 @@ impl RbacLayer {
             required_permission: Some(required_permission),
             route_permissions: Vec::new(),
             allow_customers: false,
+            customers_only: false,
             deny_customers: false,
         }
     }
@@ -54,6 +56,7 @@ impl RbacLayer {
                 .map(|(method, permission)| (method, None, permission))
                 .collect(),
             allow_customers: false,
+            customers_only: false,
             deny_customers: false,
         }
     }
@@ -72,6 +75,7 @@ impl RbacLayer {
             required_permission: None,
             route_permissions: route_permissions.into_iter().collect(),
             allow_customers: false,
+            customers_only: false,
             deny_customers: false,
         }
     }
@@ -87,6 +91,19 @@ impl RbacLayer {
         self.deny_customers = true;
         self
     }
+
+    /// Restricts a route to authenticated users assigned the customer role.
+    #[must_use]
+    pub const fn customers_only(state: Arc<AppContext>) -> Self {
+        Self {
+            state,
+            required_permission: None,
+            route_permissions: Vec::new(),
+            allow_customers: false,
+            customers_only: true,
+            deny_customers: false,
+        }
+    }
 }
 
 impl<S> Layer<S> for RbacLayer {
@@ -99,6 +116,7 @@ impl<S> Layer<S> for RbacLayer {
             required_permission: self.required_permission,
             route_permissions: self.route_permissions.clone(),
             allow_customers: self.allow_customers,
+            customers_only: self.customers_only,
             deny_customers: self.deny_customers,
         }
     }
@@ -111,6 +129,7 @@ pub struct RbacService<S> {
     required_permission: Option<PermissionName>,
     route_permissions: Vec<(Method, Option<&'static str>, PermissionName)>,
     allow_customers: bool,
+    customers_only: bool,
     deny_customers: bool,
 }
 
@@ -127,6 +146,7 @@ impl<S> RbacService<S> {
             required_permission: Some(required_permission),
             route_permissions: Vec::new(),
             allow_customers: false,
+            customers_only: false,
             deny_customers: false,
         }
     }
@@ -151,12 +171,40 @@ where
         let required_permission = self.required_permission;
         let route_permissions = self.route_permissions.clone();
         let allow_customers = self.allow_customers;
+        let customers_only = self.customers_only;
         let deny_customers = self.deny_customers;
         let clone = self.inner.clone();
 
         let mut inner = std::mem::replace(&mut self.inner, clone);
 
         Box::pin(async move {
+            let Some(claims) = req.extensions().get::<Claims>() else {
+                return Ok(Error::MissingCredentials.response());
+            };
+
+            let Ok(user_pid) = Uuid::parse_str(claims.sub()) else {
+                return Ok(Error::Forbidden.response());
+            };
+
+            let is_customer = crate::models::User::has_role(state.db(), user_pid, "customer")
+                .await
+                .unwrap_or(false);
+            if customers_only {
+                return if is_customer {
+                    inner.call(req).await
+                } else {
+                    Ok(Error::Forbidden.response())
+                };
+            }
+            if is_customer {
+                if deny_customers {
+                    return Ok(Error::Forbidden.response());
+                }
+                if allow_customers {
+                    return inner.call(req).await;
+                }
+            }
+
             let required_permission = required_permission.or_else(|| {
                 route_permissions
                     .iter()
@@ -169,26 +217,6 @@ where
             let Some(required_permission) = required_permission else {
                 return Ok(Error::Forbidden.response());
             };
-
-            let Some(claims) = req.extensions().get::<Claims>() else {
-                return Ok(Error::MissingCredentials.response());
-            };
-
-            let Ok(user_pid) = Uuid::parse_str(claims.sub()) else {
-                return Ok(Error::Forbidden.response());
-            };
-
-            if crate::models::User::has_role(state.db(), user_pid, "customer")
-                .await
-                .unwrap_or(false)
-            {
-                if deny_customers {
-                    return Ok(Error::Forbidden.response());
-                }
-                if allow_customers {
-                    return inner.call(req).await;
-                }
-            }
 
             let granted = Permission::is_granted_to_user_role(
                 state.db(),

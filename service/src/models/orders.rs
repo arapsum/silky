@@ -7,7 +7,7 @@ use serde_json::Value as JsonValue;
 use sqlx::{FromRow, PgPool, types::Json};
 use uuid::Uuid;
 
-use crate::schemas::{NewOrder, OrderListQuery, UpdateOrder};
+use crate::schemas::{CheckoutOrder, NewOrder, NewOrderItem, OrderListQuery, UpdateOrder};
 
 use super::{
     ModelError, ModelResult, PaginatedModel, Pagination, Seedable,
@@ -57,6 +57,39 @@ pub struct OrderWithItems {
     pub items: Vec<OrderItem>,
 }
 
+struct CheckoutOrderInput<'a> {
+    customer_pid: Uuid,
+    billing_address_pid: Option<Uuid>,
+    shipping_address_pid: Option<Uuid>,
+    items: &'a [NewOrderItem],
+    customer_note: Option<&'a str>,
+    staff_note: Option<&'a str>,
+}
+
+impl<'a> CheckoutOrderInput<'a> {
+    fn from_new_order(params: &'a NewOrder) -> Self {
+        Self {
+            customer_pid: params.customer_pid(),
+            billing_address_pid: params.billing_address_pid(),
+            shipping_address_pid: params.shipping_address_pid(),
+            items: params.items(),
+            customer_note: params.customer_note(),
+            staff_note: params.staff_note(),
+        }
+    }
+
+    fn from_checkout(customer_pid: Uuid, params: &'a CheckoutOrder) -> Self {
+        Self {
+            customer_pid,
+            billing_address_pid: params.billing_address_pid(),
+            shipping_address_pid: params.shipping_address_pid(),
+            items: params.items(),
+            customer_note: params.customer_note(),
+            staff_note: None,
+        }
+    }
+}
+
 impl Order {
     /// Checks out an order and reserves its inventory in one transaction.
     ///
@@ -72,8 +105,39 @@ impl Order {
     /// items; or a database error when checkout cannot be committed.
     #[allow(clippy::too_many_lines)]
     pub async fn create(db: &PgPool, params: &NewOrder) -> ModelResult<Self> {
-        validate_checkout_items(params)?;
         let mut txn = db.begin().await?;
+        let input = CheckoutOrderInput::from_new_order(params);
+        let created = Self::insert_checkout_order(&mut txn, input).await?;
+        txn.commit().await?;
+        Ok(created.order)
+    }
+
+    /// Creates a customer-owned order inside a caller-managed transaction.
+    ///
+    /// Customer identity is supplied separately from the public payload so it
+    /// can only come from authenticated claims. The caller can create a payment
+    /// attempt in the same transaction before contacting Stripe.
+    ///
+    /// # Errors
+    /// Returns an invalid-reference error for missing customers, addresses, or
+    /// variants; an invalid-input error for empty, duplicate, or unavailable
+    /// items; or a database error when checkout rows cannot be written.
+    #[allow(clippy::too_many_lines)]
+    pub async fn create_checkout_order(
+        txn: &mut sqlx::Transaction<'_, sqlx::Postgres>,
+        customer_pid: Uuid,
+        params: &CheckoutOrder,
+    ) -> ModelResult<OrderWithItems> {
+        let input = CheckoutOrderInput::from_checkout(customer_pid, params);
+        Self::insert_checkout_order(txn, input).await
+    }
+
+    #[allow(clippy::too_many_lines)]
+    async fn insert_checkout_order(
+        txn: &mut sqlx::Transaction<'_, sqlx::Postgres>,
+        input: CheckoutOrderInput<'_>,
+    ) -> ModelResult<OrderWithItems> {
+        validate_checkout_items(input.items)?;
         let (customer_id, customer_name, customer_email) =
             sqlx::query_as::<_, (i32, String, String)>(
                 r"SELECT id, name, email::text
@@ -81,28 +145,28 @@ impl Order {
                   WHERE pid = $1
                     AND deleted_at IS NULL",
             )
-            .bind(params.customer_pid())
-            .fetch_optional(&mut *txn)
+            .bind(input.customer_pid)
+            .fetch_optional(&mut **txn)
             .await?
             .ok_or(ModelError::CustomerNotFound)?;
 
         let billing = load_customer_address(
-            &mut txn,
+            txn,
             customer_id,
-            params.billing_address_pid(),
+            input.billing_address_pid,
             "billingAddressPid",
         )
         .await?;
         let shipping = load_customer_address(
-            &mut txn,
+            txn,
             customer_id,
-            params.shipping_address_pid(),
+            input.shipping_address_pid,
             "shippingAddressPid",
         )
         .await?;
 
-        let mut variants = load_checkout_variants(&mut txn, params).await?;
-        let subtotal = calculate_subtotal(&variants, params)?;
+        let mut variants = load_checkout_variants(txn, input.items).await?;
+        let subtotal = calculate_subtotal(&variants, input.items)?;
         let order = sqlx::query_as::<_, Self>(
             r"INSERT INTO orders (
                 customer_id,
@@ -143,17 +207,18 @@ impl Order {
         .bind(Decimal::ZERO)
         .bind(Decimal::ZERO)
         .bind(subtotal)
-        .bind(params.customer_note().map(str::trim))
-        .bind(params.staff_note().map(str::trim))
-        .fetch_one(&mut *txn)
+        .bind(input.customer_note.map(str::trim))
+        .bind(input.staff_note.map(str::trim))
+        .fetch_one(&mut **txn)
         .await?;
 
-        for requested_item in params.items() {
+        let mut order_items = Vec::with_capacity(input.items.len());
+        for requested_item in input.items {
             let variant = variants
                 .remove(&requested_item.variant_pid())
                 .ok_or(ModelError::ProductVariantUnavailable)?;
             reserve_inventory(
-                &mut txn,
+                txn,
                 variant.variant_id,
                 variant.variant_pid,
                 requested_item.quantity(),
@@ -161,8 +226,8 @@ impl Order {
             )
             .await?;
             let line_total = variant.price * Decimal::from(requested_item.quantity());
-            OrderItem::insert(
-                &mut txn,
+            let item = OrderItem::insert(
+                txn,
                 CheckoutItem {
                     order_id: order.id,
                     product_id: variant.product_id,
@@ -178,10 +243,13 @@ impl Order {
                 },
             )
             .await?;
+            order_items.push(item);
         }
 
-        txn.commit().await?;
-        Ok(order)
+        Ok(OrderWithItems {
+            order,
+            items: order_items,
+        })
     }
 
     /// Finds an order by its public ID, including its persisted snapshots.
@@ -366,6 +434,26 @@ impl Order {
     pub fn status(&self) -> &str {
         &self.status
     }
+
+    #[must_use]
+    pub fn customer_email(&self) -> &str {
+        &self.customer_email
+    }
+
+    #[must_use]
+    pub const fn grand_total(&self) -> Decimal {
+        self.grand_total
+    }
+
+    #[must_use]
+    pub fn currency(&self) -> &str {
+        &self.currency
+    }
+
+    #[must_use]
+    pub const fn row_id(&self) -> i32 {
+        self.id
+    }
 }
 
 impl Seedable for Order {
@@ -485,13 +573,13 @@ impl Seedable for Order {
     }
 }
 
-fn validate_checkout_items(params: &NewOrder) -> ModelResult<()> {
-    if params.items().is_empty() {
+fn validate_checkout_items(items: &[NewOrderItem]) -> ModelResult<()> {
+    if items.is_empty() {
         return Err(ModelError::OrderHasNoItems);
     }
 
-    let mut variants = HashSet::with_capacity(params.items().len());
-    for item in params.items() {
+    let mut variants = HashSet::with_capacity(items.len());
+    for item in items {
         if item.quantity() < 1 {
             return Err(ModelError::InvalidOrderItemQuantity);
         }
@@ -505,10 +593,9 @@ fn validate_checkout_items(params: &NewOrder) -> ModelResult<()> {
 
 async fn load_checkout_variants(
     txn: &mut sqlx::Transaction<'_, sqlx::Postgres>,
-    params: &NewOrder,
+    items: &[NewOrderItem],
 ) -> ModelResult<HashMap<Uuid, VariantSnapshot>> {
-    let variant_pids = params
-        .items()
+    let variant_pids = items
         .iter()
         .map(crate::schemas::NewOrderItem::variant_pid)
         .collect::<Vec<_>>();
@@ -555,24 +642,21 @@ async fn load_checkout_variants(
 
 fn calculate_subtotal(
     variants: &HashMap<Uuid, VariantSnapshot>,
-    params: &NewOrder,
+    items: &[NewOrderItem],
 ) -> ModelResult<Decimal> {
-    params
-        .items()
-        .iter()
-        .try_fold(Decimal::ZERO, |total, item| {
-            let variant = variants
-                .get(&item.variant_pid())
-                .ok_or(ModelError::ProductVariantUnavailable)?;
-            if variant.stock_quantity < item.quantity() {
-                return Err(ModelError::InsufficientStock {
-                    variant_pid: item.variant_pid(),
-                    requested: item.quantity(),
-                    available: variant.stock_quantity,
-                });
-            }
-            Ok(total + variant.price * Decimal::from(item.quantity()))
-        })
+    items.iter().try_fold(Decimal::ZERO, |total, item| {
+        let variant = variants
+            .get(&item.variant_pid())
+            .ok_or(ModelError::ProductVariantUnavailable)?;
+        if variant.stock_quantity < item.quantity() {
+            return Err(ModelError::InsufficientStock {
+                variant_pid: item.variant_pid(),
+                requested: item.quantity(),
+                available: variant.stock_quantity,
+            });
+        }
+        Ok(total + variant.price * Decimal::from(item.quantity()))
+    })
 }
 
 async fn reserve_inventory(

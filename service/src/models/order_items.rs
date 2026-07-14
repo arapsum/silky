@@ -136,6 +136,21 @@ impl OrderItem {
     pub const fn quantity(&self) -> i32 {
         self.quantity
     }
+
+    #[must_use]
+    pub fn product_name(&self) -> &str {
+        &self.product_name
+    }
+
+    #[must_use]
+    pub const fn variant_pid(&self) -> Uuid {
+        self.variant_pid
+    }
+
+    #[must_use]
+    pub const fn unit_price(&self) -> Decimal {
+        self.unit_price
+    }
 }
 
 pub(super) struct CheckoutItem {

@@ -1,0 +1,8 @@
+---
+source: tests/requests/orders.rs
+expression: "(response.status_code(), response.text())"
+---
+(
+    401,
+    "{\"error\":\"Authentication is required. Please sign in and try again.\",\"code\":\"missing_credentials\"}",
+)

@@ -3,11 +3,12 @@ import { env } from "#/env.ts";
 export type ErrorResponse = {
   error?: string;
   message?: string;
+  code?: string;
 };
 
 export const API_BASE_URL = env.VITE_SERVER_URL ?? "http://127.0.0.1:7150/api";
-const EXPIRED_SESSION_MESSAGE = "Expired session";
-const MISSING_CREDENTIALS_MESSAGE = "Missing credentials";
+const EXPIRED_SESSION_CODE = "session_expired";
+const MISSING_CREDENTIALS_CODE = "missing_credentials";
 const REFRESH_SESSION_PATH = "/auth/refresh";
 
 type SessionExpiredHandler = () => void | Promise<void>;
@@ -26,11 +27,25 @@ export function setSessionExpiredHandler(handler: SessionExpiredHandler | undefi
 }
 
 export async function getErrorResponse(response: Response, fallback = "Request failed") {
+  const body = await readErrorResponse(response);
+  return body.error ?? body.message ?? fallback;
+}
+
+async function readErrorResponse(response: Response): Promise<ErrorResponse> {
   try {
-    const body = (await response.json()) as ErrorResponse;
-    return body.error ?? body.message ?? fallback;
+    return (await response.json()) as ErrorResponse;
   } catch {
-    return fallback;
+    return {};
+  }
+}
+
+class ApiError extends Error {
+  constructor(
+    message: string,
+    readonly code?: string,
+  ) {
+    super(message);
+    this.name = "ApiError";
   }
 }
 
@@ -75,10 +90,17 @@ async function apiRequestInternal<T>(
   });
 
   if (!response.ok) {
-    const errorMessage = await getErrorResponse(response, fallback);
+    const errorResponse = await readErrorResponse(response);
+    const errorMessage = errorResponse.error ?? errorResponse.message ?? fallback;
 
     if (
-      shouldRefreshSession(path, response, errorMessage, skipAuthRefresh, hasRetriedAfterRefresh)
+      shouldRefreshSession(
+        path,
+        response,
+        errorResponse.code,
+        skipAuthRefresh,
+        hasRetriedAfterRefresh,
+      )
     ) {
       try {
         await getRefreshSessionPromise();
@@ -100,7 +122,7 @@ async function apiRequestInternal<T>(
           ...init,
         });
       } catch (error) {
-        if (error instanceof Error && isRefreshableAuthError(error.message)) {
+        if (error instanceof ApiError && isRefreshableAuthError(error.code)) {
           if (sessionExpiredMode === "handle") {
             await handleRefreshFailure();
           }
@@ -110,7 +132,7 @@ async function apiRequestInternal<T>(
       }
     }
 
-    throw new Error(errorMessage);
+    throw new ApiError(errorMessage, errorResponse.code);
   }
 
   if (response.status === 204) {
@@ -123,21 +145,21 @@ async function apiRequestInternal<T>(
 function shouldRefreshSession(
   path: string,
   response: Response,
-  errorMessage: string,
+  errorCode: string | undefined,
   skipAuthRefresh: boolean,
   hasRetriedAfterRefresh: boolean,
 ) {
   return (
     response.status === 401 &&
-    isRefreshableAuthError(errorMessage) &&
+    isRefreshableAuthError(errorCode) &&
     !skipAuthRefresh &&
     !hasRetriedAfterRefresh &&
     path !== REFRESH_SESSION_PATH
   );
 }
 
-function isRefreshableAuthError(errorMessage: string) {
-  return errorMessage === EXPIRED_SESSION_MESSAGE || errorMessage === MISSING_CREDENTIALS_MESSAGE;
+function isRefreshableAuthError(errorCode: string | undefined) {
+  return errorCode === EXPIRED_SESSION_CODE || errorCode === MISSING_CREDENTIALS_CODE;
 }
 
 function getRefreshSessionPromise() {

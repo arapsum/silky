@@ -19,7 +19,7 @@ pub struct ErrorResponse {
     pub error: String,
     pub code: &'static str,
     #[serde(skip_serializing_if = "Option::is_none")]
-    pub field: Option<&'static str>,
+    pub field: Option<String>,
     #[serde(skip_serializing_if = "Option::is_none")]
     pub details: Option<Value>,
 }
@@ -160,6 +160,27 @@ impl Error {
             _ => None,
         }
     }
+
+    /// Returns the request field associated with an application-level error.
+    #[must_use]
+    pub fn field(&self) -> Option<String> {
+        match self {
+            Self::Model(error) => error.field().map(str::to_owned),
+            Self::PathRejection(error) => path_parameter_name(&error.body_text()),
+            _ => None,
+        }
+    }
+}
+
+fn path_parameter_name(message: &str) -> Option<String> {
+    let (_, remainder) = message.split_once("Cannot parse `")?;
+    let (field, _) = remainder.split_once('`')?;
+
+    (!field.is_empty()
+        && field
+            .chars()
+            .all(|character| character.is_ascii_alphanumeric() || character == '_'))
+    .then(|| field.to_string())
 }
 
 #[derive(Debug, thiserror::Error)]

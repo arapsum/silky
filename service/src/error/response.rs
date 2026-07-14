@@ -49,26 +49,35 @@ impl Error {
     #[must_use]
     pub fn response_body(&self) -> (StatusCode, String) {
         let (status, message) = match self {
-            Self::InvalidToken | Self::Jwt(_) => {
-                (StatusCode::UNAUTHORIZED, "Invalid token".to_string())
-            }
-            Self::ExpiredSession => (StatusCode::UNAUTHORIZED, "Expired session".to_string()),
-            Self::MissingCredentials => {
-                (StatusCode::UNAUTHORIZED, "Missing credentials".to_string())
-            }
-            Self::Forbidden => (StatusCode::FORBIDDEN, "Forbidden".to_string()),
+            Self::InvalidToken | Self::Jwt(_) => (
+                StatusCode::UNAUTHORIZED,
+                "Your authentication token is invalid. Please sign in again.".to_string(),
+            ),
+            Self::ExpiredSession => (
+                StatusCode::UNAUTHORIZED,
+                "Your session has expired. Please sign in again.".to_string(),
+            ),
+            Self::MissingCredentials => (
+                StatusCode::UNAUTHORIZED,
+                "Authentication is required. Please sign in and try again.".to_string(),
+            ),
+            Self::Forbidden => (
+                StatusCode::FORBIDDEN,
+                "You do not have permission to perform this action.".to_string(),
+            ),
             Self::InvalidCredentials => (
                 StatusCode::UNAUTHORIZED,
-                "Invalid email or password".to_string(),
+                "The email address or password is incorrect.".to_string(),
             ),
             Self::Model(model_error) => model_error.response_body(),
             Self::ValidationError(val_error) => (StatusCode::BAD_REQUEST, val_error.clone()),
             Self::JsonRejection(json_rejection) => {
                 (json_rejection.status(), json_rejection.body_text())
             }
-            Self::PathRejection(path_rejection) => {
-                (path_rejection.status(), path_rejection.body_text())
-            }
+            Self::PathRejection(path_rejection) => (
+                path_rejection.status(),
+                "The supplied resource identifier is invalid.".to_string(),
+            ),
             Self::QueryRejection(query_rejection) => {
                 (query_rejection.status(), query_rejection.body_text())
             }
@@ -98,6 +107,7 @@ impl Error {
         }
 
         let mut body = ErrorResponse::new(message, self.code());
+        body.field = self.field();
         body.details = details;
 
         (status, Json(body)).into_response()

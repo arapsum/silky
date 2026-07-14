@@ -272,7 +272,7 @@ impl ModelError {
             Self::InvalidClaimsKey => (StatusCode::UNAUTHORIZED, "Invalid claims key".to_string()),
             Self::InvalidCredentials => (
                 StatusCode::UNAUTHORIZED,
-                "Invalid email or password".to_string(),
+                "The email address or password is incorrect.".to_string(),
             ),
             Self::InvalidResetToken => (StatusCode::FORBIDDEN, "Invalid reset token".to_string()),
             Self::InvalidVerificationToken => (
@@ -358,7 +358,7 @@ impl ModelError {
         let body = ErrorResponse {
             error: message,
             code: self.code(),
-            field: self.field(),
+            field: self.field().map(str::to_owned),
             details: self.details(),
         };
         (status, Json(body)).into_response()

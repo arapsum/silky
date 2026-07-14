@@ -8,6 +8,7 @@ mod config;
 mod error;
 mod middlewares;
 mod models;
+mod payments;
 mod requests;
 mod schemas;
 pub mod utils;

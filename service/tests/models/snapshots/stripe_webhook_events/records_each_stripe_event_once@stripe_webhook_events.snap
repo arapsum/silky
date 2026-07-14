@@ -1,0 +1,22 @@
+---
+source: tests/models/stripe_webhook_events.rs
+expression: "(first, duplicate, stored)"
+---
+(
+    true,
+    false,
+    {
+        "stripeEventId": String("evt_test_completed"),
+        "eventType": String("checkout.session.completed"),
+        "apiVersion": String("2025-02-24.acacia"),
+        "payload": Object {
+            "id": String("evt_test_completed"),
+            "data": Object {
+                "object": Object {
+                    "id": String("cs_test_completed"),
+                },
+            },
+            "type": String("checkout.session.completed"),
+        },
+    },
+)

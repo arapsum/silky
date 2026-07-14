@@ -1,0 +1,10 @@
+---
+source: tests/models/payment_attempts.rs
+expression: result
+---
+Err(
+    (
+        "invalid_payment_transition",
+        "Payment cannot transition from succeeded to failed",
+    ),
+)

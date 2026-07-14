@@ -78,6 +78,47 @@ async fn revoke_customer_role(db: &sqlx::PgPool, email: &str) {
     .expect("customer role should be revoked");
 }
 
+#[derive(Clone, Copy)]
+enum CheckoutActor {
+    Customer,
+    Staff,
+    Anonymous,
+}
+
+#[rstest]
+#[case("checkout_requires_authentication", CheckoutActor::Anonymous)]
+#[case("checkout_rejects_staff_accounts", CheckoutActor::Staff)]
+#[case("checkout_reports_unconfigured_stripe", CheckoutActor::Customer)]
+#[tokio::test]
+#[serial]
+async fn protects_customer_checkout(#[case] test_name: &str, #[case] actor: CheckoutActor) {
+    crate::request(|server, ctx| async move {
+        configure_insta!();
+        seed_data(ctx.db()).await.expect("seed should complete");
+
+        let mut request = server.post("/orders/checkout").json(&serde_json::json!({
+            "items": [{
+                "variantPid": "db365773-2ac1-49aa-a4b9-03dcf8ac3401",
+                "quantity": 1
+            }]
+        }));
+        match actor {
+            CheckoutActor::Customer => {
+                assign_customer_role(ctx.db(), "john.doe@silk.com").await;
+                request = with_auth(request, access_token(&server, "john.doe@silk.com").await);
+            }
+            CheckoutActor::Staff => {
+                request = with_auth(request, access_token(&server, "admin@silk.com").await);
+            }
+            CheckoutActor::Anonymous => {}
+        }
+
+        let response = request.await;
+        assert_debug_snapshot!(test_name, (response.status_code(), response.text()));
+    })
+    .await;
+}
+
 #[rstest]
 #[case("can_list_orders", "/orders")]
 #[case(
@@ -265,6 +306,28 @@ async fn staff_with_order_permission_can_update_an_order(
         }, {
             assert_debug_snapshot!(test_name, (response.status_code(), response.text()))
         });
+    })
+    .await;
+}
+
+#[tokio::test]
+#[serial]
+async fn staff_cannot_set_payment_status_directly() {
+    crate::request(|server, ctx| async move {
+        configure_insta!();
+        seed_data(ctx.db()).await.expect("seed should complete");
+        let response = with_auth(
+            server
+                .patch(&format!("/orders/{ORDER_PID}"))
+                .json(&serde_json::json!({ "paymentStatus": "paid" })),
+            access_token(&server, "admin@silk.com").await,
+        )
+        .await;
+
+        assert_debug_snapshot!(
+            "staff_cannot_set_payment_status_directly",
+            (response.status_code(), response.text())
+        );
     })
     .await;
 }

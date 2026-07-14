@@ -220,6 +220,51 @@ fn cloudinary_credentials_are_loaded_from_environment() {
 
 #[test]
 #[serial]
+fn stripe_is_disabled_when_credentials_are_missing() {
+    let config = Config::from_env(&Environment::Testing).unwrap();
+
+    assert!(config.stripe().is_none());
+}
+
+#[test]
+#[serial]
+fn stripe_configuration_is_loaded_from_environment() {
+    let _guard = EnvGuard::set(&[
+        ("APP_STRIPE_SECRET_KEY", "sk_test_example"),
+        ("APP_STRIPE_WEBHOOK_SECRET", "whsec_example"),
+        (
+            "APP_STRIPE_CHECKOUT_SUCCESS_URL",
+            "http://localhost:3000/checkout/success?session_id={CHECKOUT_SESSION_ID}",
+        ),
+        (
+            "APP_STRIPE_CHECKOUT_CANCEL_URL",
+            "http://localhost:3000/checkout/cancel",
+        ),
+        ("APP_STRIPE_CHECKOUT_TTL_SECONDS", "3600"),
+    ]);
+
+    let config = Config::from_env(&Environment::Testing).unwrap();
+    let stripe = config.stripe().expect("Stripe config should be present");
+
+    assert_eq!(stripe.secret_key(), "sk_test_example");
+    assert_eq!(stripe.webhook_secret(), "whsec_example");
+    assert_eq!(
+        stripe.checkout_success_url(),
+        "http://localhost:3000/checkout/success?session_id={CHECKOUT_SESSION_ID}"
+    );
+    assert_eq!(
+        stripe.checkout_cancel_url(),
+        "http://localhost:3000/checkout/cancel"
+    );
+    assert_eq!(stripe.checkout_ttl_seconds(), 3600);
+
+    let debug = format!("{stripe:?}");
+    assert!(!debug.contains("sk_test_example"));
+    assert!(!debug.contains("whsec_example"));
+}
+
+#[test]
+#[serial]
 fn missing_environment_file_returns_error() {
     let result = Config::from_env(&Environment::Other("missing-config".to_string()));
 

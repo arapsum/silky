@@ -124,6 +124,44 @@ pub struct NewOrder {
     staff_note: Option<String>,
 }
 
+/// Customer-controlled input for starting a hosted Checkout flow.
+///
+/// Customer identity is intentionally absent and must be derived from the
+/// authenticated access token by the controller. Staff-only notes are also not
+/// accepted on this public customer operation.
+#[derive(Debug, Clone, Deserialize, Serialize, Validate)]
+#[serde(rename_all = "camelCase", deny_unknown_fields)]
+pub struct CheckoutOrder {
+    billing_address_pid: Option<Uuid>,
+    shipping_address_pid: Option<Uuid>,
+    #[validate(length(min = 1, max = 100), nested)]
+    items: Vec<NewOrderItem>,
+    #[validate(length(max = 2_000))]
+    customer_note: Option<String>,
+}
+
+impl CheckoutOrder {
+    #[must_use]
+    pub const fn billing_address_pid(&self) -> Option<Uuid> {
+        self.billing_address_pid
+    }
+
+    #[must_use]
+    pub const fn shipping_address_pid(&self) -> Option<Uuid> {
+        self.shipping_address_pid
+    }
+
+    #[must_use]
+    pub fn items(&self) -> &[NewOrderItem] {
+        &self.items
+    }
+
+    #[must_use]
+    pub fn customer_note(&self) -> Option<&str> {
+        self.customer_note.as_deref()
+    }
+}
+
 impl NewOrder {
     #[must_use]
     pub const fn customer_pid(&self) -> Uuid {
@@ -160,12 +198,10 @@ pub struct NewOrderItem {
 }
 
 #[derive(Debug, Clone, Deserialize, Serialize, Validate)]
-#[serde(rename_all = "camelCase")]
+#[serde(rename_all = "camelCase", deny_unknown_fields)]
 pub struct UpdateOrder {
     #[validate(length(min = 1, max = 32))]
     status: Option<String>,
-    #[validate(length(min = 1, max = 32))]
-    payment_status: Option<String>,
     #[validate(length(min = 1, max = 32))]
     fulfillment_status: Option<String>,
     staff_note: Option<String>,
@@ -175,13 +211,6 @@ impl UpdateOrder {
     #[must_use]
     pub fn status(&self) -> Option<&str> {
         self.status
-            .as_deref()
-            .map(str::trim)
-            .filter(|v| !v.is_empty())
-    }
-    #[must_use]
-    pub fn payment_status(&self) -> Option<&str> {
-        self.payment_status
             .as_deref()
             .map(str::trim)
             .filter(|v| !v.is_empty())

@@ -5,7 +5,7 @@ use axum::{
     response::{IntoResponse, Response},
 };
 
-use super::{Error, ErrorResponse, Report};
+use super::{Error, ErrorResponse, PaymentError, Report};
 
 impl IntoResponse for Report {
     fn into_response(self) -> Response {
@@ -19,6 +19,11 @@ impl IntoResponse for Report {
             let status = error.response_body().0;
             log_report(&report, status, error.code());
             return error.response();
+        } else if let Some(error) = report.downcast_ref::<PaymentError>() {
+            let (status, message) = error.response_body();
+            log_report(&report, status, error.code());
+            let body = Json(ErrorResponse::new(message, error.code()));
+            return (status, body).into_response();
         }
 
         log_report(&report, StatusCode::INTERNAL_SERVER_ERROR, "internal_error");
@@ -70,6 +75,10 @@ impl Error {
                 "The email address or password is incorrect.".to_string(),
             ),
             Self::Model(model_error) => model_error.response_body(),
+            Self::Payment(payment_error) => {
+                let (status, message) = payment_error.response_body();
+                (status, message.to_string())
+            }
             Self::ValidationError(val_error) => (StatusCode::BAD_REQUEST, val_error.clone()),
             Self::JsonRejection(json_rejection) => {
                 (json_rejection.status(), json_rejection.body_text())

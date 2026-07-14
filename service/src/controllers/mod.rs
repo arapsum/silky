@@ -11,6 +11,7 @@ mod auth;
 mod categories;
 mod media;
 mod orders;
+mod payments;
 mod permissions;
 mod products;
 mod roles;
@@ -52,6 +53,7 @@ pub fn router(ctx: &AppState) -> Router {
         .nest("/categories", categories::router(ctx))
         .nest("/products", products::router(ctx))
         .nest("/orders", orders::router(ctx))
+        .nest("/payments", payments::router(ctx))
         .nest("/media", media::router(ctx))
         .fallback(not_found)
 }

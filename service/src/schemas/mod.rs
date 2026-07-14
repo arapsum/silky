@@ -10,7 +10,7 @@ pub mod validator;
 pub use self::{
     auth::{ChangePassword, ForgotPassword, LoginUser, RegisterUser, ResetPassword, UpdateProfile},
     categories::{CategoryAttributesInput, NewCategory, UpdateCategory},
-    orders::{NewAddress, NewOrder, NewOrderItem, UpdateOrder},
+    orders::{CheckoutOrder, NewAddress, NewOrder, NewOrderItem, UpdateOrder},
     products::{
         CreateProduct, CreateProductPicture, CreateProductTag, CreateProductVariant,
         CreateVariantOption, ProductListQuery, StockStatus, UpdateProduct, UpdateProductPicture,

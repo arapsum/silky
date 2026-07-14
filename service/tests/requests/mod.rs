@@ -2,6 +2,7 @@ mod auth;
 mod categories;
 mod media;
 mod orders;
+mod payments;
 mod permissions;
 mod products;
 mod roles;

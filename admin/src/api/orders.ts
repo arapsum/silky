@@ -68,7 +68,6 @@ export type OrderWithItems = {
 
 export type UpdateOrderInput = {
   status?: string;
-  paymentStatus?: string;
   fulfillmentStatus?: string;
   staffNote?: string;
 };

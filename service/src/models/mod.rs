@@ -4,11 +4,13 @@ pub mod error;
 pub mod media_assets;
 pub mod order_items;
 pub mod orders;
+pub mod payment_attempts;
 pub mod permissions;
 pub mod products;
 pub mod roles;
 pub mod roles_permissions;
 pub mod seed;
+pub mod stripe_webhook_events;
 pub mod user;
 pub mod user_roles;
 
@@ -23,6 +25,7 @@ pub use self::{
     media_assets::{FinalizeMediaAsset, MediaAsset},
     order_items::OrderItem,
     orders::{Order, OrderWithItems},
+    payment_attempts::{CheckoutSessionDetails, PaymentAttempt, PaymentReconciliation},
     permissions::Permission,
     products::{
         Attribute, AttributeValue, NewPicture, NewProductOption, NewVariant,
@@ -32,6 +35,7 @@ pub use self::{
     roles::Role,
     roles_permissions::RolePermission,
     seed::Seedable,
+    stripe_webhook_events::StripeWebhookEvent,
     user::{User, UserAccess},
     user_roles::UserRole,
 };

@@ -6,7 +6,10 @@ use serde_json::Value;
 
 use crate::models::ModelError;
 
+mod payment;
 mod response;
+
+pub use payment::PaymentError;
 
 /// JSON body returned when an API request cannot be completed.
 ///
@@ -77,6 +80,8 @@ pub enum Error {
     #[error(transparent)]
     PathRejection(#[from] axum::extract::rejection::PathRejection),
     #[error(transparent)]
+    Payment(#[from] PaymentError),
+    #[error(transparent)]
     QueryRejection(#[from] axum::extract::rejection::QueryRejection),
     #[error(transparent)]
     Redis(#[from] redis::RedisError),
@@ -128,6 +133,7 @@ impl Error {
             Self::InvalidToken | Self::Jwt(_) => "invalid_token",
             Self::MissingCredentials => "missing_credentials",
             Self::Model(error) => error.code(),
+            Self::Payment(error) => error.code(),
             Self::ValidationError(_) => "validation_error",
             Self::JsonRejection(_) => "invalid_json",
             Self::PathRejection(_) => "invalid_path_parameter",

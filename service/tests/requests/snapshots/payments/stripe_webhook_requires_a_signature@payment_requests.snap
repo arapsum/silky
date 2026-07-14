@@ -1,0 +1,8 @@
+---
+source: tests/requests/payments.rs
+expression: "(response.status_code(), response.text())"
+---
+(
+    400,
+    "{\"error\":\"The Stripe webhook signature is missing or invalid.\",\"code\":\"invalid_stripe_signature\"}",
+)

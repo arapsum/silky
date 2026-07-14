@@ -1,0 +1,8 @@
+---
+source: tests/requests/orders.rs
+expression: "(response.status_code(), response.text())"
+---
+(
+    422,
+    "{\"error\":\"Failed to deserialize the JSON body into the target type: paymentStatus: unknown field `paymentStatus`, expected one of `status`, `fulfillmentStatus`, `staffNote` at line 1 column 16\",\"code\":\"invalid_json\"}",
+)

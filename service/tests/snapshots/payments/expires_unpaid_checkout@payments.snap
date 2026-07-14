@@ -1,0 +1,9 @@
+---
+source: tests/payments.rs
+expression: "(stored_attempt.status(), lifecycle.0, lifecycle.1)"
+---
+(
+    "expired",
+    "cancelled",
+    "failed",
+)

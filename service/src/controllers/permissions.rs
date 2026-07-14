@@ -9,6 +9,8 @@ use uuid::Uuid;
 
 use crate::{
     AppState, Result,
+    access_control::permissions,
+    middlewares::RbacLayer,
     models::Permission,
     schemas::{PermissionListQuery, Validator},
     utils::{AppPath, AppQuery},
@@ -38,7 +40,19 @@ async fn one(State(ctx): State<AppState>, AppPath(pid): AppPath<Uuid>) -> Result
 
 pub fn router(ctx: &AppState) -> Router {
     Router::new()
-        .route("/", get(list))
-        .route("/{pid}", get(one))
+        .route(
+            "/",
+            get(list).layer(RbacLayer::new(
+                ctx.clone(),
+                permissions::permission_records::READ,
+            )),
+        )
+        .route(
+            "/{pid}",
+            get(one).layer(RbacLayer::new(
+                ctx.clone(),
+                permissions::permission_records::READ,
+            )),
+        )
         .with_state(ctx.clone())
 }

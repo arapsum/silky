@@ -1,5 +1,6 @@
 mod log;
 mod mailer;
+mod stripe;
 
 use std::{
     fmt::{self, Display},
@@ -17,6 +18,7 @@ use crate::Result;
 pub use self::{
     log::Logger,
     mailer::{MailerAuthConfig, MailerConfig, SmtpConfig},
+    stripe::StripeConfig,
 };
 
 #[derive(Debug, Deserialize, Clone)]
@@ -27,6 +29,8 @@ pub struct Config {
     auth: AuthConfig,
     #[serde(default)]
     cloudinary: Option<CloudinaryConfig>,
+    #[serde(default)]
+    stripe: Option<StripeConfig>,
     mailer: MailerConfig,
     redis: RedisConfig,
     cors: CorsConfig,
@@ -71,6 +75,12 @@ impl Config {
                 config.cloudinary = None;
             }
         }
+        if let Some(stripe) = config.stripe.as_mut() {
+            stripe.apply_environment();
+            if !stripe.is_configured() {
+                config.stripe = None;
+            }
+        }
 
         Ok(config)
     }
@@ -113,6 +123,11 @@ impl Config {
     #[must_use]
     pub const fn cloudinary(&self) -> Option<&CloudinaryConfig> {
         self.cloudinary.as_ref()
+    }
+
+    #[must_use]
+    pub const fn stripe(&self) -> Option<&StripeConfig> {
+        self.stripe.as_ref()
     }
 }
 

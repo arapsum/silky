@@ -9,7 +9,7 @@ use uuid::Uuid;
 
 use crate::{
     Config, Error,
-    config::{AuthConfig, JwtConfig, RedisConfig},
+    config::{AuthConfig, JwtConfig, RedisConfig, StripeConfig},
     workers::MailQueue,
 };
 
@@ -22,6 +22,7 @@ pub struct AppContext {
     db: PgPool,
     queue: Arc<OnceLock<MailQueue>>,
     redis: redis::Client,
+    stripe: Option<StripeContext>,
 }
 
 impl AppContext {
@@ -74,6 +75,11 @@ impl AppContext {
     #[must_use]
     pub const fn redis(&self) -> &redis::Client {
         &self.redis
+    }
+
+    #[must_use]
+    pub const fn stripe(&self) -> Option<&StripeContext> {
+        self.stripe.as_ref()
     }
 
     /// Stores a newly issued refresh token identifier until the token expires.
@@ -167,7 +173,34 @@ impl TryFrom<&Config> for AppContext {
             config: cfg.clone(),
             queue: Arc::new(OnceLock::new()),
             redis: RedisConfig::connection(cfg.redis())?,
+            stripe: cfg.stripe().map(StripeContext::new),
         })
+    }
+}
+
+#[derive(Clone)]
+pub struct StripeContext {
+    client: stripe::Client,
+    webhook_secret: Arc<str>,
+}
+
+impl StripeContext {
+    #[must_use]
+    pub fn new(config: &StripeConfig) -> Self {
+        Self {
+            client: stripe::Client::new(config.secret_key().to_owned()),
+            webhook_secret: Arc::from(config.webhook_secret()),
+        }
+    }
+
+    #[must_use]
+    pub const fn client(&self) -> &stripe::Client {
+        &self.client
+    }
+
+    #[must_use]
+    pub const fn webhook_secret(&self) -> &Arc<str> {
+        &self.webhook_secret
     }
 }
 

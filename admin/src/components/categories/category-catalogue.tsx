@@ -92,7 +92,10 @@ function categoryColumns({
       header: "Description",
       accessorFn: (category) => category.description ?? "",
       cell: ({ row }) => (
-        <span className="line-clamp-2 text-muted-foreground">
+        <span
+          className="block max-w-[21rem] truncate text-muted-foreground"
+          title={row.original.description || "No description"}
+        >
           {row.original.description || "No description"}
         </span>
       ),

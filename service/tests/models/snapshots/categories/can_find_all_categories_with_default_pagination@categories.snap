@@ -6,6 +6,34 @@ Ok(
     PaginatedModel {
         data: [
             Category {
+                id: 105,
+                pid: 140c7205-f399-4aa9-9fa8-675df4aaf105,
+                name: "accessories",
+                slug: "accessories",
+                image_link: "https://images.unsplash.com/photo-1523779917675-b6ed3a42a561?auto=format&fit=crop&w=900&q=80",
+                description: Some(
+                    "Finishing pieces designed to complement the core Silk wardrobe.",
+                ),
+                parent_id: None,
+                created_at: 2026-06-26T08:18:00+00:00,
+                updated_at: 2026-06-26T08:18:00+00:00,
+                deleted_at: None,
+            },
+            Category {
+                id: 104,
+                pid: 9de76f85-8fde-40e7-9445-e078fc4df104,
+                name: "shirts",
+                slug: "shirts",
+                image_link: "https://images.unsplash.com/photo-1603252109303-2751441dd157?auto=format&fit=crop&w=900&q=80",
+                description: Some(
+                    "Smart and casual shirts for work, weekends, and every layer in between.",
+                ),
+                parent_id: None,
+                created_at: 2026-06-26T08:17:00+00:00,
+                updated_at: 2026-06-26T08:17:00+00:00,
+                deleted_at: None,
+            },
+            Category {
                 id: 103,
                 pid: 6f042674-322f-4933-afc8-1d3fd75599f6,
                 name: "shoes",
@@ -45,7 +73,7 @@ Ok(
         pagination: Pagination {
             page: 1,
             limit: 20,
-            total_items: 3,
+            total_items: 5,
             total_pages: 1,
             has_next: false,
             has_prev: false,

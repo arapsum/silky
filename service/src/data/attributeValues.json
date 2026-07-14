@@ -78,5 +78,45 @@
     "value": "Leather",
     "createdAt": "2026-07-02T15:25:00+03:00",
     "updatedAt": "2026-07-02T15:25:00+03:00"
+  },
+  {
+    "id": 211,
+    "pid": "1a698643-d77a-42c7-a49a-20970fc03211",
+    "attributeId": 201,
+    "value": "Sand",
+    "createdAt": "2026-07-03T10:40:00+03:00",
+    "updatedAt": "2026-07-03T10:40:00+03:00"
+  },
+  {
+    "id": 212,
+    "pid": "26426288-d1a1-43c7-ae9b-c890f19e3212",
+    "attributeId": 201,
+    "value": "Natural",
+    "createdAt": "2026-07-03T10:41:00+03:00",
+    "updatedAt": "2026-07-03T10:41:00+03:00"
+  },
+  {
+    "id": 213,
+    "pid": "9b462e1f-2517-4f1e-a60a-a1c984e33213",
+    "attributeId": 201,
+    "value": "Brown",
+    "createdAt": "2026-07-03T10:42:00+03:00",
+    "updatedAt": "2026-07-03T10:42:00+03:00"
+  },
+  {
+    "id": 214,
+    "pid": "9d864edb-acf6-4627-8e06-bc25973c3214",
+    "attributeId": 201,
+    "value": "Grey",
+    "createdAt": "2026-07-03T10:43:00+03:00",
+    "updatedAt": "2026-07-03T10:43:00+03:00"
+  },
+  {
+    "id": 215,
+    "pid": "7b09f180-0ec9-4f81-a2d3-b75515f33215",
+    "attributeId": 202,
+    "value": "One Size",
+    "createdAt": "2026-07-03T10:44:00+03:00",
+    "updatedAt": "2026-07-03T10:44:00+03:00"
   }
 ]

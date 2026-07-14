@@ -8,6 +8,34 @@ Ok(
             Category {
                 id: ID,
                 pid: PID,
+                name: "accessories",
+                slug: "accessories",
+                image_link: "https://images.unsplash.com/photo-1523779917675-b6ed3a42a561?auto=format&fit=crop&w=900&q=80",
+                description: Some(
+                    "Finishing pieces designed to complement the core Silk wardrobe.",
+                ),
+                parent_id: None,
+                created_at: DATE,
+                updated_at: DATE,
+                deleted_at: None,
+            },
+            Category {
+                id: ID,
+                pid: PID,
+                name: "shirts",
+                slug: "shirts",
+                image_link: "https://images.unsplash.com/photo-1603252109303-2751441dd157?auto=format&fit=crop&w=900&q=80",
+                description: Some(
+                    "Smart and casual shirts for work, weekends, and every layer in between.",
+                ),
+                parent_id: None,
+                created_at: DATE,
+                updated_at: DATE,
+                deleted_at: None,
+            },
+            Category {
+                id: ID,
+                pid: PID,
                 name: "shoes",
                 slug: "shoes",
                 image_link: "https://images.unsplash.com/photo-1542291026-7eec264c27ff?auto=format&fit=crop&w=900&q=80",
@@ -45,7 +73,7 @@ Ok(
         pagination: Pagination {
             page: 1,
             limit: 20,
-            total_items: 3,
+            total_items: 5,
             total_pages: 1,
             has_next: false,
             has_prev: false,

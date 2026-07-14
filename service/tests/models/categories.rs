@@ -611,10 +611,10 @@ async fn can_delete_category_without_products() {
     let category = Category::create(
         ctx.db(),
         &new_category(
-            "Accessories".to_string(),
-            "https://cdn.example.com/categories/accessories.png".to_string(),
+            "Homeware".to_string(),
+            "https://cdn.example.com/categories/homeware.png".to_string(),
             None,
-            Some("Bags and belts".to_string()),
+            Some("Textiles and decorative objects".to_string()),
         ),
     )
     .await

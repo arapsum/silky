@@ -10,7 +10,7 @@ use crate::utils;
 const TSHIRTS_PID: &str = "f63b79c9-4753-40c3-bc78-8c4fd38abd5b";
 const TROUSERS_PID: &str = "00b92bcb-cc7a-4a2b-bd80-e9c1b40d1c46";
 const SNEAKERS_PID: &str = "9a4a662b-2d78-4697-8469-e0b58c7bc4d2";
-const ACCESSORIES_PID: &str = "50bda9bb-0e4a-4b86-a97c-6943d4c1eec0";
+const EMPTY_CATEGORY_PID: &str = "50bda9bb-0e4a-4b86-a97c-6943d4c1eec0";
 const MISSING_PID: &str = "00000000-0000-0000-0000-000000000000";
 
 macro_rules! configure_insta {
@@ -124,7 +124,7 @@ async fn create_child_category(db: &sqlx::PgPool) {
             created_at,
             updated_at
         ) VALUES (
-            104,
+            1004,
             '9a4a662b-2d78-4697-8469-e0b58c7bc4d2',
             'sneakers',
             'sneakers',
@@ -154,18 +154,18 @@ async fn create_deletable_category(db: &sqlx::PgPool) {
             created_at,
             updated_at
         ) VALUES (
-            105,
+            1005,
             $1::uuid,
-            'accessories',
-            'accessories',
-            'https://cdn.example.com/categories/accessories.png',
-            'Bags and belts',
+            'homeware',
+            'homeware',
+            'https://cdn.example.com/categories/homeware.png',
+            'Textiles and decorative objects',
             NOW(),
             NOW()
         )
         ",
     )
-    .bind(ACCESSORIES_PID)
+    .bind(EMPTY_CATEGORY_PID)
     .execute(db)
     .await
     .expect("Failed to create an empty category");
@@ -319,10 +319,10 @@ async fn can_get_category_detail_with_children_products_and_attributes() {
 #[case(
     "can_create_category_with_description",
     serde_json::json!({
-        "name": "Accessories",
-        "slug": "accessories",
-        "imageLink": "https://cdn.example.com/categories/accessories.png",
-        "description": "Bags and belts"
+        "name": "Homeware",
+        "slug": "homeware",
+        "imageLink": "https://cdn.example.com/categories/homeware.png",
+        "description": "Textiles and decorative objects"
     })
 )]
 #[case(
@@ -354,9 +354,9 @@ async fn can_get_category_detail_with_children_products_and_attributes() {
 #[case(
     "can_create_category_when_slug_already_exists",
     serde_json::json!({
-        "name": "Accessories",
+        "name": "Homeware",
         "slug": "t-shirts",
-        "imageLink": "https://cdn.example.com/categories/accessories.png",
+        "imageLink": "https://cdn.example.com/categories/homeware.png",
         "description": "Duplicate seeded slug"
     })
 )]
@@ -371,9 +371,9 @@ async fn can_get_category_detail_with_children_products_and_attributes() {
 #[case(
     "can_create_category_with_unformatted_slug",
     serde_json::json!({
-        "name": "Accessories",
-        "slug": "  New Accessories  ",
-        "imageLink": "https://cdn.example.com/categories/accessories.png"
+        "name": "Homeware",
+        "slug": "  New Homeware  ",
+        "imageLink": "https://cdn.example.com/categories/homeware.png"
     })
 )]
 #[case(
@@ -551,7 +551,7 @@ async fn can_update_category(
 }
 
 #[rstest]
-#[case("can_delete_category", ACCESSORIES_PID)]
+#[case("can_delete_category", EMPTY_CATEGORY_PID)]
 #[case("cannot_delete_category_when_category_contains_products", TROUSERS_PID)]
 #[case("cannot_delete_category_when_pid_does_not_exist", MISSING_PID)]
 #[case("cannot_delete_category_when_pid_is_invalid", "not-a-uuid")]

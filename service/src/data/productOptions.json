@@ -46,5 +46,117 @@
     "attributeId": 202,
     "displayOrder": 2,
     "createdAt": "2026-07-02T15:31:00+03:00"
+  },
+  {
+    "id": 207,
+    "pid": "3055f2d6-a448-4839-a815-c15bde1e3307",
+    "productId": 204,
+    "attributeId": 201,
+    "displayOrder": 1,
+    "createdAt": "2026-07-03T10:45:00+03:00"
+  },
+  {
+    "id": 208,
+    "pid": "1c0de190-0f15-46c2-a7db-e7abf1e53308",
+    "productId": 204,
+    "attributeId": 202,
+    "displayOrder": 2,
+    "createdAt": "2026-07-03T10:45:00+03:00"
+  },
+  {
+    "id": 209,
+    "pid": "863a88c3-557d-4fe2-805d-82c44fb13309",
+    "productId": 205,
+    "attributeId": 201,
+    "displayOrder": 1,
+    "createdAt": "2026-07-03T10:46:00+03:00"
+  },
+  {
+    "id": 210,
+    "pid": "927979d0-bc98-4c72-a20e-66cb2e973310",
+    "productId": 205,
+    "attributeId": 202,
+    "displayOrder": 2,
+    "createdAt": "2026-07-03T10:46:00+03:00"
+  },
+  {
+    "id": 211,
+    "pid": "142ea222-4479-4f11-a6f1-383120723311",
+    "productId": 206,
+    "attributeId": 201,
+    "displayOrder": 1,
+    "createdAt": "2026-07-03T10:47:00+03:00"
+  },
+  {
+    "id": 212,
+    "pid": "e06bf6ef-a167-4a87-9bb7-e8a0679d3312",
+    "productId": 206,
+    "attributeId": 202,
+    "displayOrder": 2,
+    "createdAt": "2026-07-03T10:47:00+03:00"
+  },
+  {
+    "id": 213,
+    "pid": "c13c2a90-0f2d-4b7f-80af-b11818ce3313",
+    "productId": 207,
+    "attributeId": 201,
+    "displayOrder": 1,
+    "createdAt": "2026-07-03T10:48:00+03:00"
+  },
+  {
+    "id": 214,
+    "pid": "675fc1b5-9c8c-4239-beb6-6f817dea3314",
+    "productId": 207,
+    "attributeId": 202,
+    "displayOrder": 2,
+    "createdAt": "2026-07-03T10:48:00+03:00"
+  },
+  {
+    "id": 215,
+    "pid": "99b832a3-d0ca-44b2-98ef-c5f439633315",
+    "productId": 208,
+    "attributeId": 201,
+    "displayOrder": 1,
+    "createdAt": "2026-07-03T10:49:00+03:00"
+  },
+  {
+    "id": 216,
+    "pid": "20da4ccf-8ca1-48df-b155-b10b27033316",
+    "productId": 208,
+    "attributeId": 202,
+    "displayOrder": 2,
+    "createdAt": "2026-07-03T10:49:00+03:00"
+  },
+  {
+    "id": 217,
+    "pid": "83948303-a3a7-45d8-9ed6-5ed625f53317",
+    "productId": 209,
+    "attributeId": 201,
+    "displayOrder": 1,
+    "createdAt": "2026-07-03T10:50:00+03:00"
+  },
+  {
+    "id": 218,
+    "pid": "40b651d6-8852-4770-b91b-2d37f7713318",
+    "productId": 209,
+    "attributeId": 202,
+    "displayOrder": 2,
+    "createdAt": "2026-07-03T10:50:00+03:00"
+  },
+  {
+    "id": 219,
+    "pid": "f89fbcce-1c27-4b55-81b9-8c46859e3319",
+    "productId": 210,
+    "attributeId": 201,
+    "displayOrder": 1,
+    "createdAt": "2026-07-03T10:51:00+03:00"
+  },
+  {
+    "id": 220,
+    "pid": "74d15430-c0da-480a-868b-51436c763320",
+    "productId": 210,
+    "attributeId": 202,
+    "displayOrder": 2,
+    "createdAt": "2026-07-03T10:51:00+03:00"
   }
 ]

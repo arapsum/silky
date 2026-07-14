@@ -6,11 +6,11 @@ Ok(
     Category {
         id: ID,
         pid: PID,
-        name: "accessories",
-        slug: "accessories",
-        image_link: "https://cdn.example.com/categories/accessories.png",
+        name: "homeware",
+        slug: "homeware",
+        image_link: "https://cdn.example.com/categories/homeware.png",
         description: Some(
-            "Bags and belts",
+            "Textiles and decorative objects",
         ),
         parent_id: None,
         created_at: DATE,

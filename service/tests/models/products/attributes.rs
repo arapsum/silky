@@ -136,7 +136,9 @@ async fn can_find_attribute_by_name(#[case] test_name: &str, #[case] name: &str)
 
     let result = Attribute::find_by_name(ctx.db(), name).await;
 
-    assert_debug_snapshot!(test_name, result);
+    with_settings!({ filters => cleanup_date().to_vec() }, {
+        assert_debug_snapshot!(test_name, result);
+    });
 }
 
 #[tokio::test]

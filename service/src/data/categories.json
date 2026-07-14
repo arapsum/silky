@@ -34,5 +34,29 @@
     "createdAt": "2026-06-26T11:16:00+03:00",
     "updatedAt": "2026-06-26T11:16:00+03:00",
     "deletedAt": null
+  },
+  {
+    "id": 104,
+    "pid": "9de76f85-8fde-40e7-9445-e078fc4df104",
+    "name": "Shirts",
+    "slug": "shirts",
+    "imageLink": "https://images.unsplash.com/photo-1603252109303-2751441dd157?auto=format&fit=crop&w=900&q=80",
+    "description": "Smart and casual shirts for work, weekends, and every layer in between.",
+    "parentId": null,
+    "createdAt": "2026-06-26T11:17:00+03:00",
+    "updatedAt": "2026-06-26T11:17:00+03:00",
+    "deletedAt": null
+  },
+  {
+    "id": 105,
+    "pid": "140c7205-f399-4aa9-9fa8-675df4aaf105",
+    "name": "Accessories",
+    "slug": "accessories",
+    "imageLink": "https://images.unsplash.com/photo-1523779917675-b6ed3a42a561?auto=format&fit=crop&w=900&q=80",
+    "description": "Finishing pieces designed to complement the core Silk wardrobe.",
+    "parentId": null,
+    "createdAt": "2026-06-26T11:18:00+03:00",
+    "updatedAt": "2026-06-26T11:18:00+03:00",
+    "deletedAt": null
   }
 ]

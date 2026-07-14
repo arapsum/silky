@@ -58,5 +58,75 @@
     "displayOrder": 2,
     "createdAt": "2026-07-02T15:55:00+03:00",
     "updatedAt": "2026-07-02T15:55:00+03:00"
+  },
+  {
+    "id": 207,
+    "pid": "2094a1fd-cd77-42ec-b2e5-d3a126b23607",
+    "productId": 204,
+    "variantId": 207,
+    "imageLink": "https://images.unsplash.com/photo-1603252109303-2751441dd157?auto=format&fit=crop&w=900&q=80",
+    "displayOrder": 1,
+    "createdAt": "2026-07-03T10:30:00+03:00",
+    "updatedAt": "2026-07-03T10:30:00+03:00"
+  },
+  {
+    "id": 208,
+    "pid": "a2179dd4-d292-48ea-b5d9-535b2f9a3608",
+    "productId": 205,
+    "variantId": 208,
+    "imageLink": "https://images.unsplash.com/photo-1596755094514-f87e34085b2c?auto=format&fit=crop&w=900&q=80",
+    "displayOrder": 1,
+    "createdAt": "2026-07-03T10:31:00+03:00",
+    "updatedAt": "2026-07-03T10:31:00+03:00"
+  },
+  {
+    "id": 209,
+    "pid": "58885351-a510-4d0b-982f-09da9d653609",
+    "productId": 206,
+    "variantId": 209,
+    "imageLink": "https://images.unsplash.com/photo-1594223274512-ad4803739b7c?auto=format&fit=crop&w=900&q=80",
+    "displayOrder": 1,
+    "createdAt": "2026-07-03T10:32:00+03:00",
+    "updatedAt": "2026-07-03T10:32:00+03:00"
+  },
+  {
+    "id": 210,
+    "pid": "369da187-e83d-43a3-8b7b-759c99243610",
+    "productId": 207,
+    "variantId": 210,
+    "imageLink": "https://images.unsplash.com/photo-1624222247344-550fb60583dc?auto=format&fit=crop&w=900&q=80",
+    "displayOrder": 1,
+    "createdAt": "2026-07-03T10:33:00+03:00",
+    "updatedAt": "2026-07-03T10:33:00+03:00"
+  },
+  {
+    "id": 211,
+    "pid": "436803f8-197a-42ac-af18-58e129f73611",
+    "productId": 208,
+    "variantId": 211,
+    "imageLink": "https://images.unsplash.com/photo-1520903920243-00d872a2d1c9?auto=format&fit=crop&w=900&q=80",
+    "displayOrder": 1,
+    "createdAt": "2026-07-03T10:34:00+03:00",
+    "updatedAt": "2026-07-03T10:34:00+03:00"
+  },
+  {
+    "id": 212,
+    "pid": "14ec6ac2-f55d-457f-8d09-03cce3393612",
+    "productId": 209,
+    "variantId": 212,
+    "imageLink": "https://images.unsplash.com/photo-1552346154-21d32810aba3?auto=format&fit=crop&w=900&q=80",
+    "displayOrder": 1,
+    "createdAt": "2026-07-03T10:35:00+03:00",
+    "updatedAt": "2026-07-03T10:35:00+03:00"
+  },
+  {
+    "id": 213,
+    "pid": "fd0d4cd4-a1c7-4296-bdf9-217272c33613",
+    "productId": 210,
+    "variantId": 213,
+    "imageLink": "https://images.unsplash.com/photo-1594633312681-425c7b97ccd1?auto=format&fit=crop&w=900&q=80",
+    "displayOrder": 1,
+    "createdAt": "2026-07-03T10:36:00+03:00",
+    "updatedAt": "2026-07-03T10:36:00+03:00"
   }
 ]

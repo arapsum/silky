@@ -7,6 +7,111 @@ Ok(
         data: [
             ProductListItem {
                 pid: PID,
+                name: "Pleated Wide-leg Trousers",
+                description: Some(
+                    "Fluid wide-leg trousers with front pleats and a clean tailored waistband.",
+                ),
+                information: {
+                    "Fit": "Wide leg",
+                    "Material": "Tencel blend",
+                    "Rise": "High rise",
+                },
+                category: ProductCategorySummary {
+                    id: ID,
+                    pid: PID,
+                    name: "trousers",
+                    slug: "trousers",
+                },
+                primary_image: Some(
+                    "https://images.unsplash.com/photo-1594633312681-425c7b97ccd1?auto=format&fit=crop&w=900&q=80",
+                ),
+                default_variant: Some(
+                    ProductVariantSummary {
+                        pid: PID,
+                        sku: "PLEAT-BLK-M",
+                        price: 64.99,
+                        stock_quantity: 23,
+                    },
+                ),
+                variant_count: 1,
+                option_count: 2,
+                total_stock: 23,
+                created_at: DATE,
+                updated_at: DATE,
+                deleted_at: None,
+            },
+            ProductListItem {
+                pid: PID,
+                name: "Oxford Button-down Shirt",
+                description: Some(
+                    "A crisp cotton Oxford shirt cut for comfortable everyday layering.",
+                ),
+                information: {
+                    "Collar": "Button-down",
+                    "Fit": "Tailored",
+                    "Material": "Oxford cotton",
+                },
+                category: ProductCategorySummary {
+                    id: ID,
+                    pid: PID,
+                    name: "shirts",
+                    slug: "shirts",
+                },
+                primary_image: Some(
+                    "https://images.unsplash.com/photo-1596755094514-f87e34085b2c?auto=format&fit=crop&w=900&q=80",
+                ),
+                default_variant: Some(
+                    ProductVariantSummary {
+                        pid: PID,
+                        sku: "OXFORD-BLU-L",
+                        price: 59.99,
+                        stock_quantity: 4,
+                    },
+                ),
+                variant_count: 1,
+                option_count: 2,
+                total_stock: 4,
+                created_at: DATE,
+                updated_at: DATE,
+                deleted_at: None,
+            },
+            ProductListItem {
+                pid: PID,
+                name: "Washed Linen Shirt",
+                description: Some(
+                    "A breathable linen shirt with a soft washed finish and easy shape.",
+                ),
+                information: {
+                    "Care": "Machine wash gentle",
+                    "Fit": "Regular",
+                    "Material": "100% linen",
+                },
+                category: ProductCategorySummary {
+                    id: ID,
+                    pid: PID,
+                    name: "shirts",
+                    slug: "shirts",
+                },
+                primary_image: Some(
+                    "https://images.unsplash.com/photo-1603252109303-2751441dd157?auto=format&fit=crop&w=900&q=80",
+                ),
+                default_variant: Some(
+                    ProductVariantSummary {
+                        pid: PID,
+                        sku: "LINEN-SAND-M",
+                        price: 69.99,
+                        stock_quantity: 28,
+                    },
+                ),
+                variant_count: 1,
+                option_count: 2,
+                total_stock: 28,
+                created_at: DATE,
+                updated_at: DATE,
+                deleted_at: None,
+            },
+            ProductListItem {
+                pid: PID,
                 name: "Court Leather Sneakers",
                 description: Some(
                     "Low-profile leather sneakers with cushioned insoles.",
@@ -79,7 +184,7 @@ Ok(
         pagination: Pagination {
             page: 1,
             limit: 20,
-            total_items: 2,
+            total_items: 5,
             total_pages: 1,
             has_next: false,
             has_prev: false,

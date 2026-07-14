@@ -43,5 +43,110 @@
     "createdAt": "2026-07-02T15:12:00+03:00",
     "updatedAt": "2026-07-02T15:12:00+03:00",
     "deletedAt": null
+  },
+  {
+    "id": 204,
+    "pid": "987a118c-124c-4749-a83c-3f76471f3004",
+    "categoryId": 104,
+    "name": "Washed Linen Shirt",
+    "description": "A breathable linen shirt with a soft washed finish and easy shape.",
+    "information": {
+      "Material": "100% linen",
+      "Fit": "Regular",
+      "Care": "Machine wash gentle"
+    },
+    "createdAt": "2026-07-03T09:10:00+03:00",
+    "updatedAt": "2026-07-03T09:10:00+03:00",
+    "deletedAt": null
+  },
+  {
+    "id": 205,
+    "pid": "a9dd0089-8cee-45f9-901d-6f411bea3005",
+    "categoryId": 104,
+    "name": "Oxford Button-down Shirt",
+    "description": "A crisp cotton Oxford shirt cut for comfortable everyday layering.",
+    "information": {
+      "Material": "Oxford cotton",
+      "Fit": "Tailored",
+      "Collar": "Button-down"
+    },
+    "createdAt": "2026-07-03T09:20:00+03:00",
+    "updatedAt": "2026-07-03T09:20:00+03:00",
+    "deletedAt": null
+  },
+  {
+    "id": 206,
+    "pid": "10d6db44-bf11-414e-be62-5535ee0e3006",
+    "categoryId": 105,
+    "name": "Everyday Canvas Tote",
+    "description": "A roomy heavyweight canvas tote with reinforced handles and an inner pocket.",
+    "information": {
+      "Material": "Cotton canvas",
+      "Capacity": "18 litres",
+      "Care": "Spot clean"
+    },
+    "createdAt": "2026-07-03T09:30:00+03:00",
+    "updatedAt": "2026-07-03T09:30:00+03:00",
+    "deletedAt": null
+  },
+  {
+    "id": 207,
+    "pid": "93c2924c-1a7a-466b-8acc-7aa5c3133007",
+    "categoryId": 105,
+    "name": "Full-grain Leather Belt",
+    "description": "A vegetable-tanned leather belt finished with a brushed metal buckle.",
+    "information": {
+      "Material": "Full-grain leather",
+      "Hardware": "Brushed steel",
+      "Width": "32 mm"
+    },
+    "createdAt": "2026-07-03T09:40:00+03:00",
+    "updatedAt": "2026-07-03T09:40:00+03:00",
+    "deletedAt": null
+  },
+  {
+    "id": 208,
+    "pid": "8f944bd4-26fc-4877-920a-af0bdcf73008",
+    "categoryId": 105,
+    "name": "Brushed Wool Scarf",
+    "description": "A warm, softly brushed wool scarf with subtle fringed ends.",
+    "information": {
+      "Material": "Lambswool",
+      "Dimensions": "180 × 30 cm",
+      "Care": "Dry clean only"
+    },
+    "createdAt": "2026-07-03T09:50:00+03:00",
+    "updatedAt": "2026-07-03T09:50:00+03:00",
+    "deletedAt": null
+  },
+  {
+    "id": 209,
+    "pid": "645bf6e1-bf37-472a-aa0f-09dc9aa13009",
+    "categoryId": 103,
+    "name": "Mesh Running Trainers",
+    "description": "Lightweight trainers with a breathable mesh upper and responsive foam sole.",
+    "information": {
+      "Upper": "Recycled mesh",
+      "Sole": "Cushioned foam",
+      "Care": "Hand wash"
+    },
+    "createdAt": "2026-07-03T10:00:00+03:00",
+    "updatedAt": "2026-07-03T10:00:00+03:00",
+    "deletedAt": null
+  },
+  {
+    "id": 210,
+    "pid": "a012b9f1-58cb-45c5-bc83-141b3a4a3010",
+    "categoryId": 102,
+    "name": "Pleated Wide-leg Trousers",
+    "description": "Fluid wide-leg trousers with front pleats and a clean tailored waistband.",
+    "information": {
+      "Material": "Tencel blend",
+      "Fit": "Wide leg",
+      "Rise": "High rise"
+    },
+    "createdAt": "2026-07-03T10:10:00+03:00",
+    "updatedAt": "2026-07-03T10:10:00+03:00",
+    "deletedAt": null
   }
 ]

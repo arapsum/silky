@@ -70,5 +70,89 @@
     "createdAt": "2026-07-02T15:37:00+03:00",
     "updatedAt": "2026-07-02T15:37:00+03:00",
     "deletedAt": null
+  },
+  {
+    "id": 207,
+    "pid": "c69750bc-7f45-4ee0-b566-76be0afe3407",
+    "productId": 204,
+    "sku": "LINEN-SAND-M",
+    "price": 69.99,
+    "stockQuantity": 28,
+    "isDefault": true,
+    "createdAt": "2026-07-03T10:20:00+03:00",
+    "updatedAt": "2026-07-03T10:20:00+03:00",
+    "deletedAt": null
+  },
+  {
+    "id": 208,
+    "pid": "cff086c9-59bf-45ec-9042-85399d213408",
+    "productId": 205,
+    "sku": "OXFORD-BLU-L",
+    "price": 59.99,
+    "stockQuantity": 4,
+    "isDefault": true,
+    "createdAt": "2026-07-03T10:21:00+03:00",
+    "updatedAt": "2026-07-03T10:21:00+03:00",
+    "deletedAt": null
+  },
+  {
+    "id": 209,
+    "pid": "02387679-6f1d-4385-ae73-65da53163409",
+    "productId": 206,
+    "sku": "TOTE-NAT-OS",
+    "price": 34.99,
+    "stockQuantity": 46,
+    "isDefault": true,
+    "createdAt": "2026-07-03T10:22:00+03:00",
+    "updatedAt": "2026-07-03T10:22:00+03:00",
+    "deletedAt": null
+  },
+  {
+    "id": 210,
+    "pid": "54ebc128-670b-4c9f-953b-6f2009843410",
+    "productId": 207,
+    "sku": "BELT-BRN-M",
+    "price": 44.99,
+    "stockQuantity": 15,
+    "isDefault": true,
+    "createdAt": "2026-07-03T10:23:00+03:00",
+    "updatedAt": "2026-07-03T10:23:00+03:00",
+    "deletedAt": null
+  },
+  {
+    "id": 211,
+    "pid": "354aa1c4-6441-41ac-9d65-48d8348e3411",
+    "productId": 208,
+    "sku": "SCARF-GRY-OS",
+    "price": 39.99,
+    "stockQuantity": 0,
+    "isDefault": true,
+    "createdAt": "2026-07-03T10:24:00+03:00",
+    "updatedAt": "2026-07-03T10:24:00+03:00",
+    "deletedAt": null
+  },
+  {
+    "id": 212,
+    "pid": "ea81b064-4e9a-418e-b677-691461303412",
+    "productId": 209,
+    "sku": "RUNNER-GRY-42",
+    "price": 109.99,
+    "stockQuantity": 11,
+    "isDefault": true,
+    "createdAt": "2026-07-03T10:25:00+03:00",
+    "updatedAt": "2026-07-03T10:25:00+03:00",
+    "deletedAt": null
+  },
+  {
+    "id": 213,
+    "pid": "94439aa9-4c8f-47a3-bf45-ec70f1cd3413",
+    "productId": 210,
+    "sku": "PLEAT-BLK-M",
+    "price": 64.99,
+    "stockQuantity": 23,
+    "isDefault": true,
+    "createdAt": "2026-07-03T10:26:00+03:00",
+    "updatedAt": "2026-07-03T10:26:00+03:00",
+    "deletedAt": null
   }
 ]

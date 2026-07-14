@@ -22,5 +22,21 @@
   {
     "categoryId": 103,
     "attributeId": 202
+  },
+  {
+    "categoryId": 104,
+    "attributeId": 201
+  },
+  {
+    "categoryId": 104,
+    "attributeId": 202
+  },
+  {
+    "categoryId": 105,
+    "attributeId": 201
+  },
+  {
+    "categoryId": 105,
+    "attributeId": 202
   }
 ]

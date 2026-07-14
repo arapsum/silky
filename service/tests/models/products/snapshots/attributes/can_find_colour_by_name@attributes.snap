@@ -1,6 +1,5 @@
 ---
 source: tests/models/products/attributes.rs
-assertion_line: 57
 expression: result
 ---
 Ok(
@@ -11,7 +10,7 @@ Ok(
         description: Some(
             "The colour or finish used to distinguish product variants.",
         ),
-        created_at: 2026-07-02T12:13:00+00:00,
-        updated_at: 2026-07-02T12:13:00+00:00,
+        created_at: DATE,
+        updated_at: DATE,
     },
 )

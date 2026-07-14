@@ -9,7 +9,10 @@
 // Additionally, you should also exclude this file from your linter and/or formatter to prevent it from being checked or modified.
 
 import { Route as rootRouteImport } from './routes/__root'
+import { Route as UnauthorizedRouteImport } from './routes/unauthorized'
+import { Route as MaintenanceRouteImport } from './routes/maintenance'
 import { Route as ForbiddenRouteImport } from './routes/forbidden'
+import { Route as R500RouteImport } from './routes/500'
 import { Route as MainRouteRouteImport } from './routes/_main/route'
 import { Route as MainIndexRouteImport } from './routes/_main/index'
 import { Route as MainSettingsIndexRouteImport } from './routes/_main/settings/index'
@@ -29,9 +32,24 @@ import { Route as MainAccessControlPermissionsIndexRouteImport } from './routes/
 import { Route as MainProductsPidEditIndexRouteImport } from './routes/_main/products/$pid/edit/index'
 import { Route as MainCategoriesPidEditIndexRouteImport } from './routes/_main/categories/$pid/edit/index'
 
+const UnauthorizedRoute = UnauthorizedRouteImport.update({
+  id: '/unauthorized',
+  path: '/unauthorized',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const MaintenanceRoute = MaintenanceRouteImport.update({
+  id: '/maintenance',
+  path: '/maintenance',
+  getParentRoute: () => rootRouteImport,
+} as any)
 const ForbiddenRoute = ForbiddenRouteImport.update({
   id: '/forbidden',
   path: '/forbidden',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const R500Route = R500RouteImport.update({
+  id: '/500',
+  path: '/500',
   getParentRoute: () => rootRouteImport,
 } as any)
 const MainRouteRoute = MainRouteRouteImport.update({
@@ -132,7 +150,10 @@ const MainCategoriesPidEditIndexRoute =
 
 export interface FileRoutesByFullPath {
   '/': typeof MainIndexRoute
+  '/500': typeof R500Route
   '/forbidden': typeof ForbiddenRoute
+  '/maintenance': typeof MaintenanceRoute
+  '/unauthorized': typeof UnauthorizedRoute
   '/sign-in/': typeof AuthSignInIndexRoute
   '/categories/': typeof MainCategoriesIndexRoute
   '/orders/': typeof MainOrdersIndexRoute
@@ -151,7 +172,10 @@ export interface FileRoutesByFullPath {
   '/products/$pid/edit/': typeof MainProductsPidEditIndexRoute
 }
 export interface FileRoutesByTo {
+  '/500': typeof R500Route
   '/forbidden': typeof ForbiddenRoute
+  '/maintenance': typeof MaintenanceRoute
+  '/unauthorized': typeof UnauthorizedRoute
   '/': typeof MainIndexRoute
   '/sign-in': typeof AuthSignInIndexRoute
   '/categories': typeof MainCategoriesIndexRoute
@@ -173,7 +197,10 @@ export interface FileRoutesByTo {
 export interface FileRoutesById {
   __root__: typeof rootRouteImport
   '/_main': typeof MainRouteRouteWithChildren
+  '/500': typeof R500Route
   '/forbidden': typeof ForbiddenRoute
+  '/maintenance': typeof MaintenanceRoute
+  '/unauthorized': typeof UnauthorizedRoute
   '/_main/': typeof MainIndexRoute
   '/_auth/sign-in/': typeof AuthSignInIndexRoute
   '/_main/categories/': typeof MainCategoriesIndexRoute
@@ -196,7 +223,10 @@ export interface FileRouteTypes {
   fileRoutesByFullPath: FileRoutesByFullPath
   fullPaths:
     | '/'
+    | '/500'
     | '/forbidden'
+    | '/maintenance'
+    | '/unauthorized'
     | '/sign-in/'
     | '/categories/'
     | '/orders/'
@@ -215,7 +245,10 @@ export interface FileRouteTypes {
     | '/products/$pid/edit/'
   fileRoutesByTo: FileRoutesByTo
   to:
+    | '/500'
     | '/forbidden'
+    | '/maintenance'
+    | '/unauthorized'
     | '/'
     | '/sign-in'
     | '/categories'
@@ -236,7 +269,10 @@ export interface FileRouteTypes {
   id:
     | '__root__'
     | '/_main'
+    | '/500'
     | '/forbidden'
+    | '/maintenance'
+    | '/unauthorized'
     | '/_main/'
     | '/_auth/sign-in/'
     | '/_main/categories/'
@@ -258,17 +294,41 @@ export interface FileRouteTypes {
 }
 export interface RootRouteChildren {
   MainRouteRoute: typeof MainRouteRouteWithChildren
+  R500Route: typeof R500Route
   ForbiddenRoute: typeof ForbiddenRoute
+  MaintenanceRoute: typeof MaintenanceRoute
+  UnauthorizedRoute: typeof UnauthorizedRoute
   AuthSignInIndexRoute: typeof AuthSignInIndexRoute
 }
 
 declare module '@tanstack/react-router' {
   interface FileRoutesByPath {
+    '/unauthorized': {
+      id: '/unauthorized'
+      path: '/unauthorized'
+      fullPath: '/unauthorized'
+      preLoaderRoute: typeof UnauthorizedRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/maintenance': {
+      id: '/maintenance'
+      path: '/maintenance'
+      fullPath: '/maintenance'
+      preLoaderRoute: typeof MaintenanceRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     '/forbidden': {
       id: '/forbidden'
       path: '/forbidden'
       fullPath: '/forbidden'
       preLoaderRoute: typeof ForbiddenRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/500': {
+      id: '/500'
+      path: '/500'
+      fullPath: '/500'
+      preLoaderRoute: typeof R500RouteImport
       parentRoute: typeof rootRouteImport
     }
     '/_main': {
@@ -445,7 +505,10 @@ const MainRouteRouteWithChildren = MainRouteRoute._addFileChildren(
 
 const rootRouteChildren: RootRouteChildren = {
   MainRouteRoute: MainRouteRouteWithChildren,
+  R500Route: R500Route,
   ForbiddenRoute: ForbiddenRoute,
+  MaintenanceRoute: MaintenanceRoute,
+  UnauthorizedRoute: UnauthorizedRoute,
   AuthSignInIndexRoute: AuthSignInIndexRoute,
 }
 export const routeTree = rootRouteImport

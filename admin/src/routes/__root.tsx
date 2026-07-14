@@ -1,4 +1,11 @@
-import { HeadContent, Scripts, createRootRouteWithContext } from "@tanstack/react-router";
+import {
+  HeadContent,
+  Link,
+  Scripts,
+  createRootRouteWithContext,
+  type ErrorComponentProps,
+} from "@tanstack/react-router";
+import { ArrowClockwiseIcon, ArrowLeftIcon } from "@phosphor-icons/react";
 import { TanStackRouterDevtoolsPanel } from "@tanstack/react-router-devtools";
 import { TanStackDevtools } from "@tanstack/react-devtools";
 
@@ -10,6 +17,8 @@ import appCss from "../styles.css?url";
 import type { QueryClient } from "@tanstack/react-query";
 import { ThemeProvider } from "#/components/theme-provider";
 import { TooltipProvider } from "#/components/ui/tooltip";
+import { StatusPage } from "#/components/status-page.tsx";
+import { Button } from "#/components/ui/button.tsx";
 
 interface MyRouterContext {
   queryClient: QueryClient;
@@ -36,8 +45,43 @@ export const Route = createRootRouteWithContext<MyRouterContext>()({
       },
     ],
   }),
+  errorComponent: RootErrorPage,
+  notFoundComponent: NotFoundPage,
   shellComponent: RootDocument,
 });
+
+function NotFoundPage() {
+  return (
+    <StatusPage
+      kind="notFound"
+      actions={
+        <Button render={<Link to="/" />}>
+          <ArrowLeftIcon data-icon="inline-start" />
+          Go to dashboard
+        </Button>
+      }
+    />
+  );
+}
+
+function RootErrorPage({ reset }: ErrorComponentProps) {
+  return (
+    <StatusPage
+      kind="error"
+      actions={
+        <>
+          <Button type="button" onClick={reset}>
+            <ArrowClockwiseIcon data-icon="inline-start" />
+            Try again
+          </Button>
+          <Button variant="outline" render={<Link to="/" />}>
+            Go to dashboard
+          </Button>
+        </>
+      }
+    />
+  );
+}
 
 function RootDocument({ children }: { children: React.ReactNode }) {
   return (

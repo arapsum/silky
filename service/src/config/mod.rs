@@ -69,6 +69,7 @@ impl Config {
             .build()?;
 
         let mut config = config.try_deserialize::<Self>()?;
+        config.auth.apply_environment()?;
         if let Some(cloudinary) = config.cloudinary.as_mut() {
             cloudinary.apply_environment();
             if !cloudinary.is_configured() {
@@ -351,11 +352,37 @@ impl DatabaseConfig {
 pub struct AuthConfig {
     access: JwtConfig,
     refresh: JwtConfig,
+    #[serde(default)]
+    cookie: AuthCookieConfig,
     verification_token_expiry: i64,
     refresh_token_expiry: i64,
 }
 
 impl AuthConfig {
+    fn apply_environment(&mut self) -> Result<()> {
+        if let Ok(value) = std::env::var("APP_AUTH_COOKIE_SECURE") {
+            self.cookie.secure = value.parse::<bool>().map_err(|_| {
+                color_eyre::eyre::eyre!("APP_AUTH_COOKIE_SECURE must be either `true` or `false`")
+            })?;
+        }
+
+        if let Ok(value) = std::env::var("APP_AUTH_COOKIE_SAME_SITE") {
+            self.cookie.same_site = match value.trim().to_ascii_lowercase().as_str() {
+                "strict" => CookieSameSite::Strict,
+                "lax" => CookieSameSite::Lax,
+                "none" => CookieSameSite::None,
+                _ => {
+                    return Err(color_eyre::eyre::eyre!(
+                        "APP_AUTH_COOKIE_SAME_SITE must be `strict`, `lax`, or `none`"
+                    )
+                    .into());
+                }
+            };
+        }
+
+        Ok(())
+    }
+
     #[must_use]
     pub const fn access(&self) -> &JwtConfig {
         &self.access
@@ -367,6 +394,11 @@ impl AuthConfig {
     }
 
     #[must_use]
+    pub const fn cookie(&self) -> &AuthCookieConfig {
+        &self.cookie
+    }
+
+    #[must_use]
     pub const fn verification_token_expiry(&self) -> i64 {
         self.verification_token_expiry
     }
@@ -375,6 +407,35 @@ impl AuthConfig {
     pub const fn refresh_token_expiry(&self) -> i64 {
         self.refresh_token_expiry
     }
+}
+
+#[derive(Debug, Default, Clone, Copy, PartialEq, Eq, Deserialize)]
+pub struct AuthCookieConfig {
+    #[serde(default)]
+    secure: bool,
+    #[serde(default)]
+    same_site: CookieSameSite,
+}
+
+impl AuthCookieConfig {
+    #[must_use]
+    pub const fn secure(&self) -> bool {
+        self.secure
+    }
+
+    #[must_use]
+    pub const fn same_site(&self) -> CookieSameSite {
+        self.same_site
+    }
+}
+
+#[derive(Debug, Default, Clone, Copy, PartialEq, Eq, Deserialize)]
+#[serde(rename_all = "lowercase")]
+pub enum CookieSameSite {
+    Strict,
+    #[default]
+    Lax,
+    None,
 }
 
 #[derive(Debug, Default, Clone, PartialEq, Eq, Deserialize)]

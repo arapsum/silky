@@ -34,6 +34,9 @@ mailer:
       # password:
 
 auth:
+  cookie:
+    secure: false
+    same_site: lax
   access:
     public_key: secrets/keys/test/access_key_pub.pem
     private_key: secrets/keys/test/access_key.pem

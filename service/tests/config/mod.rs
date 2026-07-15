@@ -3,7 +3,7 @@ use std::{env, ffi::OsString};
 use serial_test::serial;
 use service::{
     Config,
-    config::{Environment, RedisConfig},
+    config::{CookieSameSite, Environment, RedisConfig},
 };
 
 struct EnvGuard {
@@ -127,6 +127,8 @@ fn loads_testing_config_from_yaml() {
     assert_eq!(auth.refresh().maxage(), 604_800);
     assert_eq!(auth.verification_token_expiry(), 86_400);
     assert_eq!(auth.refresh_token_expiry(), 900);
+    assert!(!auth.cookie().secure());
+    assert_eq!(auth.cookie().same_site(), CookieSameSite::Lax);
     assert!(auth.access().encoding_key().is_ok());
     assert!(auth.access().decoding_key().is_ok());
     assert!(auth.refresh().encoding_key().is_ok());
@@ -174,6 +176,8 @@ fn environment_variables_override_yaml_config_values() {
         ("APP_LOGGER_LEVEL", "warn"),
         ("APP_MAILER_SMTP_PORT", "2525"),
         ("APP_AUTH_ACCESS_MAXAGE", "123"),
+        ("APP_AUTH_COOKIE_SECURE", "true"),
+        ("APP_AUTH_COOKIE_SAME_SITE", "none"),
     ]);
 
     let config = Config::from_env(&Environment::Testing).unwrap();
@@ -197,6 +201,8 @@ fn environment_variables_override_yaml_config_values() {
     );
     assert_eq!(config.mailer().smtp().port(), 2525);
     assert_eq!(config.auth().access().maxage(), 123);
+    assert!(config.auth().cookie().secure());
+    assert_eq!(config.auth().cookie().same_site(), CookieSameSite::None);
 }
 
 #[test]

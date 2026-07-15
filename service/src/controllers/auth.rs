@@ -16,6 +16,7 @@ use uuid::Uuid;
 
 use crate::{
     AppState, Error, Result,
+    config::{AuthConfig, CookieSameSite},
     context::Claims,
     middlewares::auth::AuthLayer,
     models::{ModelError, User},
@@ -226,19 +227,21 @@ async fn logout(
         ctx.revoke_refresh_token(&claims).await?;
     }
 
-    let expired_access_cookie = cookie::Cookie::build(("access_token", ""))
-        .path("/")
-        .http_only(false)
-        .max_age(time::Duration::ZERO)
-        .same_site(cookie::SameSite::Lax)
-        .secure(false);
+    let expired_access_cookie = auth_cookie(
+        ctx.config().auth(),
+        "access_token",
+        "",
+        false,
+        time::Duration::ZERO,
+    );
 
-    let expired_refresh_cookie = cookie::Cookie::build(("refresh_token", ""))
-        .path("/")
-        .http_only(true)
-        .max_age(time::Duration::ZERO)
-        .same_site(cookie::SameSite::Lax)
-        .secure(false);
+    let expired_refresh_cookie = auth_cookie(
+        ctx.config().auth(),
+        "refresh_token",
+        "",
+        true,
+        time::Duration::ZERO,
+    );
 
     let mut response = Response::builder().status(StatusCode::OK).body(Body::from(
         json!(AuthResponse::new("Logged out successfully")).to_string(),
@@ -290,19 +293,21 @@ async fn issue_login_response(ctx: &AppState, user: &User, sub: &str) -> Result<
 
     ctx.store_refresh_token(&refresh_claims).await?;
 
-    let access_cookie = cookie::Cookie::build(("access_token", &access_token))
-        .path("/")
-        .http_only(false)
-        .max_age(time::Duration::seconds(ctx.auth().access().expires_in()))
-        .same_site(cookie::SameSite::Lax)
-        .secure(false);
+    let access_cookie = auth_cookie(
+        ctx.config().auth(),
+        "access_token",
+        &access_token,
+        false,
+        time::Duration::seconds(ctx.auth().access().expires_in()),
+    );
 
-    let refresh_cookie = cookie::Cookie::build(("refresh_token", &refresh_token))
-        .path("/")
-        .http_only(true)
-        .max_age(time::Duration::seconds(ctx.auth().refresh().expires_in()))
-        .same_site(cookie::SameSite::Lax)
-        .secure(false);
+    let refresh_cookie = auth_cookie(
+        ctx.config().auth(),
+        "refresh_token",
+        &refresh_token,
+        true,
+        time::Duration::seconds(ctx.auth().refresh().expires_in()),
+    );
 
     let mut response = Response::builder().status(StatusCode::OK).body(Body::from(
         json!(LoginResponse::new(user, &access_token)).to_string(),
@@ -322,6 +327,28 @@ async fn issue_login_response(ctx: &AppState, user: &User, sub: &str) -> Result<
     );
 
     Ok(response)
+}
+
+fn auth_cookie(
+    config: &AuthConfig,
+    name: &'static str,
+    value: &str,
+    http_only: bool,
+    max_age: time::Duration,
+) -> cookie::Cookie<'static> {
+    let same_site = match config.cookie().same_site() {
+        CookieSameSite::Strict => cookie::SameSite::Strict,
+        CookieSameSite::Lax => cookie::SameSite::Lax,
+        CookieSameSite::None => cookie::SameSite::None,
+    };
+
+    cookie::Cookie::build((name, value.to_owned()))
+        .path("/")
+        .http_only(http_only)
+        .max_age(max_age)
+        .same_site(same_site)
+        .secure(config.cookie().secure())
+        .build()
 }
 
 pub fn router(ctx: &AppState) -> Router {

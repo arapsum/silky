@@ -1,0 +1,8 @@
+---
+import { VerifyEmail } from "@/components/auth/VerifyEmail";
+import AuthLayout from "@/layouts/AuthLayout.astro";
+const token = Astro.url.searchParams.get("token") ?? "";
+---
+<AuthLayout title="Verify email" description="Confirm your Silk email address.">
+  <VerifyEmail client:load token={token} />
+</AuthLayout>

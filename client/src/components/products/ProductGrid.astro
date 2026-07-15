@@ -5,15 +5,16 @@ import ProductCard from "./ProductCard.astro";
 interface Props {
   products: ProductListItem[];
   eagerCount?: number;
+  variant?: "standard" | "catalogue";
 }
 
-const { products, eagerCount = 0 } = Astro.props;
+const { products, eagerCount = 0, variant = "standard" } = Astro.props;
 ---
 
-<div class="product-grid">
+<div class:list={["product-grid", `product-grid--${variant}`]}>
   {
     products.map((product, index) => (
-      <ProductCard product={product} eager={index < eagerCount} />
+      <ProductCard product={product} eager={index < eagerCount} variant={variant} />
     ))
   }
 </div>
@@ -34,6 +35,10 @@ const { products, eagerCount = 0 } = Astro.props;
   @media (min-width: 68rem) {
     .product-grid {
       grid-template-columns: repeat(4, minmax(0, 1fr));
+    }
+
+    .product-grid--catalogue {
+      grid-template-columns: repeat(3, minmax(0, 1fr));
     }
   }
 </style>

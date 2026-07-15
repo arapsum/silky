@@ -4,9 +4,10 @@ import { ArrowLeftIcon, ArrowRightIcon } from "@phosphor-icons/react";
 interface Props {
   currentPage: number;
   totalPages: number;
+  compact?: boolean;
 }
 
-const { currentPage, totalPages } = Astro.props;
+const { currentPage, totalPages, compact = false } = Astro.props;
 
 function pageHref(page: number): string {
   const url = new URL(Astro.url);
@@ -20,7 +21,7 @@ const visiblePages = Array.from({ length: totalPages }, (_, index) => index + 1)
 
 {
   totalPages > 1 && (
-    <nav class="pagination" aria-label="Catalogue pages">
+    <nav class:list={["pagination", { "pagination--compact": compact }]} aria-label="Catalogue pages">
       {currentPage > 1 ? (
         <a class="pagination__direction" href={pageHref(currentPage - 1)} rel="prev">
           <ArrowLeftIcon aria-hidden="true" size={16} weight="bold" />
@@ -95,6 +96,21 @@ const visiblePages = Array.from({ length: totalPages }, (_, index) => index + 1)
 
   .pagination__direction--disabled {
     opacity: 0.4;
+  }
+
+  .pagination--compact {
+    margin-top: 2rem;
+    padding-top: 1rem;
+  }
+
+  .pagination--compact .pagination__direction,
+  .pagination--compact .pagination__pages a {
+    min-height: 2.35rem;
+    font-size: 0.68rem;
+  }
+
+  .pagination--compact .pagination__pages a {
+    width: 2.35rem;
   }
 
   .pagination__pages {

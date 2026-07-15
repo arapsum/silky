@@ -5,13 +5,14 @@ import { formatCurrency, titleCase } from "@/lib/format";
 interface Props {
   product: ProductListItem;
   eager?: boolean;
+  variant?: "standard" | "catalogue";
 }
 
-const { product, eager = false } = Astro.props;
+const { product, eager = false, variant = "standard" } = Astro.props;
 const isAvailable = product.totalStock > 0;
 ---
 
-<article class="product-card">
+<article class:list={["product-card", `product-card--${variant}`]}>
   <a class="product-card__image-wrap" href={`/products/${product.slug}`}>
     {
       product.primaryImage ? (
@@ -54,6 +55,10 @@ const isAvailable = product.totalStock > 0;
     overflow: hidden;
     border-radius: var(--radius-card);
     background: var(--surface-muted);
+  }
+
+  .product-card--catalogue .product-card__image-wrap {
+    aspect-ratio: 1 / 1;
   }
 
   .product-card__image {
@@ -108,6 +113,24 @@ const isAvailable = product.totalStock > 0;
     font-size: 0.9rem;
     font-weight: 720;
     line-height: 1.35;
+  }
+
+  .product-card--catalogue .product-card__body {
+    display: grid;
+    gap: 0.3rem;
+    padding-top: 0.65rem;
+  }
+
+  .product-card--catalogue .product-card__category {
+    display: none;
+  }
+
+  .product-card--catalogue h3 {
+    font-size: 0.8rem;
+  }
+
+  .product-card--catalogue .product-card__price {
+    font-size: 0.95rem;
   }
 
   .product-card__price {

@@ -1,7 +1,11 @@
 ---
 import { CaretDownIcon, MagnifyingGlassIcon, UserCircleIcon } from "@phosphor-icons/react";
 import { CartIndicator } from "@/components/cart/CartIndicator";
+import { CART_COUNT_COOKIE } from "@/stores/cart";
 import { MobileNavigation } from "./MobileNavigation";
+
+const cookieCount = Number.parseInt(Astro.cookies.get(CART_COUNT_COOKIE)?.value ?? "0", 10);
+const initialCartCount = Number.isFinite(cookieCount) ? Math.max(0, cookieCount) : 0;
 ---
 
 <header class="site-header">
@@ -29,7 +33,7 @@ import { MobileNavigation } from "./MobileNavigation";
     </form>
 
     <div class="site-header__actions">
-      <CartIndicator client:load />
+      <CartIndicator initialCount={initialCartCount} client:load />
       <a class="account-action" href="/account" aria-label="Your account">
         <UserCircleIcon aria-hidden="true" size={22} weight="bold" />
       </a>

@@ -3,6 +3,7 @@ import { createJSONStorage, persist } from "zustand/middleware";
 import type { CartQuote } from "@/lib/api/types";
 
 const CART_LIFETIME_MS = 30 * 24 * 60 * 60 * 1000;
+export const CART_COUNT_COOKIE = "silk-cart-count";
 
 export interface CartItem {
   variantPid: string;
@@ -102,7 +103,11 @@ export const useCartStore = create<CartState>()(
       name: "silk-cart",
       version: 1,
       storage: createJSONStorage(() => localStorage),
-      partialize: ({ items, pendingCheckout, expiresAt }) => ({ items, pendingCheckout, expiresAt }),
+      partialize: ({ items, pendingCheckout, expiresAt }) => ({
+        items,
+        pendingCheckout,
+        expiresAt,
+      }),
       merge: (persisted, current) => {
         const saved = persisted as Partial<CartState>;
         const valid = (saved.expiresAt ?? 0) > Date.now();
@@ -114,10 +119,44 @@ export const useCartStore = create<CartState>()(
         };
       },
       onRehydrateStorage: () => (state) => state?.setHydrated(true),
+      skipHydration: true,
     },
   ),
 );
 
 export function cartItemCount(items: CartItem[]) {
   return items.reduce((total, item) => total + item.quantity, 0);
+}
+
+let hydrationPromise: Promise<void> | null = null;
+let lastCookieValue: string | null = null;
+
+function syncCartCountCookie(state: Pick<CartState, "items" | "expiresAt">) {
+  if (typeof document === "undefined") return;
+
+  const valid = state.expiresAt > Date.now();
+  const count = valid ? cartItemCount(state.items) : 0;
+  const maxAge = valid ? Math.max(0, Math.floor((state.expiresAt - Date.now()) / 1_000)) : 0;
+  const value = `${count}:${maxAge}`;
+
+  if (value === lastCookieValue) return;
+
+  document.cookie = `${CART_COUNT_COOKIE}=${count}; Path=/; Max-Age=${maxAge}; SameSite=Lax`;
+  lastCookieValue = value;
+}
+
+export function hydrateCartStore() {
+  if (typeof window === "undefined") return Promise.resolve();
+
+  hydrationPromise ??= Promise.resolve(useCartStore.persist.rehydrate()).then(() => {
+    const state = useCartStore.getState();
+    if (!state.hydrated) state.setHydrated(true);
+    syncCartCountCookie(state);
+  });
+
+  return hydrationPromise;
+}
+
+if (typeof window !== "undefined") {
+  useCartStore.subscribe((state) => syncCartCountCookie(state));
 }

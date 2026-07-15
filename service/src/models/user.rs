@@ -135,6 +135,8 @@ impl User {
     /// Creates a new [`User`] and stores it in the database.
     ///
     /// The provided password is hashed using Argon2 before being persisted.
+    /// The customer role is assigned in the same transaction so a storefront
+    /// account is immediately eligible for customer-owned routes.
     ///
     /// # Errors
     ///
@@ -142,6 +144,7 @@ impl User {
     ///
     /// - Password hashing fails.
     /// - The user record cannot be inserted into the database.
+    /// - The required customer role is not configured.
     /// - Any database constraint is violated.
     pub async fn create(db: &PgPool, params: &RegisterUser<'_>) -> ModelResult<Self> {
         let mut txn = db.begin().await?;
@@ -172,6 +175,21 @@ impl User {
         .bind(params.image())
         .fetch_one(&mut *txn)
         .await?;
+
+        let assigned = sqlx::query(
+            r"INSERT INTO users_roles (user_id, role_id)
+              SELECT $1, roles.id
+              FROM roles
+              WHERE roles.name = 'customer'",
+        )
+        .bind(user.id)
+        .execute(&mut *txn)
+        .await?;
+        if assigned.rows_affected() != 1 {
+            return Err(ModelError::InvalidReference(
+                "Customer role is not configured".into(),
+            ));
+        }
 
         txn.commit().await?;
 

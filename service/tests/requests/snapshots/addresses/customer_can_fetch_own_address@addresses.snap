@@ -1,0 +1,8 @@
+---
+source: tests/requests/addresses.rs
+expression: "(response.status_code(), response.text())"
+---
+(
+    200,
+    "{\"pid\":\"PID\",\"addressType\":\"shipping\",\"label\":\"Home\",\"recipientName\":\"Jane Smith\",\"company\":null,\"lineOne\":\"18 Nyali Road\",\"lineTwo\":\"House 6\",\"city\":\"Mombasa\",\"region\":\"Mombasa County\",\"postalCode\":\"80100\",\"countryCode\":\"KE\",\"email\":\"jane.smith@globex.com\",\"phone\":\"+254711000022\",\"isDefault\":true,\"createdAt\":\"DATE\",\"updatedAt\":\"DATE\",\"deletedAt\":null}",
+)

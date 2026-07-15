@@ -15,9 +15,8 @@ fn validate_country_code(value: &str) -> Result<(), ValidationError> {
 }
 
 #[derive(Debug, Clone, Deserialize, Serialize, Validate)]
-#[serde(rename_all = "camelCase")]
+#[serde(rename_all = "camelCase", deny_unknown_fields)]
 pub struct NewAddress {
-    customer_pid: Uuid,
     #[validate(custom(function = "validate_address_type"))]
     address_type: String,
     #[validate(length(max = 120))]
@@ -54,10 +53,6 @@ fn validate_address_type(value: &str) -> Result<(), ValidationError> {
 }
 
 impl NewAddress {
-    #[must_use]
-    pub const fn customer_pid(&self) -> Uuid {
-        self.customer_pid
-    }
     #[must_use]
     pub fn address_type(&self) -> &str {
         &self.address_type

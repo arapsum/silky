@@ -44,7 +44,6 @@ fn new_order(
 
 fn new_address() -> service::schemas::NewAddress {
     serde_json::from_value(serde_json::json!({
-        "customerPid": "bd6f7c26-d2c9-487e-b837-8f77be468033",
         "addressType": "shipping",
         "recipientName": "John Doe",
         "lineOne": "10 Market Street",
@@ -61,10 +60,12 @@ async fn checkout_calculates_totals_and_reserves_inventory() {
     configure_insta!();
     let ctx = boot_test().await.expect("test context should boot");
     seed_data(ctx.db()).await.expect("seed should complete");
+    let customer_pid =
+        Uuid::parse_str("bd6f7c26-d2c9-487e-b837-8f77be468033").expect("customer pid");
     let billing = service::models::Address::create(
         ctx.db(),
+        customer_pid,
         &serde_json::from_value(serde_json::json!({
-            "customerPid": "bd6f7c26-d2c9-487e-b837-8f77be468033",
             "addressType": "billing",
             "recipientName": "John Doe",
             "lineOne": "10 Market Street",
@@ -76,7 +77,7 @@ async fn checkout_calculates_totals_and_reserves_inventory() {
     )
     .await
     .expect("billing address should create");
-    let shipping = service::models::Address::create(ctx.db(), &new_address())
+    let shipping = service::models::Address::create(ctx.db(), customer_pid, &new_address())
         .await
         .expect("shipping address should create");
     let variant_pid =

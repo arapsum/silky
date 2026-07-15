@@ -7,6 +7,7 @@ use axum::{
 
 use crate::{AppState, middlewares::auth::AuthLayer};
 
+mod addresses;
 mod auth;
 mod categories;
 mod media;
@@ -38,6 +39,7 @@ pub fn router(ctx: &AppState) -> Router {
     Router::new()
         .route("/health", get(health_check))
         .nest("/auth", auth::router(ctx))
+        .nest("/addresses", addresses::router(ctx))
         .nest(
             "/permissions",
             permissions::router(ctx).layer(AuthLayer::new(ctx.clone())),

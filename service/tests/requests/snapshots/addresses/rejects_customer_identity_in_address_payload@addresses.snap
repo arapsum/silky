@@ -1,0 +1,8 @@
+---
+source: tests/requests/addresses.rs
+expression: "(response.status_code(), response.text())"
+---
+(
+    422,
+    "{\"error\":\"Failed to deserialize the JSON body into the target type: customerPid: unknown field `customerPid`, expected one of `addressType`, `label`, `recipientName`, `company`, `lineOne`, `lineTwo`, `city`, `region`, `postalCode`, `countryCode`, `email`, `phone`, `isDefault` at line 1 column 278\",\"code\":\"invalid_json\"}",
+)

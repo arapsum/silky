@@ -1,3 +1,4 @@
+mod addresses;
 mod auth;
 mod categories;
 mod media;

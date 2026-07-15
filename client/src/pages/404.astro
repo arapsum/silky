@@ -1,0 +1,18 @@
+---
+import BaseLayout from "@/layouts/BaseLayout.astro";
+
+Astro.response.status = 404;
+---
+
+<BaseLayout title="Page not found | Silk" noIndex>
+  <main class="shell grid min-h-screen place-items-center py-16 text-center">
+    <section class="max-w-xl">
+      <p class="eyebrow text-[var(--text-muted)]">Error 404</p>
+      <h1 class="display-title mt-5 text-5xl sm:text-7xl">This page is out of season.</h1>
+      <p class="mx-auto mt-6 max-w-md text-[var(--text-muted)]">
+        The page may have moved, or the address may be incomplete.
+      </p>
+      <a class="button-primary mt-8" href="/">Return home</a>
+    </section>
+  </main>
+</BaseLayout>

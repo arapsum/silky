@@ -1,0 +1,21 @@
+---
+import { CartPage } from "@/components/cart/CartPage";
+import SiteFooter from "@/components/layout/SiteFooter.astro";
+import SiteHeader from "@/components/layout/SiteHeader.astro";
+import BaseLayout from "@/layouts/BaseLayout.astro";
+---
+
+<BaseLayout title="Shopping bag | Silk" description="Review your Silk selection before checkout." noIndex>
+  <SiteHeader />
+  <main class="shell cart-page">
+    <CartPage client:load />
+  </main>
+  <SiteFooter />
+</BaseLayout>
+
+<style>
+  .cart-page {
+    min-height: 65vh;
+    padding-top: clamp(2.5rem, 7vw, 6rem);
+  }
+</style>

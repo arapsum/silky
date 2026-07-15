@@ -1,27 +1,20 @@
 ---
-import { MagnifyingGlassIcon } from "@phosphor-icons/react";
-import BrandMark from "@/components/brand/BrandMark.astro";
+import { CaretDownIcon, MagnifyingGlassIcon, UserCircleIcon } from "@phosphor-icons/react";
+import { CartIndicator } from "@/components/cart/CartIndicator";
 import { MobileNavigation } from "./MobileNavigation";
 ---
 
 <header class="site-header">
-  <div class="announcement">
-    <p>New season edit: lighter textures, considered layers.</p>
-    <a href="/shop">Explore the collection</a>
-  </div>
-
   <div class="site-header__main shell">
     <a class="brand" href="/" aria-label="Silk home">
-      <BrandMark class="brand__mark" />
       <span>Silk</span>
     </a>
 
     <nav class="site-header__nav" aria-label="Primary navigation">
-      <a href="/shop">Shop</a>
-      <a href="/#new-arrivals">New in</a>
-      <a href="/shop?category=t-shirts">T-shirts</a>
-      <a href="/shop?category=shoes">Shoes</a>
-      <a href="/shop?category=accessories">Accessories</a>
+      <a href="/shop">Shop <CaretDownIcon aria-hidden="true" size={12} weight="bold" /></a>
+      <a href="/shop?availability=in-stock">On sale</a>
+      <a href="/#new-arrivals">New arrivals</a>
+      <a href="/shop">Brands</a>
     </nav>
 
     <form action="/shop" class="site-header__search" method="get" role="search">
@@ -35,6 +28,12 @@ import { MobileNavigation } from "./MobileNavigation";
       />
     </form>
 
+    <div class="site-header__actions">
+      <CartIndicator client:load />
+      <a class="account-action" href="/account" aria-label="Your account">
+        <UserCircleIcon aria-hidden="true" size={22} weight="bold" />
+      </a>
+    </div>
     <MobileNavigation client:load />
   </div>
 </header>
@@ -47,32 +46,10 @@ import { MobileNavigation } from "./MobileNavigation";
     border-bottom: 1px solid var(--border);
   }
 
-  .announcement {
-    display: flex;
-    min-height: 2.35rem;
-    align-items: center;
-    justify-content: center;
-    gap: 0.45rem;
-    padding: 0.4rem 1rem;
-    background: var(--action);
-    color: var(--action-text);
-    font-size: 0.72rem;
-    text-align: center;
-  }
-
-  .announcement p {
-    margin: 0;
-  }
-
-  .announcement a {
-    border-bottom: 1px solid currentColor;
-    font-weight: 720;
-  }
-
   .site-header__main {
     display: grid;
     min-height: 4.8rem;
-    grid-template-columns: auto 1fr auto;
+    grid-template-columns: auto 1fr auto auto;
     align-items: center;
     gap: 1.1rem;
   }
@@ -82,14 +59,9 @@ import { MobileNavigation } from "./MobileNavigation";
     align-items: center;
     gap: 0.65rem;
     font-family: var(--font-display);
-    font-size: 1.45rem;
-    font-weight: 760;
-    letter-spacing: -0.045em;
-  }
-
-  .brand__mark {
-    width: 1.55rem;
-    height: 1.9rem;
+    font-size: 1.7rem;
+    font-weight: 820;
+    letter-spacing: -0.065em;
   }
 
   .site-header__nav,
@@ -97,8 +69,48 @@ import { MobileNavigation } from "./MobileNavigation";
     display: none;
   }
 
-  :global(.mobile-navigation) {
+  :global(astro-island:has(.mobile-navigation)) {
     position: relative;
+  }
+
+  .site-header__actions {
+    display: flex;
+    align-items: center;
+    gap: 0.1rem;
+  }
+
+  :global(.cart-indicator) {
+    position: relative;
+    display: grid;
+    width: 2.7rem;
+    height: 2.7rem;
+    place-items: center;
+    border: 0;
+    border-radius: 50%;
+  }
+
+  .account-action {
+    display: none;
+    width: 2.7rem;
+    height: 2.7rem;
+    place-items: center;
+    border-radius: 50%;
+  }
+
+  :global(.cart-indicator span) {
+    position: absolute;
+    top: -0.25rem;
+    right: -0.25rem;
+    display: grid;
+    min-width: 1.15rem;
+    height: 1.15rem;
+    place-items: center;
+    padding-inline: 0.2rem;
+    border-radius: 999px;
+    background: var(--action);
+    color: var(--action-text);
+    font-size: 0.6rem;
+    font-weight: 760;
   }
 
   :global(.mobile-navigation__trigger) {
@@ -168,8 +180,8 @@ import { MobileNavigation } from "./MobileNavigation";
 
   @media (min-width: 64rem) {
     .site-header__main {
-      grid-template-columns: auto auto minmax(15rem, 1fr);
-      gap: clamp(1.5rem, 3vw, 3.5rem);
+      grid-template-columns: auto auto minmax(15rem, 1fr) auto;
+      gap: clamp(1.1rem, 2.2vw, 2rem);
     }
 
     .site-header__nav {
@@ -182,6 +194,9 @@ import { MobileNavigation } from "./MobileNavigation";
     }
 
     .site-header__nav a {
+      display: inline-flex;
+      align-items: center;
+      gap: 0.25rem;
       transition: color 150ms ease;
     }
 
@@ -212,8 +227,12 @@ import { MobileNavigation } from "./MobileNavigation";
       font-size: 0.82rem;
     }
 
-    :global(.mobile-navigation) {
+    :global(astro-island:has(.mobile-navigation)) {
       display: none;
+    }
+
+    .account-action {
+      display: grid;
     }
   }
 </style>

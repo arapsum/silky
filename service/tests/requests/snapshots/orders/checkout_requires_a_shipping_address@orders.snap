@@ -4,5 +4,5 @@ expression: "(response.status_code(), response.text())"
 ---
 (
     422,
-    "{\"error\":\"Failed to deserialize the JSON body into the target type: missing field `shippingAddressPid` at line 1 column 78\",\"code\":\"invalid_json\"}",
+    "{\"error\":\"Failed to deserialize the JSON body into the target type: missing field `shippingAddressPid` at line 1 column 131\",\"code\":\"invalid_json\"}",
 )

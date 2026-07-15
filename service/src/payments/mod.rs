@@ -4,10 +4,29 @@ use chrono::{DateTime, FixedOffset, Utc};
 use rust_decimal::{Decimal, prelude::ToPrimitive};
 use serde::Serialize;
 use stripe::{
-    CheckoutSession, CheckoutSessionMode, CreateCheckoutSession, CreateCheckoutSessionLineItems,
-    CreateCheckoutSessionLineItemsPriceData, CreateCheckoutSessionLineItemsPriceDataProductData,
-    Currency, Event, EventObject, EventType, RequestStrategy,
+    CheckoutSession, CheckoutSessionId, CheckoutSessionMode, CreateCheckoutSession,
+    CreateCheckoutSessionLineItems, CreateCheckoutSessionLineItemsPriceData,
+    CreateCheckoutSessionLineItemsPriceDataProductData, Currency, Event, EventObject, EventType,
+    RequestStrategy,
 };
+
+/// Expires an active Stripe Checkout Session before Silk releases inventory.
+///
+/// # Errors
+/// Returns an invalid-provider-response error for a malformed persisted ID, or
+/// a classified Stripe error when the provider cannot expire the Session.
+pub async fn expire_hosted_checkout_session(
+    stripe: &StripeContext,
+    session_id: &str,
+) -> Result<(), PaymentError> {
+    let session_id = session_id
+        .parse::<CheckoutSessionId>()
+        .map_err(|_| PaymentError::InvalidProviderResponse)?;
+    CheckoutSession::expire(stripe.client(), &session_id)
+        .await
+        .map_err(PaymentError::from_stripe)?;
+    Ok(())
+}
 
 use crate::{
     config::StripeConfig,
@@ -109,9 +128,15 @@ pub async fn create_hosted_checkout_session(
 
     let order_pid = checkout.order.pid().to_string();
     let attempt_pid = attempt.pid().to_string();
+    let success_url = config
+        .checkout_success_url()
+        .replace("{ORDER_PID}", &order_pid);
+    let cancel_url = config
+        .checkout_cancel_url()
+        .replace("{ORDER_PID}", &order_pid);
     let expires_at = Utc::now().timestamp() + config.checkout_ttl_seconds();
     let mut params = CreateCheckoutSession::new();
-    params.cancel_url = Some(config.checkout_cancel_url());
+    params.cancel_url = Some(&cancel_url);
     params.client_reference_id = Some(&order_pid);
     params.customer_email = Some(checkout.order.customer_email());
     params.expires_at = Some(expires_at);
@@ -121,7 +146,7 @@ pub async fn create_hosted_checkout_session(
         ("payment_attempt_pid".to_string(), attempt_pid.clone()),
     ]));
     params.mode = Some(CheckoutSessionMode::Payment);
-    params.success_url = Some(config.checkout_success_url());
+    params.success_url = Some(&success_url);
 
     let client = stripe
         .client()

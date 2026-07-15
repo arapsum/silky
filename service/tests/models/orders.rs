@@ -115,6 +115,7 @@ async fn customer_checkout_uses_shipping_address_for_billing_by_default() {
     let customer_pid =
         Uuid::parse_str("bd6f7c26-d2c9-487e-b837-8f77be468033").expect("customer pid");
     let params = serde_json::from_value::<CheckoutOrder>(serde_json::json!({
+        "checkoutKey": "c5f94c62-483f-4c2a-b688-2e599979b86c",
         "shippingAddressPid": "4f3d4f3e-1c26-4f5f-a54f-6b5b2b8a7301",
         "items": [{
             "variantPid": "db365773-2ac1-49aa-a4b9-03dcf8ac3401",
@@ -145,6 +146,74 @@ async fn customer_checkout_uses_shipping_address_for_billing_by_default() {
         "customer_checkout_uses_shipping_address_for_billing_by_default",
         address_match
     );
+}
+
+#[tokio::test]
+#[serial]
+async fn customer_checkout_is_idempotent() {
+    configure_insta!();
+    let ctx = boot_test().await.expect("test context should boot");
+    seed_data(ctx.db()).await.expect("seed should complete");
+    let customer_pid =
+        Uuid::parse_str("bd6f7c26-d2c9-487e-b837-8f77be468033").expect("customer pid");
+    let variant_pid = Uuid::parse_str("db365773-2ac1-49aa-a4b9-03dcf8ac3401").expect("variant pid");
+    let params = serde_json::from_value::<CheckoutOrder>(serde_json::json!({
+        "checkoutKey": "3b15553e-ea25-44b8-949e-17974fe90cc6",
+        "shippingAddressPid": "4f3d4f3e-1c26-4f5f-a54f-6b5b2b8a7301",
+        "items": [{
+            "variantPid": variant_pid,
+            "quantity": 2
+        }]
+    }))
+    .expect("checkout should deserialize");
+    let stock_before =
+        sqlx::query_scalar::<_, i32>("SELECT stock_quantity FROM product_variants WHERE pid = $1")
+            .bind(variant_pid)
+            .fetch_one(ctx.db())
+            .await
+            .expect("stock should load");
+
+    let first = Order::prepare_checkout(ctx.db(), customer_pid, &params)
+        .await
+        .expect("first checkout should prepare");
+    let second = Order::prepare_checkout(ctx.db(), customer_pid, &params)
+        .await
+        .expect("retry should return the prepared checkout");
+    let stock_after =
+        sqlx::query_scalar::<_, i32>("SELECT stock_quantity FROM product_variants WHERE pid = $1")
+            .bind(variant_pid)
+            .fetch_one(ctx.db())
+            .await
+            .expect("stock should reload");
+    let keyed_order_count = sqlx::query_scalar::<_, i64>(
+        r"SELECT COUNT(*)
+          FROM orders
+          JOIN users AS customer ON customer.id = orders.customer_id
+          WHERE customer.pid = $1
+            AND orders.checkout_key = $2",
+    )
+    .bind(customer_pid)
+    .bind(params.checkout_key())
+    .fetch_one(ctx.db())
+    .await
+    .expect("keyed order count should load");
+
+    with_settings!({ filters => cleanup_uuid().to_vec() }, {
+        assert_debug_snapshot!(
+            "customer_checkout_is_idempotent",
+            (
+                first.created,
+                second.created,
+                first.order.order.pid(),
+                second.order.order.pid(),
+                first.attempt.pid(),
+                second.attempt.pid(),
+                keyed_order_count,
+                stock_before,
+                stock_after,
+            )
+        );
+    });
 }
 
 #[rstest]

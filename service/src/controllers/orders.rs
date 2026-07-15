@@ -14,7 +14,7 @@ use crate::{
     context::Claims,
     middlewares::{AuthLayer, RbacLayer},
     models::{CheckoutSessionDetails, Order, PaymentAttempt, User},
-    payments::create_hosted_checkout_session,
+    payments::{create_hosted_checkout_session, expire_hosted_checkout_session},
     schemas::{CheckoutOrder, OrderListQuery, UpdateOrder, Validator},
     utils::{AppExtension, AppJson, AppPath, AppQuery},
 };
@@ -99,16 +99,9 @@ async fn checkout(
     let validator = Validator::new(params);
     let validated = validator.validate()?;
 
-    let mut txn = ctx.db().begin().await?;
-    let order = Order::create_checkout_order(&mut txn, customer_pid, validated).await?;
-    let attempt = PaymentAttempt::create_for_order(
-        &mut txn,
-        order.order.row_id(),
-        order.order.grand_total(),
-        order.order.currency(),
-    )
-    .await?;
-    txn.commit().await?;
+    let checkout = Order::prepare_checkout(ctx.db(), customer_pid, validated).await?;
+    let order = checkout.order;
+    let attempt = checkout.attempt;
 
     let session =
         match create_hosted_checkout_session(stripe, stripe_config, &order, &attempt).await {
@@ -143,7 +136,11 @@ async fn checkout(
     txn.commit().await?;
 
     Ok((
-        StatusCode::CREATED,
+        if checkout.created {
+            StatusCode::CREATED
+        } else {
+            StatusCode::OK
+        },
         Json(CheckoutResponse {
             order_pid: order.order.pid(),
             checkout_url: session.checkout_url().to_owned(),
@@ -151,6 +148,31 @@ async fn checkout(
         }),
     )
         .into_response())
+}
+
+#[tracing::instrument(skip(ctx, claims))]
+#[debug_handler]
+async fn cancel_checkout_session(
+    State(ctx): State<AppState>,
+    AppExtension(claims): AppExtension<Claims>,
+    AppPath(pid): AppPath<Uuid>,
+) -> Result<Response> {
+    let customer_pid = Uuid::parse_str(claims.sub()).map_err(|_| Error::Forbidden)?;
+    let stripe = ctx
+        .stripe()
+        .ok_or(crate::error::PaymentError::NotConfigured)?;
+    let attempt =
+        PaymentAttempt::find_active_for_customer_order(ctx.db(), pid, customer_pid).await?;
+    let session_id = attempt
+        .checkout_session_id()
+        .ok_or(crate::error::PaymentError::InvalidProviderResponse)?;
+
+    expire_hosted_checkout_session(stripe, session_id).await?;
+    let mut txn = ctx.db().begin().await?;
+    PaymentAttempt::expire_and_release_inventory(&mut txn, session_id).await?;
+    txn.commit().await?;
+
+    Ok(StatusCode::NO_CONTENT.into_response())
 }
 
 #[tracing::instrument(skip(ctx, claims))]
@@ -176,6 +198,10 @@ pub fn router(ctx: &AppState) -> Router {
         .route(
             "/{pid}/checkout-session",
             get(checkout_session).layer(RbacLayer::customers_only(ctx.clone())),
+        )
+        .route(
+            "/{pid}/checkout-session/cancel",
+            post(cancel_checkout_session).layer(RbacLayer::customers_only(ctx.clone())),
         )
         .route(
             "/",

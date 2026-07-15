@@ -46,6 +46,53 @@ pub struct PaymentReconciliation {
 }
 
 impl PaymentAttempt {
+    pub(super) async fn find_active_for_order(
+        txn: &mut Transaction<'_, Postgres>,
+        order_id: i32,
+    ) -> ModelResult<Self> {
+        sqlx::query_as::<_, Self>(
+            r"SELECT *
+              FROM payment_attempts
+              WHERE order_id = $1
+                AND status IN ('initiated', 'session_created', 'processing')
+              ORDER BY created_at DESC, id DESC
+              LIMIT 1
+              FOR UPDATE",
+        )
+        .bind(order_id)
+        .fetch_optional(&mut **txn)
+        .await?
+        .ok_or(ModelError::PaymentAttemptNotFound)
+    }
+
+    /// Finds the active payment attempt for a customer-owned order.
+    ///
+    /// # Errors
+    /// Returns an attempt-not-found error when ownership or active state does
+    /// not match, or a database error when the query fails.
+    pub async fn find_active_for_customer_order(
+        db: &sqlx::PgPool,
+        order_pid: Uuid,
+        customer_pid: Uuid,
+    ) -> ModelResult<Self> {
+        sqlx::query_as::<_, Self>(
+            r"SELECT attempt.*
+              FROM payment_attempts AS attempt
+              JOIN orders AS orders ON orders.id = attempt.order_id
+              JOIN users AS customer ON customer.id = orders.customer_id
+              WHERE orders.pid = $1
+                AND customer.pid = $2
+                AND attempt.status IN ('initiated', 'session_created', 'processing')
+              ORDER BY attempt.created_at DESC, attempt.id DESC
+              LIMIT 1",
+        )
+        .bind(order_pid)
+        .bind(customer_pid)
+        .fetch_optional(db)
+        .await?
+        .ok_or(ModelError::PaymentAttemptNotFound)
+    }
+
     /// Creates the sole active payment attempt for an order.
     ///
     /// The order amount and currency are copied into the attempt so webhook
@@ -432,6 +479,21 @@ impl PaymentAttempt {
     #[must_use]
     pub fn currency(&self) -> &str {
         &self.currency
+    }
+
+    #[must_use]
+    pub fn checkout_url(&self) -> Option<&str> {
+        self.checkout_url.as_deref()
+    }
+
+    #[must_use]
+    pub fn checkout_session_id(&self) -> Option<&str> {
+        self.stripe_checkout_session_id.as_deref()
+    }
+
+    #[must_use]
+    pub const fn expires_at(&self) -> Option<DateTime<FixedOffset>> {
+        self.expires_at
     }
 
     async fn lock_by_pid(

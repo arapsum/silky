@@ -1,0 +1,15 @@
+---
+source: tests/models/orders.rs
+expression: "(first.created, second.created, first.order.order.pid(),\nsecond.order.order.pid(), first.attempt.pid(), second.attempt.pid(),\nkeyed_order_count, stock_before, stock_after,)"
+---
+(
+    true,
+    false,
+    PID,
+    PID,
+    PID,
+    PID,
+    1,
+    32,
+    30,
+)

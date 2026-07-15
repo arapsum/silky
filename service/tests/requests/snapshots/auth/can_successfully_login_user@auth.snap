@@ -6,7 +6,7 @@ expression: "(response.status_code(), response.headers(),response.text())"
     200,
     {
         "authorization": "Bearer JWT",
-        "set-cookie": "access_token=JWT; SameSite=Lax; Path=/; Max-Age=900",
+        "set-cookie": "access_token=JWT; HttpOnly; SameSite=Lax; Path=/; Max-Age=900",
         "set-cookie": "refresh_token=JWT; HttpOnly; SameSite=Lax; Path=/; Max-Age=604800",
         "content-length": "NUMBER",
     },

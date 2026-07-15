@@ -128,7 +128,7 @@ pub struct NewOrder {
 #[serde(rename_all = "camelCase", deny_unknown_fields)]
 pub struct CheckoutOrder {
     billing_address_pid: Option<Uuid>,
-    shipping_address_pid: Option<Uuid>,
+    shipping_address_pid: Uuid,
     #[validate(length(min = 1, max = 100), nested)]
     items: Vec<NewOrderItem>,
     #[validate(length(max = 2_000))]
@@ -142,7 +142,7 @@ impl CheckoutOrder {
     }
 
     #[must_use]
-    pub const fn shipping_address_pid(&self) -> Option<Uuid> {
+    pub const fn shipping_address_pid(&self) -> Uuid {
         self.shipping_address_pid
     }
 

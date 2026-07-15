@@ -5,6 +5,7 @@ use sqlx::{FromRow, Postgres, Transaction};
 use uuid::Uuid;
 
 use super::{ModelError, ModelResult};
+use crate::views::CheckoutSessionResponse;
 
 const ACTIVE_STATUSES: &[&str] = &["initiated", "session_created", "processing"];
 
@@ -292,6 +293,50 @@ impl PaymentAttempt {
             .fetch_optional(db)
             .await?
             .ok_or(ModelError::PaymentAttemptNotFound)
+    }
+
+    /// Finds the latest hosted Checkout Session for a customer-owned order.
+    ///
+    /// The query includes customer ownership so another customer's order and
+    /// an order without an attempt are indistinguishable. Expired or terminal
+    /// attempts retain their status but no longer expose a redirect URL.
+    ///
+    /// # Errors
+    /// Returns [`ModelError::PaymentAttemptNotFound`] when the order is not
+    /// owned by the customer or has no payment attempt. Returns a database
+    /// error when the lookup fails.
+    pub async fn find_checkout_session_for_customer(
+        db: &sqlx::PgPool,
+        order_pid: Uuid,
+        customer_pid: Uuid,
+    ) -> ModelResult<CheckoutSessionResponse> {
+        sqlx::query_as::<_, CheckoutSessionResponse>(
+            r"
+            SELECT orders.pid AS order_pid,
+                orders.status AS order_status,
+                orders.payment_status,
+                attempt.status AS attempt_status,
+                CASE
+                    WHEN attempt.status IN ('initiated', 'session_created', 'processing')
+                        AND (attempt.expires_at IS NULL OR attempt.expires_at > NOW())
+                    THEN attempt.checkout_url
+                    ELSE NULL
+                END AS checkout_url,
+                attempt.expires_at
+            FROM orders
+            JOIN users AS customer ON customer.id = orders.customer_id
+            JOIN payment_attempts AS attempt ON attempt.order_id = orders.id
+            WHERE orders.pid = $1
+                AND customer.pid = $2
+            ORDER BY attempt.created_at DESC, attempt.id DESC
+            LIMIT 1
+            ",
+        )
+        .bind(order_pid)
+        .bind(customer_pid)
+        .fetch_optional(db)
+        .await?
+        .ok_or(ModelError::PaymentAttemptNotFound)
     }
 
     /// Recovers the Session link when Stripe succeeded after the application

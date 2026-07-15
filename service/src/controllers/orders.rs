@@ -153,11 +153,29 @@ async fn checkout(
         .into_response())
 }
 
+#[tracing::instrument(skip(ctx, claims))]
+#[debug_handler]
+async fn checkout_session(
+    State(ctx): State<AppState>,
+    AppExtension(claims): AppExtension<Claims>,
+    AppPath(pid): AppPath<Uuid>,
+) -> Result<Response> {
+    let customer_pid = Uuid::parse_str(claims.sub()).map_err(|_| Error::Forbidden)?;
+    let session =
+        PaymentAttempt::find_checkout_session_for_customer(ctx.db(), pid, customer_pid).await?;
+
+    Ok((StatusCode::OK, Json(session)).into_response())
+}
+
 pub fn router(ctx: &AppState) -> Router {
     Router::new()
         .route(
             "/checkout",
             post(checkout).layer(RbacLayer::customers_only(ctx.clone())),
+        )
+        .route(
+            "/{pid}/checkout-session",
+            get(checkout_session).layer(RbacLayer::customers_only(ctx.clone())),
         )
         .route(
             "/",

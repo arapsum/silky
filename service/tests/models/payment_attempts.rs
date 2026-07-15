@@ -111,6 +111,83 @@ async fn attaching_the_same_checkout_session_is_idempotent() {
     });
 }
 
+#[rstest]
+#[case(
+    "customer_can_find_owned_checkout_session",
+    "bd6f7c26-d2c9-487e-b837-8f77be468033"
+)]
+#[case(
+    "customer_cannot_find_another_customers_checkout_session",
+    "e761d8e3-fc3e-4a2e-a6c9-7c7a4f2130e8"
+)]
+#[tokio::test]
+#[serial]
+async fn scopes_checkout_session_lookup_to_the_customer(
+    #[case] test_name: &str,
+    #[case] customer_pid: &str,
+) {
+    configure_insta!();
+    let ctx = boot_test().await.expect("test context should boot");
+    seed_data(ctx.db()).await.expect("seed should complete");
+    let (order, attempt, _order_id) = create_order_and_attempt(&ctx).await;
+    let mut txn = ctx.db().begin().await.expect("transaction should begin");
+    PaymentAttempt::attach_checkout_session(
+        &mut txn,
+        attempt.pid(),
+        &CheckoutSessionDetails {
+            session_id: "cs_test_customer_lookup",
+            checkout_url: "https://checkout.stripe.com/c/pay/customer-lookup",
+            expires_at: DateTime::parse_from_rfc3339("2027-07-15T12:00:00+03:00")
+                .expect("expiry should parse"),
+        },
+    )
+    .await
+    .expect("session should attach");
+    txn.commit().await.expect("transaction should commit");
+
+    let customer_pid = Uuid::parse_str(customer_pid).expect("customer pid should parse");
+    let result =
+        PaymentAttempt::find_checkout_session_for_customer(ctx.db(), order.pid(), customer_pid)
+            .await;
+
+    with_settings!({ filters => { let mut filters = cleanup_uuid().to_vec(); filters.extend(cleanup_date()); filters.extend(cleanup_id()); filters } }, {
+        assert_debug_snapshot!(test_name, result);
+    });
+}
+
+#[tokio::test]
+#[serial]
+async fn expired_checkout_session_does_not_expose_redirect_url() {
+    configure_insta!();
+    let ctx = boot_test().await.expect("test context should boot");
+    seed_data(ctx.db()).await.expect("seed should complete");
+    let (order, attempt, _order_id) = create_order_and_attempt(&ctx).await;
+    let mut txn = ctx.db().begin().await.expect("transaction should begin");
+    PaymentAttempt::attach_checkout_session(
+        &mut txn,
+        attempt.pid(),
+        &CheckoutSessionDetails {
+            session_id: "cs_test_expired_lookup",
+            checkout_url: "https://checkout.stripe.com/c/pay/expired",
+            expires_at: DateTime::parse_from_rfc3339("2025-07-15T12:00:00+03:00")
+                .expect("expiry should parse"),
+        },
+    )
+    .await
+    .expect("session should attach");
+    txn.commit().await.expect("transaction should commit");
+
+    let customer_pid =
+        Uuid::parse_str("bd6f7c26-d2c9-487e-b837-8f77be468033").expect("customer pid should parse");
+    let result =
+        PaymentAttempt::find_checkout_session_for_customer(ctx.db(), order.pid(), customer_pid)
+            .await;
+
+    with_settings!({ filters => { let mut filters = cleanup_uuid().to_vec(); filters.extend(cleanup_date()); filters.extend(cleanup_id()); filters } }, {
+        assert_debug_snapshot!("expired_checkout_session_does_not_expose_redirect_url", result);
+    });
+}
+
 #[derive(Clone, Copy)]
 enum ForbiddenTransition {
     SucceededToProcessing,

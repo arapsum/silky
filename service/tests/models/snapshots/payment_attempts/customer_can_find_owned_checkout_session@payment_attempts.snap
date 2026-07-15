@@ -1,0 +1,18 @@
+---
+source: tests/models/payment_attempts.rs
+expression: result
+---
+Ok(
+    CheckoutSessionResponse {
+        order_pid: PID,
+        order_status: "pending",
+        payment_status: "pending",
+        attempt_status: "session_created",
+        checkout_url: Some(
+            "https://checkout.stripe.com/c/pay/customer-lookup",
+        ),
+        expires_at: Some(
+            DATE,
+        ),
+    },
+)

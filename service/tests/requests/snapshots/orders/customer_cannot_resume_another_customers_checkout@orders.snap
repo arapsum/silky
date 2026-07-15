@@ -1,0 +1,8 @@
+---
+source: tests/requests/orders.rs
+expression: "(response.status_code(), response.text())"
+---
+(
+    404,
+    "{\"error\":\"Payment attempt does not exist\",\"code\":\"payment_attempt_not_found\"}",
+)

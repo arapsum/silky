@@ -1,0 +1,39 @@
+---
+import type { ProductListItem } from "@/lib/api/types";
+import ProductCard from "./ProductCard.astro";
+
+interface Props {
+  products: ProductListItem[];
+  eagerCount?: number;
+}
+
+const { products, eagerCount = 0 } = Astro.props;
+---
+
+<div class="product-grid">
+  {
+    products.map((product, index) => (
+      <ProductCard product={product} eager={index < eagerCount} />
+    ))
+  }
+</div>
+
+<style>
+  .product-grid {
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: clamp(1.5rem, 3vw, 2.5rem) clamp(0.75rem, 2vw, 1.5rem);
+  }
+
+  @media (min-width: 48rem) {
+    .product-grid {
+      grid-template-columns: repeat(3, minmax(0, 1fr));
+    }
+  }
+
+  @media (min-width: 68rem) {
+    .product-grid {
+      grid-template-columns: repeat(4, minmax(0, 1fr));
+    }
+  }
+</style>

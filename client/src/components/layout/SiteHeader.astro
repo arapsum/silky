@@ -1,0 +1,219 @@
+---
+import { MagnifyingGlassIcon } from "@phosphor-icons/react";
+import BrandMark from "@/components/brand/BrandMark.astro";
+import { MobileNavigation } from "./MobileNavigation";
+---
+
+<header class="site-header">
+  <div class="announcement">
+    <p>New season edit: lighter textures, considered layers.</p>
+    <a href="/shop">Explore the collection</a>
+  </div>
+
+  <div class="site-header__main shell">
+    <a class="brand" href="/" aria-label="Silk home">
+      <BrandMark class="brand__mark" />
+      <span>Silk</span>
+    </a>
+
+    <nav class="site-header__nav" aria-label="Primary navigation">
+      <a href="/shop">Shop</a>
+      <a href="/#new-arrivals">New in</a>
+      <a href="/shop?category=t-shirts">T-shirts</a>
+      <a href="/shop?category=shoes">Shoes</a>
+      <a href="/shop?category=accessories">Accessories</a>
+    </nav>
+
+    <form action="/shop" class="site-header__search" method="get" role="search">
+      <MagnifyingGlassIcon aria-hidden="true" size={18} weight="regular" />
+      <label class="sr-only" for="catalogue-search">Search the catalogue</label>
+      <input
+        id="catalogue-search"
+        name="search"
+        placeholder="Search for products"
+        type="search"
+      />
+    </form>
+
+    <MobileNavigation client:load />
+  </div>
+</header>
+
+<style>
+  .site-header {
+    position: relative;
+    z-index: 20;
+    background: var(--surface-raised);
+    border-bottom: 1px solid var(--border);
+  }
+
+  .announcement {
+    display: flex;
+    min-height: 2.35rem;
+    align-items: center;
+    justify-content: center;
+    gap: 0.45rem;
+    padding: 0.4rem 1rem;
+    background: var(--action);
+    color: var(--action-text);
+    font-size: 0.72rem;
+    text-align: center;
+  }
+
+  .announcement p {
+    margin: 0;
+  }
+
+  .announcement a {
+    border-bottom: 1px solid currentColor;
+    font-weight: 720;
+  }
+
+  .site-header__main {
+    display: grid;
+    min-height: 4.8rem;
+    grid-template-columns: auto 1fr auto;
+    align-items: center;
+    gap: 1.1rem;
+  }
+
+  .brand {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.65rem;
+    font-family: var(--font-display);
+    font-size: 1.45rem;
+    font-weight: 760;
+    letter-spacing: -0.045em;
+  }
+
+  .brand__mark {
+    width: 1.55rem;
+    height: 1.9rem;
+  }
+
+  .site-header__nav,
+  .site-header__search {
+    display: none;
+  }
+
+  :global(.mobile-navigation) {
+    position: relative;
+  }
+
+  :global(.mobile-navigation__trigger) {
+    display: grid;
+    width: 2.7rem;
+    height: 2.7rem;
+    place-items: center;
+    border: 1px solid var(--border);
+    border-radius: 50%;
+    background: transparent;
+    color: var(--text);
+  }
+
+  :global(.mobile-navigation__panel) {
+    position: absolute;
+    top: calc(100% + 1rem);
+    right: 0;
+    width: min(21rem, calc(100vw - 2rem));
+    padding: 0.8rem;
+    border: 1px solid var(--border);
+    border-radius: var(--radius-card);
+    background: var(--surface-raised);
+    box-shadow: 0 1.5rem 4rem rgb(20 20 16 / 16%);
+  }
+
+  :global(.mobile-navigation__panel nav) {
+    display: grid;
+  }
+
+  :global(.mobile-navigation__panel nav a) {
+    padding: 0.85rem 0.75rem;
+    border-bottom: 1px solid var(--border);
+    font-size: 0.95rem;
+    font-weight: 680;
+  }
+
+  :global(.mobile-navigation__search) {
+    display: flex;
+    align-items: center;
+    gap: 0.6rem;
+    margin-top: 0.8rem;
+    padding: 0.7rem 0.85rem;
+    border-radius: var(--radius-control);
+    background: var(--surface-muted);
+  }
+
+  :global(.mobile-navigation__search input) {
+    min-width: 0;
+    flex: 1;
+    border: 0;
+    outline: 0;
+    background: transparent;
+    color: var(--text);
+  }
+
+  :global(.sr-only) {
+    position: absolute;
+    width: 1px;
+    height: 1px;
+    padding: 0;
+    margin: -1px;
+    overflow: hidden;
+    clip: rect(0, 0, 0, 0);
+    white-space: nowrap;
+    border: 0;
+  }
+
+  @media (min-width: 64rem) {
+    .site-header__main {
+      grid-template-columns: auto auto minmax(15rem, 1fr);
+      gap: clamp(1.5rem, 3vw, 3.5rem);
+    }
+
+    .site-header__nav {
+      display: flex;
+      align-items: center;
+      gap: clamp(1rem, 1.7vw, 1.8rem);
+      font-size: 0.84rem;
+      font-weight: 650;
+      white-space: nowrap;
+    }
+
+    .site-header__nav a {
+      transition: color 150ms ease;
+    }
+
+    .site-header__nav a:hover {
+      color: var(--text-muted);
+    }
+
+    .site-header__search {
+      display: flex;
+      min-height: 2.85rem;
+      align-items: center;
+      gap: 0.65rem;
+      justify-self: end;
+      width: min(100%, 24rem);
+      padding: 0.55rem 1rem;
+      border-radius: var(--radius-control);
+      background: var(--surface-muted);
+      color: var(--text-muted);
+    }
+
+    .site-header__search input {
+      min-width: 0;
+      flex: 1;
+      border: 0;
+      outline: 0;
+      background: transparent;
+      color: var(--text);
+      font-size: 0.82rem;
+    }
+
+    :global(.mobile-navigation) {
+      display: none;
+    }
+  }
+</style>

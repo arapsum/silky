@@ -1,0 +1,125 @@
+---
+import { ArrowLeftIcon, ArrowRightIcon } from "@phosphor-icons/react";
+
+interface Props {
+  currentPage: number;
+  totalPages: number;
+}
+
+const { currentPage, totalPages } = Astro.props;
+
+function pageHref(page: number): string {
+  const url = new URL(Astro.url);
+  url.searchParams.set("page", page.toString());
+  return `${url.pathname}?${url.searchParams.toString()}`;
+}
+
+const visiblePages = Array.from({ length: totalPages }, (_, index) => index + 1)
+  .filter((page) => page === 1 || page === totalPages || Math.abs(page - currentPage) <= 1);
+---
+
+{
+  totalPages > 1 && (
+    <nav class="pagination" aria-label="Catalogue pages">
+      {currentPage > 1 ? (
+        <a class="pagination__direction" href={pageHref(currentPage - 1)} rel="prev">
+          <ArrowLeftIcon aria-hidden="true" size={16} weight="bold" />
+          Previous
+        </a>
+      ) : (
+        <span class="pagination__direction pagination__direction--disabled">
+          <ArrowLeftIcon aria-hidden="true" size={16} weight="bold" />
+          Previous
+        </span>
+      )}
+
+      <div class="pagination__pages">
+        {visiblePages.map((page, index) => {
+          const previousPage = visiblePages[index - 1];
+          return (
+            <>
+              {previousPage && page - previousPage > 1 && <span aria-hidden="true">…</span>}
+              <a
+                aria-current={page === currentPage ? "page" : undefined}
+                href={pageHref(page)}
+              >
+                {page}
+              </a>
+            </>
+          );
+        })}
+      </div>
+
+      {currentPage < totalPages ? (
+        <a class="pagination__direction" href={pageHref(currentPage + 1)} rel="next">
+          Next
+          <ArrowRightIcon aria-hidden="true" size={16} weight="bold" />
+        </a>
+      ) : (
+        <span class="pagination__direction pagination__direction--disabled">
+          Next
+          <ArrowRightIcon aria-hidden="true" size={16} weight="bold" />
+        </span>
+      )}
+    </nav>
+  )
+}
+
+<style>
+  .pagination {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 1rem;
+    margin-top: clamp(3rem, 7vw, 5rem);
+    padding-top: 1.5rem;
+    border-top: 1px solid var(--border);
+  }
+
+  .pagination__direction,
+  .pagination__pages a {
+    display: inline-flex;
+    min-height: 2.6rem;
+    align-items: center;
+    justify-content: center;
+    gap: 0.45rem;
+    border: 1px solid var(--border);
+    border-radius: var(--radius-control);
+    font-size: 0.76rem;
+    font-weight: 700;
+  }
+
+  .pagination__direction {
+    padding-inline: 0.85rem;
+  }
+
+  .pagination__direction--disabled {
+    opacity: 0.4;
+  }
+
+  .pagination__pages {
+    display: none;
+    align-items: center;
+    gap: 0.35rem;
+  }
+
+  .pagination__pages a {
+    width: 2.6rem;
+  }
+
+  .pagination__pages a[aria-current="page"] {
+    border-color: var(--action);
+    background: var(--action);
+    color: var(--action-text);
+  }
+
+  @media (min-width: 38rem) {
+    .pagination__pages {
+      display: flex;
+    }
+
+    .pagination__direction {
+      padding-inline: 1rem;
+    }
+  }
+</style>

@@ -1,0 +1,221 @@
+---
+import { MagnifyingGlassIcon } from "@phosphor-icons/react";
+import CatalogueMessage from "@/components/catalogue/CatalogueMessage.astro";
+import Pagination from "@/components/catalogue/Pagination.astro";
+import SiteFooter from "@/components/layout/SiteFooter.astro";
+import SiteHeader from "@/components/layout/SiteHeader.astro";
+import ProductGrid from "@/components/products/ProductGrid.astro";
+import BaseLayout from "@/layouts/BaseLayout.astro";
+import { getCategories, getProducts } from "@/lib/api/client";
+import type { CategoryListItem, PaginatedResponse, ProductListItem } from "@/lib/api/types";
+import { titleCase } from "@/lib/format";
+
+const search = Astro.url.searchParams.get("search")?.trim() ?? "";
+const category = Astro.url.searchParams.get("category")?.trim() ?? "";
+const requestedPage = Number.parseInt(Astro.url.searchParams.get("page") ?? "1", 10);
+const page = Number.isFinite(requestedPage) && requestedPage > 0 ? requestedPage : 1;
+
+const productParams = new URLSearchParams({ limit: "12", page: page.toString() });
+if (search) productParams.set("search", search);
+if (category) productParams.set("categorySlug", category);
+
+let catalogue: PaginatedResponse<ProductListItem> | null = null;
+let categories: CategoryListItem[] = [];
+let loadError = false;
+
+const [productResult, categoryResult] = await Promise.allSettled([
+  getProducts(productParams),
+  getCategories(new URLSearchParams({ limit: "50", page: "1" })),
+]);
+
+if (productResult.status === "fulfilled") {
+  catalogue = productResult.value;
+} else {
+  loadError = true;
+}
+
+if (categoryResult.status === "fulfilled") {
+  categories = categoryResult.value.data;
+}
+
+const activeCategory = categories.find((item) => item.slug === category);
+const pageTitle = activeCategory ? titleCase(activeCategory.name) : search ? `Results for “${search}”` : "The collection";
+const pageDescription = activeCategory?.description
+  ?? (search ? "Explore pieces matching your search." : "Everyday pieces selected to layer easily and wear often.");
+
+function categoryHref(slug?: string): string {
+  const params = new URLSearchParams(Astro.url.searchParams);
+  params.delete("page");
+  if (slug) params.set("category", slug);
+  else params.delete("category");
+  const query = params.toString();
+  return query ? `/shop?${query}` : "/shop";
+}
+---
+
+<BaseLayout title={`${pageTitle} | Silk`} description={pageDescription}>
+  <SiteHeader />
+
+  <main class="shop shell">
+    <header class="shop__heading">
+      <div>
+        <p class="eyebrow">Shop Silk</p>
+        <h1 class="display-title">{pageTitle}</h1>
+        <p>{pageDescription}</p>
+      </div>
+      {catalogue && <span>{catalogue.pagination.totalItems} {catalogue.pagination.totalItems === 1 ? "piece" : "pieces"}</span>}
+    </header>
+
+    <section class="shop__tools" aria-label="Catalogue filters">
+      <form action="/shop" class="shop__search" method="get" role="search">
+        {category && <input name="category" type="hidden" value={category} />}
+        <MagnifyingGlassIcon aria-hidden="true" size={18} />
+        <label class="sr-only" for="shop-search">Search products</label>
+        <input id="shop-search" name="search" placeholder="Search the collection" type="search" value={search} />
+      </form>
+
+      <nav class="shop__categories" aria-label="Product categories">
+        <a aria-current={!category ? "page" : undefined} href={categoryHref()}>All</a>
+        {
+          categories.map((item) => (
+            <a aria-current={category === item.slug ? "page" : undefined} href={categoryHref(item.slug)}>
+              {titleCase(item.name)}
+            </a>
+          ))
+        }
+      </nav>
+    </section>
+
+    {
+      catalogue && catalogue.data.length > 0 ? (
+        <>
+          <ProductGrid products={catalogue.data} eagerCount={4} />
+          <Pagination currentPage={catalogue.pagination.page} totalPages={catalogue.pagination.totalPages} />
+        </>
+      ) : (
+        <CatalogueMessage
+          title={loadError ? "The collection is taking a moment" : "No pieces match this edit"}
+          message={loadError
+            ? "Silk could not reach the catalogue service. Please refresh in a moment."
+            : "Try another category or a broader search term."}
+        />
+      )
+    }
+  </main>
+
+  <SiteFooter />
+</BaseLayout>
+
+<style>
+  .shop {
+    padding-top: clamp(3.5rem, 8vw, 7rem);
+  }
+
+  .shop__heading {
+    display: flex;
+    align-items: end;
+    justify-content: space-between;
+    gap: 2rem;
+    padding-bottom: clamp(2rem, 5vw, 3.5rem);
+  }
+
+  .shop__heading .eyebrow {
+    margin: 0 0 0.8rem;
+    color: var(--text-muted);
+  }
+
+  .shop__heading h1 {
+    margin: 0;
+    font-size: clamp(3.2rem, 8vw, 6.8rem);
+  }
+
+  .shop__heading p:last-child {
+    max-width: 37rem;
+    margin: 1rem 0 0;
+    color: var(--text-muted);
+  }
+
+  .shop__heading > span {
+    display: none;
+    color: var(--text-muted);
+    font-size: 0.78rem;
+  }
+
+  .shop__tools {
+    margin-bottom: clamp(2rem, 5vw, 3.5rem);
+    padding-block: 1rem;
+    border-block: 1px solid var(--border);
+  }
+
+  .shop__search {
+    display: flex;
+    min-height: 3rem;
+    align-items: center;
+    gap: 0.65rem;
+    padding-inline: 1rem;
+    border-radius: var(--radius-control);
+    background: var(--surface-muted);
+    color: var(--text-muted);
+  }
+
+  .shop__search input {
+    min-width: 0;
+    flex: 1;
+    border: 0;
+    outline: 0;
+    background: transparent;
+    color: var(--text);
+  }
+
+  .shop__categories {
+    display: flex;
+    overflow-x: auto;
+    gap: 0.45rem;
+    margin-top: 0.8rem;
+    scrollbar-width: none;
+  }
+
+  .shop__categories::-webkit-scrollbar {
+    display: none;
+  }
+
+  .shop__categories a {
+    display: inline-flex;
+    min-height: 2.5rem;
+    flex: none;
+    align-items: center;
+    padding-inline: 1rem;
+    border: 1px solid var(--border);
+    border-radius: var(--radius-control);
+    font-size: 0.75rem;
+    font-weight: 680;
+  }
+
+  .shop__categories a[aria-current="page"] {
+    border-color: var(--action);
+    background: var(--action);
+    color: var(--action-text);
+  }
+
+  @media (min-width: 42rem) {
+    .shop__heading > span {
+      display: block;
+    }
+
+    .shop__tools {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 1rem;
+    }
+
+    .shop__search {
+      width: min(23rem, 42vw);
+    }
+
+    .shop__categories {
+      justify-content: flex-end;
+      margin-top: 0;
+    }
+  }
+</style>

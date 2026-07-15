@@ -2,6 +2,7 @@ import type {
   ApiErrorPayload,
   CategoryListItem,
   PaginatedResponse,
+  ProductDetail,
   ProductListItem,
 } from "./types";
 
@@ -54,4 +55,8 @@ export function getProducts(params: URLSearchParams = new URLSearchParams()) {
 export function getCategories(params: URLSearchParams = new URLSearchParams()) {
   const query = params.size > 0 ? `?${params.toString()}` : "";
   return request<PaginatedResponse<CategoryListItem>>(`/categories${query}`);
+}
+
+export function getProductBySlug(slug: string) {
+  return request<ProductDetail>(`/products/by-slug/${encodeURIComponent(slug)}`);
 }

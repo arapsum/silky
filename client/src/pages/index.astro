@@ -1,0 +1,495 @@
+---
+import { ArrowRightIcon } from "@phosphor-icons/react";
+import CatalogueMessage from "@/components/catalogue/CatalogueMessage.astro";
+import SiteFooter from "@/components/layout/SiteFooter.astro";
+import SiteHeader from "@/components/layout/SiteHeader.astro";
+import ProductGrid from "@/components/products/ProductGrid.astro";
+import BaseLayout from "@/layouts/BaseLayout.astro";
+import { getCategories, getProducts } from "@/lib/api/client";
+import type { CategoryListItem, ProductListItem } from "@/lib/api/types";
+import { titleCase } from "@/lib/format";
+
+let products: ProductListItem[] = [];
+let categories: CategoryListItem[] = [];
+let productTotal = 0;
+let catalogueUnavailable = false;
+
+const [productResult, categoryResult] = await Promise.allSettled([
+  getProducts(new URLSearchParams({ limit: "20", page: "1" })),
+  getCategories(new URLSearchParams({ limit: "20", page: "1" })),
+]);
+
+if (productResult.status === "fulfilled") {
+  products = productResult.value.data;
+  productTotal = productResult.value.pagination.totalItems;
+} else {
+  catalogueUnavailable = true;
+}
+
+if (categoryResult.status === "fulfilled") {
+  categories = categoryResult.value.data;
+} else {
+  catalogueUnavailable = true;
+}
+
+const featuredProducts = products.slice(0, 4);
+const totalVariants = products.reduce((total, product) => total + product.variantCount, 0);
+---
+
+<BaseLayout>
+  <SiteHeader />
+
+  <main>
+    <section class="hero shell" aria-labelledby="hero-heading">
+      <img
+        alt="Two models wearing Silk's refined everyday collection"
+        class="hero__image"
+        decoding="sync"
+        fetchpriority="high"
+        height="941"
+        src="/images/silk-editorial-hero.png"
+        width="1672"
+      />
+      <div class="hero__veil"></div>
+      <div class="hero__content">
+        <p class="eyebrow">The everyday edit</p>
+        <h1 class="display-title" id="hero-heading">Clothes that feel like you.</h1>
+        <p class="hero__copy">
+          Quietly confident pieces, selected for how they feel, layer, and live.
+          Build a wardrobe that gives you room to be yourself.
+        </p>
+        <a class="button-primary" href="/shop">
+          Shop the collection
+          <ArrowRightIcon aria-hidden="true" size={18} weight="bold" />
+        </a>
+      </div>
+    </section>
+
+    <section class="metrics shell" aria-label="Catalogue overview">
+      <div>
+        <strong>{productTotal || "10"}</strong>
+        <span>Considered pieces</span>
+      </div>
+      <div>
+        <strong>{categories.length || "5"}</strong>
+        <span>Wardrobe categories</span>
+      </div>
+      <div>
+        <strong>{totalVariants || "14"}</strong>
+        <span>Fits and finishes</span>
+      </div>
+    </section>
+
+    {
+      categories.length > 0 && (
+        <nav class="category-ribbon" aria-label="Shop by category">
+          <div class="shell category-ribbon__inner">
+            {categories.map((category) => (
+              <a href={`/shop?category=${category.slug}`}>{titleCase(category.name)}</a>
+            ))}
+          </div>
+        </nav>
+      )
+    }
+
+    <section class="collection shell" id="new-arrivals" aria-labelledby="new-arrivals-heading">
+      <header class="section-heading">
+        <div>
+          <p class="eyebrow">Freshly selected</p>
+          <h2 class="display-title" id="new-arrivals-heading">New arrivals</h2>
+        </div>
+        <a class="section-heading__link" href="/shop">
+          View the full edit
+          <ArrowRightIcon aria-hidden="true" size={17} weight="bold" />
+        </a>
+      </header>
+
+      {
+        featuredProducts.length > 0 ? (
+          <ProductGrid products={featuredProducts} eagerCount={2} />
+        ) : (
+          <CatalogueMessage
+            title={catalogueUnavailable ? "The collection is taking a moment" : "New pieces are on their way"}
+            message={catalogueUnavailable
+              ? "The catalogue service is unavailable right now. Please refresh in a moment."
+              : "There are no products in this edit yet. Check back soon."}
+          />
+        )
+      }
+    </section>
+
+    <section class="editorial shell" aria-labelledby="editorial-heading">
+      <div class="editorial__image-wrap">
+        <img
+          alt="A crisp white shirt from the Silk collection"
+          class="editorial__image"
+          decoding="async"
+          height="900"
+          loading="lazy"
+          src={categories.find((category) => category.slug === "shirts")?.imageLink ?? "https://images.unsplash.com/photo-1603252109303-2751441dd157?auto=format&fit=crop&w=1200&q=85"}
+          width="900"
+        />
+      </div>
+      <div class="editorial__content">
+        <p class="eyebrow">Made to work together</p>
+        <h2 class="display-title" id="editorial-heading">Build a wardrobe, not a costume.</h2>
+        <p>
+          Start with shape, texture, and the way a piece earns its place. Our
+          edit keeps the palette calm so every new addition has more than one life.
+        </p>
+        <a class="button-secondary" href="/shop?category=shirts">Explore shirting</a>
+      </div>
+    </section>
+
+    {
+      categories.length > 0 && (
+        <section class="categories shell" aria-labelledby="categories-heading">
+          <header class="section-heading">
+            <div>
+              <p class="eyebrow">Find your starting point</p>
+              <h2 class="display-title" id="categories-heading">Browse by category</h2>
+            </div>
+          </header>
+
+          <div class="category-grid">
+            {categories.slice(0, 5).map((category, index) => (
+              <a class={`category-tile category-tile--${index + 1}`} href={`/shop?category=${category.slug}`}>
+                <img
+                  alt=""
+                  decoding="async"
+                  height="760"
+                  loading="lazy"
+                  src={category.imageLink}
+                  width="980"
+                />
+                <span>
+                  <small>{category.productCount} {category.productCount === 1 ? "piece" : "pieces"}</small>
+                  <strong>{titleCase(category.name)}</strong>
+                </span>
+              </a>
+            ))}
+          </div>
+        </section>
+      )
+    }
+  </main>
+
+  <SiteFooter />
+</BaseLayout>
+
+<style>
+  .hero {
+    position: relative;
+    min-height: clamp(35rem, 72vw, 47rem);
+    margin-top: 1rem;
+    overflow: hidden;
+    border-radius: var(--radius-panel);
+    background: #d7c4a5;
+    isolation: isolate;
+  }
+
+  .hero__image,
+  .hero__veil {
+    position: absolute;
+    inset: 0;
+    width: 100%;
+    height: 100%;
+  }
+
+  .hero__image {
+    z-index: -2;
+    object-fit: cover;
+    object-position: 66% center;
+  }
+
+  .hero__veil {
+    z-index: -1;
+    background: linear-gradient(90deg, rgb(232 217 190 / 96%) 0%, rgb(232 217 190 / 76%) 42%, transparent 72%);
+  }
+
+  .hero__content {
+    display: flex;
+    min-height: inherit;
+    max-width: 37rem;
+    flex-direction: column;
+    align-items: start;
+    justify-content: center;
+    padding: clamp(2rem, 6vw, 5.5rem);
+    color: #171713;
+  }
+
+  .hero__content .eyebrow {
+    margin: 0 0 1rem;
+  }
+
+  .hero h1 {
+    max-width: 9ch;
+    margin: 0;
+    font-size: clamp(3.4rem, 8.5vw, 7.4rem);
+  }
+
+  .hero__copy {
+    max-width: 31rem;
+    margin: 1.5rem 0 2rem;
+    color: rgb(23 23 19 / 72%);
+    font-size: clamp(0.95rem, 1.5vw, 1.08rem);
+  }
+
+  .metrics {
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    margin-top: 1rem;
+    border: 1px solid var(--border);
+    border-radius: var(--radius-card);
+    background: var(--surface-raised);
+  }
+
+  .metrics div {
+    display: flex;
+    min-width: 0;
+    flex-direction: column;
+    padding: 1.25rem clamp(0.75rem, 3vw, 2rem);
+    border-right: 1px solid var(--border);
+  }
+
+  .metrics div:last-child {
+    border-right: 0;
+  }
+
+  .metrics strong {
+    font-family: var(--font-display);
+    font-size: clamp(1.35rem, 4vw, 2.35rem);
+    letter-spacing: -0.05em;
+    line-height: 1;
+  }
+
+  .metrics span {
+    margin-top: 0.35rem;
+    color: var(--text-muted);
+    font-size: clamp(0.6rem, 1.6vw, 0.78rem);
+    line-height: 1.35;
+  }
+
+  .category-ribbon {
+    margin-top: clamp(3rem, 7vw, 5.5rem);
+    border-block: 1px solid var(--border);
+  }
+
+  .category-ribbon__inner {
+    display: flex;
+    overflow-x: auto;
+    justify-content: space-between;
+    gap: 2rem;
+    padding-block: 1.1rem;
+    scrollbar-width: none;
+  }
+
+  .category-ribbon__inner::-webkit-scrollbar {
+    display: none;
+  }
+
+  .category-ribbon a {
+    flex: none;
+    font-family: var(--font-display);
+    font-size: clamp(1rem, 2.2vw, 1.35rem);
+    font-weight: 650;
+    letter-spacing: -0.035em;
+  }
+
+  .collection,
+  .categories {
+    padding-top: clamp(5rem, 10vw, 9rem);
+  }
+
+  .section-heading {
+    display: flex;
+    align-items: end;
+    justify-content: space-between;
+    gap: 2rem;
+    margin-bottom: clamp(1.8rem, 4vw, 3rem);
+  }
+
+  .section-heading .eyebrow {
+    margin: 0 0 0.7rem;
+    color: var(--text-muted);
+  }
+
+  .section-heading h2 {
+    margin: 0;
+    font-size: clamp(2.45rem, 6vw, 4.8rem);
+  }
+
+  .section-heading__link {
+    display: none;
+    align-items: center;
+    gap: 0.5rem;
+    padding-bottom: 0.35rem;
+    border-bottom: 1px solid var(--text);
+    font-size: 0.83rem;
+    font-weight: 720;
+  }
+
+  .editorial {
+    display: grid;
+    margin-top: clamp(5rem, 12vw, 10rem);
+    overflow: hidden;
+    border-radius: var(--radius-panel);
+    background: var(--accent);
+    color: #171713;
+  }
+
+  .editorial__image-wrap {
+    min-height: 23rem;
+  }
+
+  .editorial__image {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+  }
+
+  .editorial__content {
+    display: flex;
+    flex-direction: column;
+    align-items: start;
+    justify-content: center;
+    padding: clamp(2rem, 6vw, 5rem);
+  }
+
+  .editorial__content .eyebrow {
+    margin: 0 0 1rem;
+  }
+
+  .editorial h2 {
+    max-width: 10ch;
+    margin: 0;
+    font-size: clamp(2.7rem, 6.5vw, 5rem);
+  }
+
+  .editorial__content > p:not(.eyebrow) {
+    max-width: 31rem;
+    margin: 1.4rem 0 2rem;
+    color: rgb(23 23 19 / 72%);
+  }
+
+  .category-grid {
+    display: grid;
+    gap: 0.85rem;
+  }
+
+  .category-tile {
+    position: relative;
+    min-height: 19rem;
+    overflow: hidden;
+    border-radius: var(--radius-card);
+    background: var(--surface-muted);
+  }
+
+  .category-tile::after {
+    position: absolute;
+    inset: 0;
+    background: linear-gradient(180deg, transparent 42%, rgb(12 12 10 / 72%) 100%);
+    content: "";
+  }
+
+  .category-tile img {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+    transition: transform 500ms cubic-bezier(0.22, 1, 0.36, 1);
+  }
+
+  .category-tile span {
+    position: absolute;
+    z-index: 1;
+    right: 1.25rem;
+    bottom: 1.2rem;
+    left: 1.25rem;
+    display: flex;
+    align-items: end;
+    justify-content: space-between;
+    gap: 1rem;
+    color: #fffef9;
+  }
+
+  .category-tile small {
+    color: rgb(255 254 249 / 72%);
+    font-size: 0.68rem;
+  }
+
+  .category-tile strong {
+    font-family: var(--font-display);
+    font-size: clamp(1.5rem, 4vw, 2.2rem);
+    letter-spacing: -0.04em;
+  }
+
+  @media (hover: hover) {
+    .category-tile:hover img {
+      transform: scale(1.035);
+    }
+  }
+
+  @media (max-width: 40rem) {
+    .hero {
+      display: flex;
+      min-height: 42rem;
+      align-items: end;
+    }
+
+    .hero__image {
+      object-position: 69% center;
+    }
+
+    .hero__veil {
+      background: linear-gradient(180deg, transparent 20%, rgb(232 217 190 / 45%) 47%, rgb(232 217 190 / 97%) 76%);
+    }
+
+    .hero__content {
+      min-height: auto;
+      padding-top: 15rem;
+    }
+
+    .hero h1 {
+      font-size: clamp(3rem, 15vw, 4.7rem);
+    }
+  }
+
+  @media (min-width: 40rem) {
+    .section-heading__link {
+      display: inline-flex;
+    }
+  }
+
+  @media (min-width: 48rem) {
+    .editorial {
+      grid-template-columns: minmax(0, 1.05fr) minmax(0, 0.95fr);
+    }
+
+    .category-grid {
+      grid-template-columns: repeat(6, minmax(0, 1fr));
+      grid-auto-rows: 12rem;
+    }
+
+    .category-tile {
+      min-height: 0;
+    }
+
+    .category-tile--1,
+    .category-tile--4 {
+      grid-column: span 2;
+    }
+
+    .category-tile--2,
+    .category-tile--3 {
+      grid-column: span 4;
+    }
+
+    .category-tile--3 {
+      grid-row: span 2;
+    }
+
+    .category-tile--5 {
+      grid-column: span 4;
+    }
+  }
+</style>

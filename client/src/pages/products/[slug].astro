@@ -169,9 +169,10 @@ const galleryImages = pictures.map((picture, index) => ({
   }
 
   .product__summary h1 {
-    max-width: 10ch;
+    max-width: none;
     margin: 0;
-    font-size: clamp(3rem, 7vw, 5.6rem);
+    font-size: clamp(2.25rem, 3.2vw, 2.8rem);
+    line-height: 1;
   }
 
   .product__price {
@@ -267,6 +268,10 @@ const galleryImages = pictures.map((picture, index) => ({
       position: sticky;
       top: 2rem;
       padding-top: clamp(1rem, 4vw, 4rem);
+    }
+
+    .product__summary h1 {
+      white-space: nowrap;
     }
   }
 </style>

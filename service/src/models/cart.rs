@@ -60,6 +60,55 @@ struct QuotedVariant {
     price: Decimal,
 }
 
+async fn load_quoted_variants(
+    db: &PgPool,
+    variant_pids: &[Uuid],
+) -> ModelResult<HashMap<Uuid, QuotedVariant>> {
+    let variants = sqlx::query_as::<_, QuotedVariant>(
+        r"SELECT variant.pid AS variant_pid,
+                  product.pid AS product_pid,
+                  product.slug AS product_slug,
+                  product.name AS product_name,
+                  variant.sku,
+                  COALESCE(
+                      (
+                          SELECT picture.image_link
+                          FROM pictures AS picture
+                          WHERE picture.product_id = product.id
+                             OR picture.variant_id = variant.id
+                          ORDER BY picture.display_order NULLS LAST, picture.id
+                          LIMIT 1
+                      ),
+                      NULL
+                  ) AS image_url,
+                  COALESCE(
+                      (
+                          SELECT jsonb_object_agg(attribute.name, value.value)
+                          FROM variant_attribute_values AS link
+                          JOIN attributes AS attribute ON attribute.id = link.attribute_id
+                          JOIN attribute_values AS value ON value.id = link.attribute_value_id
+                          WHERE link.variant_id = variant.id
+                      ),
+                      '{}'::jsonb
+                  ) AS selected_options,
+                  variant.stock_quantity,
+                  variant.price
+            FROM product_variants AS variant
+            JOIN products AS product ON product.id = variant.product_id
+            WHERE variant.pid = ANY($1)
+              AND variant.deleted_at IS NULL
+              AND product.deleted_at IS NULL",
+    )
+    .bind(variant_pids)
+    .fetch_all(db)
+    .await?;
+
+    Ok(variants
+        .into_iter()
+        .map(|variant| (variant.variant_pid, variant))
+        .collect())
+}
+
 impl CartQuote {
     /// Builds a read-only, server-priced quote for a set of variant quantities.
     ///
@@ -75,47 +124,7 @@ impl CartQuote {
             .iter()
             .map(crate::schemas::NewOrderItem::variant_pid)
             .collect::<Vec<_>>();
-        let variants = sqlx::query_as::<_, QuotedVariant>(
-            r"SELECT variant.pid AS variant_pid,
-                    product.pid AS product_pid,
-                    product.slug AS product_slug,
-                    product.name AS product_name,
-                    variant.sku,
-                    COALESCE(
-                        (
-                            SELECT picture.image_link
-                            FROM pictures AS picture
-                            WHERE picture.product_id = product.id
-                               OR picture.variant_id = variant.id
-                            ORDER BY picture.display_order NULLS LAST, picture.id
-                            LIMIT 1
-                        ),
-                        NULL
-                    ) AS image_url,
-                    COALESCE(
-                        (
-                            SELECT jsonb_object_agg(attribute.name, value.value)
-                            FROM variant_attribute_values AS link
-                            JOIN attributes AS attribute ON attribute.id = link.attribute_id
-                            JOIN attribute_values AS value ON value.id = link.attribute_value_id
-                            WHERE link.variant_id = variant.id
-                        ),
-                        '{}'::jsonb
-                    ) AS selected_options,
-                    variant.stock_quantity,
-                    variant.price
-              FROM product_variants AS variant
-              JOIN products AS product ON product.id = variant.product_id
-              WHERE variant.pid = ANY($1)
-                AND variant.deleted_at IS NULL
-                AND product.deleted_at IS NULL",
-        )
-        .bind(&variant_pids)
-        .fetch_all(db)
-        .await?
-        .into_iter()
-        .map(|variant| (variant.variant_pid, variant))
-        .collect::<HashMap<_, _>>();
+        let variants = load_quoted_variants(db, &variant_pids).await?;
 
         let mut subtotal = Decimal::ZERO;
         let mut can_checkout = true;

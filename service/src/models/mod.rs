@@ -1,4 +1,5 @@
 pub mod addresses;
+pub mod cart;
 pub mod categories;
 pub mod error;
 pub mod media_assets;
@@ -20,11 +21,12 @@ use serde::{Deserialize, Serialize};
 
 pub use self::{
     addresses::Address,
+    cart::CartQuote,
     categories::{Category, CategoryAttributeLink},
     error::{ModelError, ModelResult},
     media_assets::{FinalizeMediaAsset, MediaAsset},
     order_items::OrderItem,
-    orders::{Order, OrderWithItems},
+    orders::{CheckoutOrderState, Order, OrderWithItems},
     payment_attempts::{CheckoutSessionDetails, PaymentAttempt, PaymentReconciliation},
     permissions::Permission,
     products::{

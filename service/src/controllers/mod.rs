@@ -9,6 +9,7 @@ use crate::{AppState, middlewares::auth::AuthLayer};
 
 mod addresses;
 mod auth;
+mod cart;
 mod categories;
 mod media;
 mod orders;
@@ -53,6 +54,7 @@ pub fn router(ctx: &AppState) -> Router {
             users::router(ctx).layer(AuthLayer::new(ctx.clone())),
         )
         .nest("/categories", categories::router(ctx))
+        .nest("/cart", cart::router(ctx))
         .nest("/products", products::router(ctx))
         .nest("/orders", orders::router(ctx))
         .nest("/payments", payments::router(ctx))

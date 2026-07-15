@@ -1,0 +1,31 @@
+---
+source: tests/requests/addresses.rs
+expression: "(created.status_code(), created_body, updated.status_code(), updated.text(),\ndeleted.status_code(), missing.status_code(), missing.text(),)"
+---
+(
+    201,
+    Object {
+        "pid": String("PID"),
+        "addressType": String("shipping"),
+        "label": String("Weekend home"),
+        "recipientName": String("Jane Smith"),
+        "company": Null,
+        "lineOne": String("42 Ocean View Road"),
+        "lineTwo": Null,
+        "city": String("Mombasa"),
+        "region": String("Mombasa County"),
+        "postalCode": String("80100"),
+        "countryCode": String("KE"),
+        "email": String("jane.smith@globex.com"),
+        "phone": String("+254711000022"),
+        "isDefault": Bool(true),
+        "createdAt": String("DATE"),
+        "updatedAt": String("DATE"),
+        "deletedAt": Null,
+    },
+    200,
+    "{\"pid\":\"PID\",\"addressType\":\"shipping\",\"label\":\"Primary home\",\"recipientName\":\"Jane Smith\",\"company\":null,\"lineOne\":\"42 Ocean View Road\",\"lineTwo\":\"Apartment 7\",\"city\":\"Mombasa\",\"region\":\"Mombasa County\",\"postalCode\":\"80100\",\"countryCode\":\"KE\",\"email\":\"jane.smith@globex.com\",\"phone\":\"+254711000022\",\"isDefault\":true,\"createdAt\":\"DATE\",\"updatedAt\":\"DATE\",\"deletedAt\":null}",
+    204,
+    404,
+    "{\"error\":\"Entity not found\",\"code\":\"entity_not_found\"}",
+)

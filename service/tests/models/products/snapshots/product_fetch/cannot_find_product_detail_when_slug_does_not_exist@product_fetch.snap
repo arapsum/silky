@@ -1,0 +1,7 @@
+---
+source: tests/models/products/product_fetch.rs
+expression: result
+---
+Err(
+    EntityNotFound,
+)

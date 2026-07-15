@@ -1,0 +1,12 @@
+---
+source: tests/models/addresses.rs
+expression: "(found, updated)"
+---
+(
+    Err(
+        EntityNotFound,
+    ),
+    Err(
+        EntityNotFound,
+    ),
+)

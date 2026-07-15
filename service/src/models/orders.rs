@@ -79,10 +79,11 @@ impl<'a> CheckoutOrderInput<'a> {
     }
 
     fn from_checkout(customer_pid: Uuid, params: &'a CheckoutOrder) -> Self {
+        let shipping_address_pid = params.shipping_address_pid();
         Self {
             customer_pid,
-            billing_address_pid: params.billing_address_pid(),
-            shipping_address_pid: params.shipping_address_pid(),
+            billing_address_pid: Some(params.billing_address_pid().unwrap_or(shipping_address_pid)),
+            shipping_address_pid: Some(shipping_address_pid),
             items: params.items(),
             customer_note: params.customer_note(),
             staff_note: None,
@@ -93,7 +94,7 @@ impl<'a> CheckoutOrderInput<'a> {
 impl Order {
     /// Checks out an order and reserves its inventory in one transaction.
     ///
-    /// Optional billing and shipping address references must belong to the
+    /// Any supplied billing and shipping address references must belong to the
     /// customer. Their values are copied into JSON snapshots so later address
     /// edits do not change the order history. Product prices and totals are
     /// loaded and calculated on the server. Every item and its corresponding

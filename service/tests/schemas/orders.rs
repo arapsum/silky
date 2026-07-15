@@ -24,7 +24,6 @@ fn address(value: serde_json::Value) -> NewAddress {
 fn rejects_invalid_addresses(#[case] name: &str, #[case] value: &str, #[case] expected: &str) {
     configure_insta!();
     let mut payload = serde_json::json!({
-        "customerPid": Uuid::nil(),
         "addressType": "shipping",
         "recipientName": "John Doe",
         "lineOne": "10 Market Street",

@@ -1,8 +1,9 @@
-use axum::http::HeaderValue;
+use axum::http::{HeaderValue, StatusCode};
 use axum_test::TestServer;
 use insta::{Settings, assert_debug_snapshot, with_settings};
 use rstest::rstest;
 use serial_test::serial;
+use service::models::{CheckoutSessionDetails, PaymentAttempt};
 
 use crate::seed_data;
 use crate::utils;
@@ -97,6 +98,7 @@ async fn protects_customer_checkout(#[case] test_name: &str, #[case] actor: Chec
         seed_data(ctx.db()).await.expect("seed should complete");
 
         let mut request = server.post("/orders/checkout").json(&serde_json::json!({
+            "shippingAddressPid": "4f3d4f3e-1c26-4f5f-a54f-6b5b2b8a7301",
             "items": [{
                 "variantPid": "db365773-2ac1-49aa-a4b9-03dcf8ac3401",
                 "quantity": 1
@@ -115,6 +117,98 @@ async fn protects_customer_checkout(#[case] test_name: &str, #[case] actor: Chec
 
         let response = request.await;
         assert_debug_snapshot!(test_name, (response.status_code(), response.text()));
+    })
+    .await;
+}
+
+#[tokio::test]
+#[serial]
+async fn checkout_requires_a_shipping_address() {
+    crate::request(|server, ctx| async move {
+        configure_insta!();
+        seed_data(ctx.db()).await.expect("seed should complete");
+
+        let response = with_auth(
+            server.post("/orders/checkout").json(&serde_json::json!({
+                "items": [{
+                    "variantPid": "db365773-2ac1-49aa-a4b9-03dcf8ac3401",
+                    "quantity": 1
+                }]
+            })),
+            access_token(&server, "jane.smith@globex.com").await,
+        )
+        .await;
+
+        assert_debug_snapshot!(
+            "checkout_requires_a_shipping_address",
+            (response.status_code(), response.text())
+        );
+    })
+    .await;
+}
+
+async fn attach_checkout_session(db: &sqlx::PgPool, order_pid: &str) {
+    let order_pid = uuid::Uuid::parse_str(order_pid).expect("order pid should parse");
+    let (order_id, amount, currency) = sqlx::query_as::<_, (i32, rust_decimal::Decimal, String)>(
+        "SELECT id, grand_total, currency FROM orders WHERE pid = $1",
+    )
+    .bind(order_pid)
+    .fetch_one(db)
+    .await
+    .expect("order should load");
+    let mut txn = db.begin().await.expect("transaction should begin");
+    let attempt = PaymentAttempt::create_for_order(&mut txn, order_id, amount, &currency)
+        .await
+        .expect("payment attempt should create");
+    PaymentAttempt::attach_checkout_session(
+        &mut txn,
+        attempt.pid(),
+        &CheckoutSessionDetails {
+            session_id: "cs_test_customer_resume",
+            checkout_url: "https://checkout.stripe.com/c/pay/customer-resume",
+            expires_at: chrono::DateTime::parse_from_rfc3339("2027-07-15T12:00:00+03:00")
+                .expect("expiry should parse"),
+        },
+    )
+    .await
+    .expect("checkout session should attach");
+    txn.commit().await.expect("transaction should commit");
+}
+
+#[rstest]
+#[case(
+    "customer_can_resume_owned_checkout",
+    "jane.smith@globex.com",
+    StatusCode::OK
+)]
+#[case(
+    "customer_cannot_resume_another_customers_checkout",
+    "james.moriaty@continental.org",
+    StatusCode::NOT_FOUND
+)]
+#[tokio::test]
+#[serial]
+async fn scopes_checkout_sessions_to_the_customer(
+    #[case] test_name: &str,
+    #[case] email: &str,
+    #[case] expected_status: StatusCode,
+) {
+    crate::request(|server, ctx| async move {
+        configure_insta!();
+        seed_data(ctx.db()).await.expect("seed should complete");
+        let order_pid = "00d33070-e8d0-47bd-889a-96f4f4f94003";
+        attach_checkout_session(ctx.db(), order_pid).await;
+
+        let response = with_auth(
+            server.get(&format!("/orders/{order_pid}/checkout-session")),
+            access_token(&server, email).await,
+        )
+        .await;
+
+        assert_eq!(response.status_code(), expected_status);
+        with_settings!({ filters => response_filters() }, {
+            assert_debug_snapshot!(test_name, (response.status_code(), response.text()));
+        });
     })
     .await;
 }

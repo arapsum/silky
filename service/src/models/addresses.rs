@@ -11,8 +11,10 @@ use super::{ModelError, ModelResult, Seedable};
 #[serde(rename_all = "camelCase")]
 #[allow(clippy::struct_field_names)]
 pub struct Address {
+    #[serde(skip_serializing)]
     id: i32,
     pid: Uuid,
+    #[serde(skip_serializing)]
     customer_id: i32,
     address_type: String,
     label: Option<String>,
@@ -41,18 +43,9 @@ impl Address {
     /// # Errors
     /// Returns [`ModelError::InvalidReference`] when the customer is absent,
     /// or [`ModelError::Sqlx`] when the address cannot be persisted.
-    pub async fn create(db: &PgPool, params: &NewAddress) -> ModelResult<Self> {
+    pub async fn create(db: &PgPool, customer_pid: Uuid, params: &NewAddress) -> ModelResult<Self> {
         let mut txn = db.begin().await?;
-        let customer_id = sqlx::query_scalar::<_, i32>(
-            r"SELECT id
-              FROM users
-              WHERE pid = $1
-                AND deleted_at IS NULL",
-        )
-        .bind(params.customer_pid())
-        .fetch_optional(&mut *txn)
-        .await?
-        .ok_or_else(|| ModelError::InvalidReference("Customer does not exist.".to_string()))?;
+        let owner_id = Self::customer_row_id(&mut txn, customer_pid).await?;
 
         if params.is_default() {
             sqlx::query(
@@ -62,7 +55,7 @@ impl Address {
                     AND address_type = $2
                     AND deleted_at IS NULL",
             )
-            .bind(customer_id)
+            .bind(owner_id)
             .bind(params.address_type())
             .execute(&mut *txn)
             .await?;
@@ -88,7 +81,7 @@ impl Address {
               VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14)
               RETURNING *",
         )
-        .bind(customer_id)
+        .bind(owner_id)
         .bind(params.address_type())
         .bind(params.label().map(str::trim))
         .bind(params.recipient_name().trim())
@@ -108,6 +101,126 @@ impl Address {
         Ok(address)
     }
 
+    /// Replaces an address owned by the supplied customer.
+    ///
+    /// When the replacement becomes the default, the previous default for the
+    /// same address type is cleared within the transaction. Ownership is part
+    /// of the update predicate so callers cannot edit another customer's data.
+    ///
+    /// # Errors
+    /// Returns [`ModelError::EntityNotFound`] when the address is missing,
+    /// deleted, or belongs to another customer. Returns a database error when
+    /// the update cannot be persisted.
+    pub async fn update_for_customer(
+        db: &PgPool,
+        pid: Uuid,
+        customer_pid: Uuid,
+        params: &NewAddress,
+    ) -> ModelResult<Self> {
+        let mut txn = db.begin().await?;
+        let owner_id = Self::customer_row_id(&mut txn, customer_pid).await?;
+
+        if params.is_default() {
+            sqlx::query(
+                r"
+                UPDATE addresses
+                SET is_default = FALSE
+                WHERE customer_id = $1
+                    AND address_type = $2
+                    AND pid <> $3
+                    AND deleted_at IS NULL
+                ",
+            )
+            .bind(owner_id)
+            .bind(params.address_type())
+            .bind(pid)
+            .execute(&mut *txn)
+            .await?;
+        }
+
+        let address = sqlx::query_as::<_, Self>(
+            r"
+            UPDATE addresses
+            SET address_type = $1,
+                label = $2,
+                recipient_name = $3,
+                company = $4,
+                line_one = $5,
+                line_two = $6,
+                city = $7,
+                region = $8,
+                postal_code = $9,
+                country_code = $10,
+                email = $11,
+                phone = $12,
+                is_default = $13
+            WHERE pid = $14
+                AND customer_id = $15
+                AND deleted_at IS NULL
+            RETURNING *
+            ",
+        )
+        .bind(params.address_type())
+        .bind(params.label().map(str::trim))
+        .bind(params.recipient_name().trim())
+        .bind(params.company().map(str::trim))
+        .bind(params.line_one().trim())
+        .bind(params.line_two().map(str::trim))
+        .bind(params.city().trim())
+        .bind(params.region().map(str::trim))
+        .bind(params.postal_code().map(str::trim))
+        .bind(params.country_code().to_uppercase())
+        .bind(params.email().map(str::trim))
+        .bind(params.phone().map(str::trim))
+        .bind(params.is_default())
+        .bind(pid)
+        .bind(owner_id)
+        .fetch_optional(&mut *txn)
+        .await?
+        .ok_or(ModelError::EntityNotFound)?;
+
+        txn.commit().await?;
+        Ok(address)
+    }
+
+    /// Soft-deletes an address owned by the supplied customer.
+    ///
+    /// Historical orders retain their immutable address snapshots and their
+    /// optional foreign-key reference to this row.
+    ///
+    /// # Errors
+    /// Returns [`ModelError::EntityNotFound`] when the address is missing,
+    /// already deleted, or belongs to another customer. Returns a database
+    /// error when the deletion cannot be persisted.
+    pub async fn delete_for_customer(
+        db: &PgPool,
+        pid: Uuid,
+        customer_pid: Uuid,
+    ) -> ModelResult<()> {
+        let result = sqlx::query(
+            r"
+            UPDATE addresses AS address
+            SET deleted_at = NOW(),
+                is_default = FALSE
+            FROM users AS customer
+            WHERE address.pid = $1
+                AND customer.pid = $2
+                AND customer.id = address.customer_id
+                AND address.deleted_at IS NULL
+            ",
+        )
+        .bind(pid)
+        .bind(customer_pid)
+        .execute(db)
+        .await?;
+
+        if result.rows_affected() == 0 {
+            return Err(ModelError::EntityNotFound);
+        }
+
+        Ok(())
+    }
+
     /// Finds one non-deleted address by its public ID.
     ///
     /// # Errors
@@ -120,6 +233,33 @@ impl Address {
                 AND deleted_at IS NULL",
         )
         .bind(pid)
+        .fetch_optional(db)
+        .await?
+        .ok_or(ModelError::EntityNotFound)
+    }
+
+    /// Finds one non-deleted address owned by the supplied customer.
+    ///
+    /// # Errors
+    /// Returns [`ModelError::EntityNotFound`] when the address is missing,
+    /// deleted, or belongs to another customer.
+    pub async fn find_by_pid_for_customer(
+        db: &PgPool,
+        pid: Uuid,
+        customer_pid: Uuid,
+    ) -> ModelResult<Self> {
+        sqlx::query_as::<_, Self>(
+            r"
+            SELECT address.*
+            FROM addresses AS address
+            JOIN users AS customer ON customer.id = address.customer_id
+            WHERE address.pid = $1
+                AND customer.pid = $2
+                AND address.deleted_at IS NULL
+            ",
+        )
+        .bind(pid)
+        .bind(customer_pid)
         .fetch_optional(db)
         .await?
         .ok_or(ModelError::EntityNotFound)
@@ -141,6 +281,24 @@ impl Address {
         .bind(customer_pid)
         .fetch_all(db)
         .await?)
+    }
+
+    async fn customer_row_id(
+        txn: &mut sqlx::Transaction<'_, sqlx::Postgres>,
+        customer_pid: Uuid,
+    ) -> ModelResult<i32> {
+        sqlx::query_scalar::<_, i32>(
+            r"
+            SELECT id
+            FROM users
+            WHERE pid = $1
+                AND deleted_at IS NULL
+            ",
+        )
+        .bind(customer_pid)
+        .fetch_optional(&mut **txn)
+        .await?
+        .ok_or_else(|| ModelError::InvalidReference("Customer does not exist.".to_string()))
     }
 
     /// Loads addresses from a data file and seeds them into the database.

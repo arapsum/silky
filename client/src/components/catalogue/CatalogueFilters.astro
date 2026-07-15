@@ -1,0 +1,291 @@
+---
+import { SlidersHorizontalIcon } from "@phosphor-icons/react";
+import type { CategoryListItem } from "@/lib/api/types";
+import { titleCase } from "@/lib/format";
+
+interface Props {
+  categories: CategoryListItem[];
+  activeCategory?: string;
+  search?: string;
+  minPrice?: string;
+  maxPrice?: string;
+  stockStatus?: string;
+}
+
+const {
+  categories,
+  activeCategory = "",
+  search = "",
+  minPrice = "",
+  maxPrice = "",
+  stockStatus = "",
+} = Astro.props;
+
+function categoryHref(slug?: string): string {
+  const params = new URLSearchParams(Astro.url.searchParams);
+  params.delete("page");
+  if (slug) params.set("category", slug);
+  else params.delete("category");
+  const query = params.toString();
+  return query ? `/shop?${query}` : "/shop";
+}
+
+function clearHref(): string {
+  const params = new URLSearchParams();
+  if (search) params.set("search", search);
+  const query = params.toString();
+  return query ? `/shop?${query}` : "/shop";
+}
+---
+
+<details class="filters" open>
+  <summary>
+    <span>Filters</span>
+    <SlidersHorizontalIcon aria-hidden="true" size={18} />
+  </summary>
+
+  <div class="filters__content">
+    <section class="filters__section" aria-labelledby="category-filter-heading">
+      <h2 id="category-filter-heading">Category</h2>
+      <nav aria-label="Filter by category">
+        <a aria-current={!activeCategory ? "page" : undefined} href={categoryHref()}>
+          <span>All products</span>
+        </a>
+        {
+          categories.map((category) => (
+            <a
+              aria-current={activeCategory === category.slug ? "page" : undefined}
+              href={categoryHref(category.slug)}
+            >
+              <span>{titleCase(category.name)}</span>
+              <small>{category.productCount}</small>
+            </a>
+          ))
+        }
+      </nav>
+    </section>
+
+    <form action="/shop" class="filters__form" method="get">
+      {activeCategory && <input name="category" type="hidden" value={activeCategory} />}
+      {search && <input name="search" type="hidden" value={search} />}
+
+      <fieldset class="filters__section filters__price">
+        <legend>Price</legend>
+        <div>
+          <label for="minimum-price">Minimum</label>
+          <div class="filters__money-input">
+            <span aria-hidden="true">$</span>
+            <input
+              id="minimum-price"
+              inputmode="decimal"
+              min="0"
+              name="minPrice"
+              placeholder="0"
+              step="0.01"
+              type="number"
+              value={minPrice}
+            />
+          </div>
+        </div>
+        <div>
+          <label for="maximum-price">Maximum</label>
+          <div class="filters__money-input">
+            <span aria-hidden="true">$</span>
+            <input
+              id="maximum-price"
+              inputmode="decimal"
+              min="0"
+              name="maxPrice"
+              placeholder="250"
+              step="0.01"
+              type="number"
+              value={maxPrice}
+            />
+          </div>
+        </div>
+      </fieldset>
+
+      <fieldset class="filters__section filters__availability">
+        <legend>Availability</legend>
+        <label>
+          <input checked={!stockStatus} name="stockStatus" type="radio" value="" />
+          <span>All stock</span>
+        </label>
+        <label>
+          <input checked={stockStatus === "inStock"} name="stockStatus" type="radio" value="inStock" />
+          <span>In stock</span>
+        </label>
+        <label>
+          <input checked={stockStatus === "outOfStock"} name="stockStatus" type="radio" value="outOfStock" />
+          <span>Sold out</span>
+        </label>
+      </fieldset>
+
+      <button class="button-primary filters__apply" type="submit">Apply filters</button>
+      <a class="filters__clear" href={clearHref()}>Clear filters</a>
+    </form>
+  </div>
+</details>
+
+<style>
+  .filters {
+    border: 1px solid var(--border);
+    border-radius: var(--radius-card);
+    background: var(--surface-raised);
+  }
+
+  .filters summary {
+    display: flex;
+    min-height: 3.5rem;
+    align-items: center;
+    justify-content: space-between;
+    gap: 1rem;
+    padding: 0.85rem 1rem;
+    cursor: pointer;
+    font-size: 0.9rem;
+    font-weight: 760;
+    list-style: none;
+  }
+
+  .filters summary::-webkit-details-marker {
+    display: none;
+  }
+
+  .filters__content {
+    padding: 0 1rem 1rem;
+  }
+
+  .filters__section {
+    margin: 0;
+    padding: 1.15rem 0;
+    border: 0;
+    border-top: 1px solid var(--border);
+  }
+
+  .filters__section h2,
+  .filters__section legend {
+    margin: 0 0 0.75rem;
+    padding: 0;
+    font-size: 0.75rem;
+    font-weight: 760;
+  }
+
+  .filters__section nav {
+    display: grid;
+    gap: 0.15rem;
+  }
+
+  .filters__section nav a {
+    display: flex;
+    min-height: 2rem;
+    align-items: center;
+    justify-content: space-between;
+    gap: 1rem;
+    color: var(--text-muted);
+    font-size: 0.72rem;
+  }
+
+  .filters__section nav a[aria-current="page"] {
+    color: var(--text);
+    font-weight: 740;
+  }
+
+  .filters__section nav small {
+    color: var(--text-muted);
+    font-size: 0.62rem;
+  }
+
+  .filters__price {
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 0.65rem;
+  }
+
+  .filters__price legend {
+    grid-column: 1 / -1;
+  }
+
+  .filters__price label {
+    display: block;
+    margin-bottom: 0.35rem;
+    color: var(--text-muted);
+    font-size: 0.62rem;
+  }
+
+  .filters__money-input {
+    display: flex;
+    min-height: 2.5rem;
+    align-items: center;
+    gap: 0.25rem;
+    padding-inline: 0.65rem;
+    border: 1px solid var(--border);
+    border-radius: 0.75rem;
+    background: var(--surface);
+    color: var(--text-muted);
+  }
+
+  .filters__money-input input {
+    min-width: 0;
+    width: 100%;
+    border: 0;
+    outline: 0;
+    background: transparent;
+    color: var(--text);
+    font-size: 0.72rem;
+  }
+
+  .filters__availability {
+    display: grid;
+    gap: 0.6rem;
+  }
+
+  .filters__availability legend {
+    margin-bottom: 0.8rem;
+  }
+
+  .filters__availability label {
+    display: flex;
+    align-items: center;
+    gap: 0.55rem;
+    color: var(--text-muted);
+    cursor: pointer;
+    font-size: 0.72rem;
+  }
+
+  .filters__availability input {
+    width: 0.95rem;
+    height: 0.95rem;
+    margin: 0;
+    accent-color: var(--action);
+  }
+
+  .filters__apply {
+    width: 100%;
+    min-height: 2.65rem;
+    margin-top: 0.15rem;
+    border: 0;
+    cursor: pointer;
+    font-size: 0.72rem;
+  }
+
+  .filters__clear {
+    display: block;
+    width: fit-content;
+    margin: 0.75rem auto 0;
+    color: var(--text-muted);
+    font-size: 0.65rem;
+    text-decoration: underline;
+    text-underline-offset: 0.2em;
+  }
+
+  @media (min-width: 56rem) {
+    .filters {
+      position: sticky;
+      top: 1rem;
+    }
+
+    .filters summary {
+      cursor: default;
+    }
+  }
+</style>

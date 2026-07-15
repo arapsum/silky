@@ -1,0 +1,277 @@
+---
+import { ArrowLeftIcon } from "@phosphor-icons/react";
+import SiteFooter from "@/components/layout/SiteFooter.astro";
+import SiteHeader from "@/components/layout/SiteHeader.astro";
+import ProductDetails from "@/components/products/ProductDetails.astro";
+import { ProductGallery } from "@/components/products/ProductGallery";
+import BaseLayout from "@/layouts/BaseLayout.astro";
+import { getProductBySlug, StorefrontApiError } from "@/lib/api/client";
+import type { ProductDetail } from "@/lib/api/types";
+import { formatCurrency, titleCase } from "@/lib/format";
+
+const { slug = "" } = Astro.params;
+let product: ProductDetail | null = null;
+let status = 200;
+
+try {
+  product = await getProductBySlug(slug);
+} catch (error) {
+  status = error instanceof StorefrontApiError ? error.status : 503;
+  Astro.response.status = status === 404 ? 404 : 503;
+}
+
+const pictures = product
+  ? Array.from(
+      new Map(
+        [...product.pictures, ...product.variants.flatMap((variant) => variant.pictures)]
+          .map((picture) => [picture.pid, picture]),
+      ).values(),
+    ).sort((left, right) => (left.displayOrder ?? 999) - (right.displayOrder ?? 999))
+  : [];
+
+const defaultVariant = product?.variants.find((variant) => variant.isDefault) ?? product?.variants[0];
+const groupedOptions = product?.variants.reduce<Record<string, Set<string>>>((groups, variant) => {
+  for (const option of variant.options) {
+    groups[option.attributeName] ??= new Set();
+    groups[option.attributeName].add(option.value);
+  }
+  return groups;
+}, {}) ?? {};
+
+const galleryImages = pictures.map((picture, index) => ({
+  id: picture.pid,
+  src: picture.imageLink,
+  alt: index === 0 && product ? product.name : `${product?.name ?? "Product"}, view ${index + 1}`,
+}));
+---
+
+<BaseLayout
+  title={product ? `${product.name} | Silk` : "Product unavailable | Silk"}
+  description={product?.description ?? "This Silk product is currently unavailable."}
+  image={pictures[0]?.imageLink}
+  noIndex={!product}
+>
+  <SiteHeader />
+
+  <main class="product shell">
+    {
+      product ? (
+        <>
+          <nav class="product__breadcrumb" aria-label="Breadcrumb">
+            <a href="/shop">
+              <ArrowLeftIcon aria-hidden="true" size={15} weight="bold" />
+              Collection
+            </a>
+            <span aria-hidden="true">/</span>
+            <a href={`/shop?category=${product.category.slug}`}>{titleCase(product.category.name)}</a>
+          </nav>
+
+          <div class="product__layout">
+            <section aria-label={`${product.name} images`}>
+              {galleryImages.length > 0 ? (
+                <ProductGallery client:load images={galleryImages} />
+              ) : (
+                <div class="product__gallery-empty">Silk</div>
+              )}
+            </section>
+
+            <aside class="product__summary">
+              <p class="eyebrow">{titleCase(product.category.name)}</p>
+              <h1 class="display-title">{product.name}</h1>
+              <p class="product__price">
+                {defaultVariant ? formatCurrency(defaultVariant.price) : "Price unavailable"}
+              </p>
+              {product.description && <p class="product__description">{product.description}</p>}
+
+              {Object.entries(groupedOptions).map(([name, values]) => (
+                <section class="product__options">
+                  <div>
+                    <h2>{titleCase(name)}</h2>
+                    <span>{values.size} {values.size === 1 ? "option" : "options"}</span>
+                  </div>
+                  <div class="product__option-values">
+                    {Array.from(values).map((value) => <span>{value}</span>)}
+                  </div>
+                </section>
+              ))}
+
+              <p class:list={["product__availability", { "product__availability--out": !defaultVariant || defaultVariant.stockQuantity === 0 }]}>
+                {defaultVariant && defaultVariant.stockQuantity > 0
+                  ? `${defaultVariant.stockQuantity} available in the shown variant`
+                  : "Currently unavailable"}
+              </p>
+
+            </aside>
+          </div>
+
+          <ProductDetails information={product.information} tags={product.tags} />
+        </>
+      ) : (
+        <section class="product__unavailable">
+          <p class="eyebrow">{status === 404 ? "Product not found" : "Catalogue unavailable"}</p>
+          <h1 class="display-title">{status === 404 ? "This piece has left the collection." : "The collection is taking a moment."}</h1>
+          <p>{status === 404
+            ? "The product may have moved or is no longer available."
+            : "Silk could not reach the catalogue service. Please try again shortly."}</p>
+          <a class="button-primary" href="/shop">Return to the collection</a>
+        </section>
+      )
+    }
+  </main>
+
+  <SiteFooter />
+</BaseLayout>
+
+<style>
+  .product {
+    padding-top: 1.5rem;
+  }
+
+  .product__breadcrumb {
+    display: flex;
+    align-items: center;
+    gap: 0.55rem;
+    margin-bottom: 1.25rem;
+    color: var(--text-muted);
+    font-size: 0.74rem;
+  }
+
+  .product__breadcrumb a:first-child {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.35rem;
+  }
+
+  .product__layout {
+    display: grid;
+    gap: clamp(2rem, 6vw, 6rem);
+  }
+
+  .product__gallery-empty {
+    width: 100%;
+    aspect-ratio: 4 / 5;
+    display: grid;
+    place-items: center;
+    border-radius: var(--radius-card);
+    background: var(--surface-muted);
+    color: var(--text-muted);
+    font-family: var(--font-display);
+    font-size: 2rem;
+  }
+
+  .product__summary {
+    align-self: start;
+  }
+
+  .product__summary > .eyebrow {
+    margin: 0 0 0.8rem;
+    color: var(--text-muted);
+  }
+
+  .product__summary h1 {
+    max-width: none;
+    margin: 0;
+    font-size: clamp(2.25rem, 3.2vw, 2.8rem);
+    line-height: 1;
+  }
+
+  .product__price {
+    margin: 1rem 0 0;
+    font-size: 1.2rem;
+    font-weight: 760;
+  }
+
+  .product__description {
+    margin: 1.35rem 0 0;
+    color: var(--text-muted);
+  }
+
+  .product__options {
+    margin-top: 2rem;
+    padding-top: 1.5rem;
+    border-top: 1px solid var(--border);
+  }
+
+  .product__options > div:first-child {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 1rem;
+  }
+
+  .product__options h2 {
+    margin: 0;
+    font-size: 0.88rem;
+  }
+
+  .product__options > div:first-child span {
+    color: var(--text-muted);
+    font-size: 0.68rem;
+  }
+
+  .product__option-values {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0.45rem;
+    margin-top: 0.85rem;
+  }
+
+  .product__option-values span {
+    padding: 0.5rem 0.85rem;
+    border: 1px solid var(--border);
+    border-radius: var(--radius-control);
+    font-size: 0.74rem;
+  }
+
+  .product__availability {
+    margin: 1.5rem 0 0;
+    color: var(--olive);
+    font-size: 0.75rem;
+    font-weight: 720;
+  }
+
+  .product__availability--out {
+    color: var(--rust);
+  }
+
+  .product__unavailable {
+    display: grid;
+    min-height: 65vh;
+    place-items: center;
+    align-content: center;
+    text-align: center;
+  }
+
+  .product__unavailable .eyebrow {
+    margin: 0;
+    color: var(--text-muted);
+  }
+
+  .product__unavailable h1 {
+    max-width: 12ch;
+    margin: 1rem 0 0;
+    font-size: clamp(3rem, 8vw, 6rem);
+  }
+
+  .product__unavailable > p:not(.eyebrow) {
+    max-width: 30rem;
+    margin: 1.3rem 0 2rem;
+    color: var(--text-muted);
+  }
+
+  @media (min-width: 58rem) {
+    .product__layout {
+      grid-template-columns: minmax(0, 1.05fr) minmax(24rem, 0.95fr);
+    }
+
+    .product__summary {
+      position: sticky;
+      top: 2rem;
+      padding-top: clamp(1rem, 4vw, 4rem);
+    }
+
+    .product__summary h1 {
+      white-space: nowrap;
+    }
+  }
+</style>

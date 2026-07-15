@@ -1,0 +1,136 @@
+---
+import type { ProductTag } from "@/lib/api/types";
+
+interface Props {
+  information: Record<string, string>;
+  tags?: ProductTag[];
+}
+
+const { information, tags = [] } = Astro.props;
+const details = Object.entries(information);
+---
+
+{
+  (details.length > 0 || tags.length > 0) && (
+    <section class="product-details" aria-labelledby="product-details-heading">
+      <header class="product-details__header">
+        <h2 id="product-details-heading">Product details</h2>
+      </header>
+
+      {details.length > 0 && (
+        <dl class="product-details__grid">
+          {details.map(([label, value]) => (
+            <div>
+              <dt>{label}</dt>
+              <dd>{value}</dd>
+            </div>
+          ))}
+        </dl>
+      )}
+
+      {tags.length > 0 && (
+        <div class="product-details__tags">
+          <h3>Tags</h3>
+          <div>
+            {tags.map((tag) => <span>{tag.name}</span>)}
+          </div>
+        </div>
+      )}
+    </section>
+  )
+}
+
+<style>
+  .product-details {
+    margin-top: clamp(3rem, 7vw, 6rem);
+    border-top: 1px solid var(--border);
+  }
+
+  .product-details__header {
+    display: flex;
+    border-bottom: 1px solid var(--border);
+  }
+
+  .product-details__header h2 {
+    position: relative;
+    margin: 0;
+    padding: 1.15rem 0;
+    font-family: var(--font-display);
+    font-size: 1rem;
+    letter-spacing: -0.025em;
+  }
+
+  .product-details__header h2::after {
+    position: absolute;
+    right: 0;
+    bottom: -1px;
+    left: 0;
+    height: 2px;
+    background: var(--text);
+    content: "";
+  }
+
+  .product-details__grid {
+    display: grid;
+    margin: 0;
+  }
+
+  .product-details__grid div {
+    padding-block: 1.25rem;
+    border-bottom: 1px solid var(--border);
+  }
+
+  .product-details__grid dt {
+    color: var(--text-muted);
+    font-size: 0.7rem;
+  }
+
+  .product-details__grid dd {
+    margin: 0.3rem 0 0;
+    font-size: 0.9rem;
+    font-weight: 720;
+  }
+
+  .product-details__tags {
+    padding-top: 1.5rem;
+  }
+
+  .product-details__tags h3 {
+    margin: 0;
+    font-size: 0.78rem;
+  }
+
+  .product-details__tags > div {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0.45rem;
+    margin-top: 0.75rem;
+  }
+
+  .product-details__tags span {
+    padding: 0.45rem 0.8rem;
+    border: 1px solid var(--border);
+    border-radius: var(--radius-control);
+    font-size: 0.7rem;
+  }
+
+  @media (min-width: 42rem) {
+    .product-details__grid {
+      grid-template-columns: repeat(auto-fit, minmax(12rem, 1fr));
+    }
+
+    .product-details__grid div {
+      padding: 1.5rem;
+      border-right: 1px solid var(--border);
+      border-bottom: 0;
+    }
+
+    .product-details__grid div:first-child {
+      padding-left: 0;
+    }
+
+    .product-details__grid div:last-child {
+      border-right: 0;
+    }
+  }
+</style>

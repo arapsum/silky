@@ -1,0 +1,68 @@
+---
+source: tests/models/addresses.rs
+expression: "(found, updated)"
+---
+(
+    Ok(
+        Address {
+            id: ID,
+            pid: PID,
+            customer_id: ID,
+            address_type: "shipping",
+            label: Some(
+                "Home",
+            ),
+            recipient_name: "Jane Smith",
+            company: None,
+            line_one: "18 Nyali Road",
+            line_two: Some(
+                "House 6",
+            ),
+            city: "Mombasa",
+            region: Some(
+                "Mombasa County",
+            ),
+            postal_code: Some(
+                "80100",
+            ),
+            country_code: "KE",
+            email: Some(
+                "jane.smith@globex.com",
+            ),
+            phone: Some(
+                "+254711000022",
+            ),
+            is_default: true,
+            created_at: DATE,
+            updated_at: DATE,
+            deleted_at: None,
+        },
+    ),
+    Ok(
+        Address {
+            id: ID,
+            pid: PID,
+            customer_id: ID,
+            address_type: "shipping",
+            label: Some(
+                "Home",
+            ),
+            recipient_name: "John Doe",
+            company: None,
+            line_one: "10 Market Street",
+            line_two: None,
+            city: "Nairobi",
+            region: None,
+            postal_code: None,
+            country_code: "KE",
+            email: Some(
+                "john.doe@acme.com",
+            ),
+            phone: None,
+            is_default: true,
+            created_at: DATE,
+            updated_at: DATE,
+            deleted_at: None,
+        },
+    ),
+)

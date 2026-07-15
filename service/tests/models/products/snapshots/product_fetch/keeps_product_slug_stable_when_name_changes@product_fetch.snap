@@ -1,0 +1,9 @@
+---
+source: tests/models/products/product_fetch.rs
+expression: "(before.slug(), after.slug(), after.name())"
+---
+(
+    "classic-cotton-t-shirt",
+    "classic-cotton-t-shirt",
+    "Renamed Cotton T-shirt",
+)

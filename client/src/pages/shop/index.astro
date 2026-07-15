@@ -1,0 +1,212 @@
+---
+import CatalogueFilters from "@/components/catalogue/CatalogueFilters.astro";
+import CatalogueMessage from "@/components/catalogue/CatalogueMessage.astro";
+import Pagination from "@/components/catalogue/Pagination.astro";
+import SiteFooter from "@/components/layout/SiteFooter.astro";
+import SiteHeader from "@/components/layout/SiteHeader.astro";
+import ProductGrid from "@/components/products/ProductGrid.astro";
+import BaseLayout from "@/layouts/BaseLayout.astro";
+import { getCategories, getProducts } from "@/lib/api/client";
+import type { CategoryListItem, PaginatedResponse, ProductListItem } from "@/lib/api/types";
+import { titleCase } from "@/lib/format";
+
+const search = Astro.url.searchParams.get("search")?.trim() ?? "";
+const category = Astro.url.searchParams.get("category")?.trim() ?? "";
+const rawMinPrice = Astro.url.searchParams.get("minPrice")?.trim() ?? "";
+const rawMaxPrice = Astro.url.searchParams.get("maxPrice")?.trim() ?? "";
+const rawStockStatus = Astro.url.searchParams.get("stockStatus")?.trim() ?? "";
+const requestedPage = Number.parseInt(Astro.url.searchParams.get("page") ?? "1", 10);
+const page = Number.isFinite(requestedPage) && requestedPage > 0 ? requestedPage : 1;
+
+function validPrice(value: string): string {
+  if (!value) return "";
+  const amount = Number(value);
+  return Number.isFinite(amount) && amount >= 0 ? value : "";
+}
+
+const minPrice = validPrice(rawMinPrice);
+const maxPrice = validPrice(rawMaxPrice);
+const stockStatus = ["inStock", "outOfStock"].includes(rawStockStatus) ? rawStockStatus : "";
+
+const productParams = new URLSearchParams({ limit: "9", page: page.toString() });
+if (search) productParams.set("search", search);
+if (category) productParams.set("categorySlug", category);
+if (minPrice) productParams.set("minPrice", minPrice);
+if (maxPrice) productParams.set("maxPrice", maxPrice);
+if (stockStatus) productParams.set("stockStatus", stockStatus);
+
+let catalogue: PaginatedResponse<ProductListItem> | null = null;
+let categories: CategoryListItem[] = [];
+let loadError = false;
+
+const [productResult, categoryResult] = await Promise.allSettled([
+  getProducts(productParams),
+  getCategories(new URLSearchParams({ limit: "50", page: "1" })),
+]);
+
+if (productResult.status === "fulfilled") {
+  catalogue = productResult.value;
+} else {
+  loadError = true;
+}
+
+if (categoryResult.status === "fulfilled") {
+  categories = categoryResult.value.data;
+}
+
+const activeCategory = categories.find((item) => item.slug === category);
+const pageTitle = activeCategory
+  ? titleCase(activeCategory.name)
+  : search
+    ? `Results for “${search}”`
+    : "The collection";
+const pageDescription = activeCategory?.description
+  ?? (search ? "Explore pieces matching your search." : "Everyday pieces selected to layer easily and wear often.");
+const totalItems = catalogue?.pagination.totalItems ?? 0;
+const firstItem = totalItems === 0 ? 0 : (page - 1) * 9 + 1;
+const lastItem = Math.min(page * 9, totalItems);
+---
+
+<BaseLayout title={`${pageTitle} | Silk`} description={pageDescription}>
+  <SiteHeader />
+
+  <main class="shop shell">
+    <nav class="shop__breadcrumb" aria-label="Breadcrumb">
+      <a href="/">Home</a>
+      <span aria-hidden="true">/</span>
+      <a href="/shop">Shop</a>
+      {activeCategory && <span aria-hidden="true">/</span>}
+      {activeCategory && <span aria-current="page">{titleCase(activeCategory.name)}</span>}
+    </nav>
+
+    <div class="shop__layout">
+      <aside>
+        <CatalogueFilters
+          activeCategory={category}
+          categories={categories}
+          maxPrice={maxPrice}
+          minPrice={minPrice}
+          search={search}
+          stockStatus={stockStatus}
+        />
+      </aside>
+
+      <section class="shop__results" aria-labelledby="shop-heading">
+        <header class="shop__heading">
+          <div>
+            <h1 id="shop-heading">{pageTitle}</h1>
+            {search && <p>{pageDescription}</p>}
+          </div>
+          {
+            catalogue && (
+              <p class="shop__count">
+                Showing {firstItem}-{lastItem} of {totalItems} {totalItems === 1 ? "product" : "products"}
+              </p>
+            )
+          }
+        </header>
+
+        {
+          catalogue && catalogue.data.length > 0 ? (
+            <>
+              <ProductGrid products={catalogue.data} eagerCount={3} variant="catalogue" />
+              <Pagination
+                compact
+                currentPage={catalogue.pagination.page}
+                totalPages={catalogue.pagination.totalPages}
+              />
+            </>
+          ) : (
+            <CatalogueMessage
+              title={loadError ? "The collection is taking a moment" : "No pieces match these filters"}
+              message={loadError
+                ? "Silk could not reach the catalogue service. Please refresh in a moment."
+                : "Clear a filter or try a broader search."}
+            />
+          )
+        }
+      </section>
+    </div>
+  </main>
+
+  <SiteFooter />
+</BaseLayout>
+
+<style>
+  .shop {
+    padding-top: 1.35rem;
+  }
+
+  .shop__breadcrumb {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    margin-bottom: 1.25rem;
+    color: var(--text-muted);
+    font-size: 0.68rem;
+  }
+
+  .shop__breadcrumb [aria-current="page"] {
+    color: var(--text);
+  }
+
+  .shop__layout {
+    display: grid;
+    gap: 1.5rem;
+  }
+
+  .shop__results {
+    min-width: 0;
+  }
+
+  .shop__heading {
+    display: flex;
+    min-height: 3.5rem;
+    align-items: start;
+    justify-content: space-between;
+    gap: 1.5rem;
+    padding-bottom: 1rem;
+  }
+
+  .shop__heading h1 {
+    margin: 0;
+    font-family: var(--font-display);
+    font-size: clamp(1.55rem, 3vw, 2rem);
+    font-weight: 740;
+    letter-spacing: -0.045em;
+    line-height: 1.1;
+  }
+
+  .shop__heading > div > p {
+    margin: 0.35rem 0 0;
+    color: var(--text-muted);
+    font-size: 0.72rem;
+  }
+
+  .shop__count {
+    flex: none;
+    margin: 0.35rem 0 0;
+    color: var(--text-muted);
+    font-size: 0.66rem;
+    white-space: nowrap;
+  }
+
+  @media (min-width: 56rem) {
+    .shop__layout {
+      grid-template-columns: minmax(14rem, 16rem) minmax(0, 1fr);
+      align-items: start;
+      gap: clamp(1.5rem, 3vw, 2.25rem);
+    }
+  }
+
+  @media (max-width: 35rem) {
+    .shop__heading {
+      display: block;
+    }
+
+    .shop__count {
+      margin-top: 0.5rem;
+      white-space: normal;
+    }
+  }
+</style>

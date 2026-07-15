@@ -7,6 +7,7 @@ Ok(
         data: [
             ProductListItem {
                 pid: PID,
+                slug: "brushed-wool-scarf",
                 name: "Brushed Wool Scarf",
                 description: Some(
                     "A warm, softly brushed wool scarf with subtle fringed ends.",
@@ -42,6 +43,7 @@ Ok(
             },
             ProductListItem {
                 pid: PID,
+                slug: "full-grain-leather-belt",
                 name: "Full-grain Leather Belt",
                 description: Some(
                     "A vegetable-tanned leather belt finished with a brushed metal buckle.",

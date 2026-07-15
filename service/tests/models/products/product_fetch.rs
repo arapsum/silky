@@ -187,6 +187,71 @@ async fn can_find_product_detail_by_pid() {
     });
 }
 
+#[rstest]
+#[case("can_find_product_detail_by_slug", "classic-cotton-t-shirt")]
+#[case("normalizes_product_slug_lookup", " CLASSIC-COTTON-T-SHIRT ")]
+#[tokio::test]
+#[serial]
+async fn can_find_product_detail_by_slug(#[case] test_name: &str, #[case] slug: &str) {
+    configure_insta!();
+
+    let ctx = boot_test().await.expect("Failed to boot test!");
+    seed_data(ctx.db()).await.expect("Failed to seed data");
+
+    let result = Product::find_detail_by_slug(ctx.db(), slug).await;
+
+    with_settings!({
+        filters => snapshot_filters()
+    }, {
+        assert_debug_snapshot!(test_name, result)
+    });
+}
+
+#[tokio::test]
+#[serial]
+async fn cannot_find_product_detail_when_slug_does_not_exist() {
+    configure_insta!();
+
+    let ctx = boot_test().await.expect("Failed to boot test!");
+    seed_data(ctx.db()).await.expect("Failed to seed data");
+
+    let result = Product::find_detail_by_slug(ctx.db(), "missing-product").await;
+
+    assert_debug_snapshot!(
+        "cannot_find_product_detail_when_slug_does_not_exist",
+        result
+    );
+}
+
+#[tokio::test]
+#[serial]
+async fn keeps_product_slug_stable_when_name_changes() {
+    configure_insta!();
+
+    let ctx = boot_test().await.expect("Failed to boot test!");
+    seed_data(ctx.db()).await.expect("Failed to seed data");
+    let pid = uuid("6d7b16c3-efbf-4e7e-9b70-4f43e1cc3001");
+    let before = Product::find_by_pid(ctx.db(), pid)
+        .await
+        .expect("Failed to find product before update");
+
+    Product::update(
+        ctx.db(),
+        pid,
+        &update_product(json!({ "name": "Renamed Cotton T-shirt" })),
+    )
+    .await
+    .expect("Failed to rename product");
+    let after = Product::find_by_pid(ctx.db(), pid)
+        .await
+        .expect("Failed to find product after update");
+
+    assert_debug_snapshot!(
+        "keeps_product_slug_stable_when_name_changes",
+        (before.slug(), after.slug(), after.name())
+    );
+}
+
 #[tokio::test]
 #[serial]
 async fn cannot_find_product_detail_when_pid_does_not_exist() {

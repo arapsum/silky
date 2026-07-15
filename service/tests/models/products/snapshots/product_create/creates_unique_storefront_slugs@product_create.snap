@@ -1,0 +1,8 @@
+---
+source: tests/models/products/product_create.rs
+expression: "(first.product.slug(), second.product.slug())"
+---
+(
+    "storefront-slug-product",
+    "storefront-slug-product-1",
+)

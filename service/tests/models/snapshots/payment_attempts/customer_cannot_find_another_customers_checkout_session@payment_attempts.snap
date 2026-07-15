@@ -1,0 +1,7 @@
+---
+source: tests/models/payment_attempts.rs
+expression: result
+---
+Err(
+    PaymentAttemptNotFound,
+)

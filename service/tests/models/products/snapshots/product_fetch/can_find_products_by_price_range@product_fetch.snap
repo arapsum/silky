@@ -7,6 +7,7 @@ Ok(
         data: [
             ProductListItem {
                 pid: PID,
+                slug: "pleated-wide-leg-trousers",
                 name: "Pleated Wide-leg Trousers",
                 description: Some(
                     "Fluid wide-leg trousers with front pleats and a clean tailored waistband.",
@@ -42,6 +43,7 @@ Ok(
             },
             ProductListItem {
                 pid: PID,
+                slug: "oxford-button-down-shirt",
                 name: "Oxford Button-down Shirt",
                 description: Some(
                     "A crisp cotton Oxford shirt cut for comfortable everyday layering.",
@@ -77,6 +79,7 @@ Ok(
             },
             ProductListItem {
                 pid: PID,
+                slug: "washed-linen-shirt",
                 name: "Washed Linen Shirt",
                 description: Some(
                     "A breathable linen shirt with a soft washed finish and easy shape.",
@@ -112,6 +115,7 @@ Ok(
             },
             ProductListItem {
                 pid: PID,
+                slug: "court-leather-sneakers",
                 name: "Court Leather Sneakers",
                 description: Some(
                     "Low-profile leather sneakers with cushioned insoles.",
@@ -147,6 +151,7 @@ Ok(
             },
             ProductListItem {
                 pid: PID,
+                slug: "tailored-chino-trousers",
                 name: "Tailored Chino Trousers",
                 description: Some(
                     "Mid-weight chinos with a tapered leg and stretch waistband.",

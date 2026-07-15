@@ -1,0 +1,8 @@
+---
+source: tests/requests/addresses.rs
+expression: "(response.status_code(), response.text())"
+---
+(
+    400,
+    "{\"error\":\"One or more fields failed validation\",\"code\":\"validation_error\",\"details\":{\"country_code\":\"Field error\"}}",
+)

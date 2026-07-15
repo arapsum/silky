@@ -1,0 +1,151 @@
+---
+import type { ProductListItem } from "@/lib/api/types";
+import { formatCurrency, titleCase } from "@/lib/format";
+
+interface Props {
+  product: ProductListItem;
+  eager?: boolean;
+  variant?: "standard" | "catalogue";
+}
+
+const { product, eager = false, variant = "standard" } = Astro.props;
+const isAvailable = product.totalStock > 0;
+---
+
+<article class:list={["product-card", `product-card--${variant}`]}>
+  <a class="product-card__image-wrap" href={`/products/${product.slug}`}>
+    {
+      product.primaryImage ? (
+        <img
+          alt={product.name}
+          class="product-card__image"
+          decoding="async"
+          height="760"
+          loading={eager ? "eager" : "lazy"}
+          src={product.primaryImage}
+          width="620"
+        />
+      ) : (
+        <span class="product-card__empty" aria-hidden="true">Silk</span>
+      )
+    }
+    {!isAvailable && <span class="product-card__status">Sold out</span>}
+  </a>
+
+  <div class="product-card__body">
+    <div>
+      <p class="product-card__category">{titleCase(product.category.name)}</p>
+      <h3><a href={`/products/${product.slug}`}>{product.name}</a></h3>
+    </div>
+    <p class="product-card__price">
+      {product.defaultVariant ? formatCurrency(product.defaultVariant.price) : "Price unavailable"}
+    </p>
+  </div>
+</article>
+
+<style>
+  .product-card {
+    min-width: 0;
+  }
+
+  .product-card__image-wrap {
+    position: relative;
+    display: block;
+    aspect-ratio: 4 / 5;
+    overflow: hidden;
+    border-radius: var(--radius-card);
+    background: var(--surface-muted);
+  }
+
+  .product-card--catalogue .product-card__image-wrap {
+    aspect-ratio: 1 / 1;
+  }
+
+  .product-card__image {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+    transition: transform 420ms cubic-bezier(0.22, 1, 0.36, 1);
+  }
+
+  .product-card__empty {
+    display: grid;
+    width: 100%;
+    height: 100%;
+    place-items: center;
+    color: var(--text-muted);
+    font-family: var(--font-display);
+    font-size: 1.4rem;
+  }
+
+  .product-card__status {
+    position: absolute;
+    top: 0.85rem;
+    left: 0.85rem;
+    padding: 0.38rem 0.7rem;
+    border-radius: var(--radius-control);
+    background: var(--surface-raised);
+    color: var(--text);
+    font-size: 0.68rem;
+    font-weight: 740;
+  }
+
+  .product-card__body {
+    display: flex;
+    align-items: start;
+    justify-content: space-between;
+    gap: 1rem;
+    padding-top: 0.85rem;
+  }
+
+  .product-card__category {
+    margin: 0 0 0.2rem;
+    color: var(--text-muted);
+    font-size: 0.68rem;
+    font-weight: 680;
+    letter-spacing: 0.08em;
+    text-transform: uppercase;
+  }
+
+  .product-card h3,
+  .product-card__price {
+    margin: 0;
+    font-size: 0.9rem;
+    font-weight: 720;
+    line-height: 1.35;
+  }
+
+  .product-card--catalogue .product-card__body {
+    display: grid;
+    gap: 0.3rem;
+    padding-top: 0.65rem;
+  }
+
+  .product-card--catalogue .product-card__category {
+    display: none;
+  }
+
+  .product-card--catalogue h3 {
+    font-size: 0.8rem;
+  }
+
+  .product-card--catalogue .product-card__price {
+    font-size: 0.95rem;
+  }
+
+  .product-card__price {
+    flex: none;
+    white-space: nowrap;
+  }
+
+  @media (hover: hover) {
+    .product-card__image-wrap:hover .product-card__image {
+      transform: scale(1.035);
+    }
+
+    .product-card h3 a:hover {
+      text-decoration: underline;
+      text-underline-offset: 0.2em;
+    }
+  }
+</style>

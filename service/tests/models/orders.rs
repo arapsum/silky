@@ -4,7 +4,7 @@ use rstest::rstest;
 use serial_test::serial;
 use service::{
     models::{ModelError, Order, OrderItem},
-    schemas::{NewOrder, OrderListQuery},
+    schemas::{CheckoutOrder, NewOrder, OrderListQuery},
 };
 use uuid::Uuid;
 
@@ -44,7 +44,6 @@ fn new_order(
 
 fn new_address() -> service::schemas::NewAddress {
     serde_json::from_value(serde_json::json!({
-        "customerPid": "bd6f7c26-d2c9-487e-b837-8f77be468033",
         "addressType": "shipping",
         "recipientName": "John Doe",
         "lineOne": "10 Market Street",
@@ -61,10 +60,12 @@ async fn checkout_calculates_totals_and_reserves_inventory() {
     configure_insta!();
     let ctx = boot_test().await.expect("test context should boot");
     seed_data(ctx.db()).await.expect("seed should complete");
+    let customer_pid =
+        Uuid::parse_str("bd6f7c26-d2c9-487e-b837-8f77be468033").expect("customer pid");
     let billing = service::models::Address::create(
         ctx.db(),
+        customer_pid,
         &serde_json::from_value(serde_json::json!({
-            "customerPid": "bd6f7c26-d2c9-487e-b837-8f77be468033",
             "addressType": "billing",
             "recipientName": "John Doe",
             "lineOne": "10 Market Street",
@@ -76,7 +77,7 @@ async fn checkout_calculates_totals_and_reserves_inventory() {
     )
     .await
     .expect("billing address should create");
-    let shipping = service::models::Address::create(ctx.db(), &new_address())
+    let shipping = service::models::Address::create(ctx.db(), customer_pid, &new_address())
         .await
         .expect("shipping address should create");
     let variant_pid =
@@ -103,6 +104,47 @@ async fn checkout_calculates_totals_and_reserves_inventory() {
     with_settings!({ filters => { let mut filters = cleanup_uuid().to_vec(); filters.extend(cleanup_date().to_vec()); filters.extend(cleanup_id()); filters } }, {
         assert_debug_snapshot!("checkout_calculates_totals_and_reserves_inventory", (found, items, remaining_stock))
     });
+}
+
+#[tokio::test]
+#[serial]
+async fn customer_checkout_uses_shipping_address_for_billing_by_default() {
+    configure_insta!();
+    let ctx = boot_test().await.expect("test context should boot");
+    seed_data(ctx.db()).await.expect("seed should complete");
+    let customer_pid =
+        Uuid::parse_str("bd6f7c26-d2c9-487e-b837-8f77be468033").expect("customer pid");
+    let params = serde_json::from_value::<CheckoutOrder>(serde_json::json!({
+        "shippingAddressPid": "4f3d4f3e-1c26-4f5f-a54f-6b5b2b8a7301",
+        "items": [{
+            "variantPid": "db365773-2ac1-49aa-a4b9-03dcf8ac3401",
+            "quantity": 1
+        }]
+    }))
+    .expect("checkout should deserialize");
+
+    let mut txn = ctx.db().begin().await.expect("transaction should begin");
+    let created = Order::create_checkout_order(&mut txn, customer_pid, &params)
+        .await
+        .expect("checkout order should create");
+    txn.commit().await.expect("transaction should commit");
+    let address_match = sqlx::query_as::<_, (bool, bool)>(
+        r"
+        SELECT billing_address_id = shipping_address_id,
+            billing_address_snapshot = shipping_address_snapshot
+        FROM orders
+        WHERE pid = $1
+        ",
+    )
+    .bind(created.order.pid())
+    .fetch_one(ctx.db())
+    .await
+    .expect("address snapshots should load");
+
+    assert_debug_snapshot!(
+        "customer_checkout_uses_shipping_address_for_billing_by_default",
+        address_match
+    );
 }
 
 #[rstest]

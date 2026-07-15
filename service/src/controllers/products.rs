@@ -72,6 +72,17 @@ async fn one(State(ctx): State<AppState>, AppPath(pid): AppPath<Uuid>) -> Result
 
 #[tracing::instrument(skip(ctx))]
 #[debug_handler]
+async fn one_by_slug(
+    State(ctx): State<AppState>,
+    AppPath(slug): AppPath<String>,
+) -> Result<Response> {
+    let product = Product::find_detail_by_slug(ctx.db(), &slug).await?;
+
+    Ok((StatusCode::OK, Json(product)).into_response())
+}
+
+#[tracing::instrument(skip(ctx))]
+#[debug_handler]
 async fn remove(State(ctx): State<AppState>, AppPath(pid): AppPath<Uuid>) -> Result<Response> {
     let product = Product::delete(ctx.db(), pid).await?;
 
@@ -321,6 +332,7 @@ fn protected(ctx: &AppState) -> Router {
 fn general(ctx: &AppState) -> Router {
     Router::new()
         .route("/", get(list))
+        .route("/by-slug/{slug}", get(one_by_slug))
         .route("/{pid}", get(one))
         .with_state(ctx.clone())
 }

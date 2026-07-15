@@ -1,0 +1,119 @@
+---
+import BrandMark from "@/components/brand/BrandMark.astro";
+---
+
+<footer class="site-footer">
+  <div class="shell site-footer__grid">
+    <section class="site-footer__intro">
+      <a class="footer-brand" href="/" aria-label="Silk home">
+        <BrandMark class="footer-brand__mark" />
+        <span>Silk</span>
+      </a>
+      <p>
+        Considered clothing for the everyday. Built around useful materials,
+        confident shapes, and pieces that live well together.
+      </p>
+    </section>
+
+    <nav aria-label="Shop links">
+      <p class="eyebrow">Shop</p>
+      <a href="/shop">All products</a>
+      <a href="/shop?category=t-shirts">T-shirts</a>
+      <a href="/shop?category=shirts">Shirts</a>
+      <a href="/shop?category=shoes">Shoes</a>
+    </nav>
+
+    <nav aria-label="Collection links">
+      <p class="eyebrow">Collection</p>
+      <a href="/#new-arrivals">New in</a>
+      <a href="/shop?category=trousers">Trousers</a>
+      <a href="/shop?category=accessories">Accessories</a>
+    </nav>
+  </div>
+
+  <div class="shell site-footer__base">
+    <p>&copy; {new Date().getFullYear()} Silk. All rights reserved.</p>
+    <p>Designed for a quieter kind of confidence.</p>
+  </div>
+</footer>
+
+<style>
+  .site-footer {
+    margin-top: clamp(5rem, 10vw, 9rem);
+    padding-block: clamp(3.5rem, 7vw, 6rem) 1.5rem;
+    background: var(--text);
+    color: var(--surface);
+  }
+
+  .site-footer__grid {
+    display: grid;
+    gap: 3rem;
+  }
+
+  .site-footer__intro {
+    max-width: 25rem;
+  }
+
+  .footer-brand {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.7rem;
+    font-family: var(--font-display);
+    font-size: 1.75rem;
+    font-weight: 760;
+    letter-spacing: -0.045em;
+  }
+
+  .footer-brand__mark {
+    width: 1.7rem;
+    height: 2rem;
+  }
+
+  .site-footer__intro p {
+    margin: 1.25rem 0 0;
+    color: color-mix(in srgb, var(--surface) 66%, transparent);
+    font-size: 0.92rem;
+  }
+
+  .site-footer nav {
+    display: grid;
+    align-content: start;
+    gap: 0.7rem;
+  }
+
+  .site-footer nav p {
+    margin: 0 0 0.4rem;
+    color: color-mix(in srgb, var(--surface) 55%, transparent);
+  }
+
+  .site-footer nav a {
+    width: fit-content;
+    font-size: 0.88rem;
+  }
+
+  .site-footer__base {
+    display: flex;
+    flex-direction: column;
+    gap: 0.3rem;
+    margin-top: 3.5rem;
+    padding-top: 1.25rem;
+    border-top: 1px solid color-mix(in srgb, var(--surface) 20%, transparent);
+    color: color-mix(in srgb, var(--surface) 55%, transparent);
+    font-size: 0.72rem;
+  }
+
+  .site-footer__base p {
+    margin: 0;
+  }
+
+  @media (min-width: 42rem) {
+    .site-footer__grid {
+      grid-template-columns: minmax(16rem, 1.6fr) 1fr 1fr;
+    }
+
+    .site-footer__base {
+      flex-direction: row;
+      justify-content: space-between;
+    }
+  }
+</style>

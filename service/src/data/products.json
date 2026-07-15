@@ -3,6 +3,7 @@
     "id": 201,
     "pid": "6d7b16c3-efbf-4e7e-9b70-4f43e1cc3001",
     "categoryId": 101,
+    "slug": "classic-cotton-t-shirt",
     "name": "Classic Cotton T-shirt",
     "description": "Soft everyday cotton t-shirt with a relaxed fit.",
     "information": {
@@ -18,6 +19,7 @@
     "id": 202,
     "pid": "4532debd-67fe-4070-b36c-d5b9392b3002",
     "categoryId": 102,
+    "slug": "tailored-chino-trousers",
     "name": "Tailored Chino Trousers",
     "description": "Mid-weight chinos with a tapered leg and stretch waistband.",
     "information": {
@@ -33,6 +35,7 @@
     "id": 203,
     "pid": "e7d4a0c2-e831-4c42-bc5c-7a7ac6863003",
     "categoryId": 103,
+    "slug": "court-leather-sneakers",
     "name": "Court Leather Sneakers",
     "description": "Low-profile leather sneakers with cushioned insoles.",
     "information": {
@@ -48,6 +51,7 @@
     "id": 204,
     "pid": "987a118c-124c-4749-a83c-3f76471f3004",
     "categoryId": 104,
+    "slug": "washed-linen-shirt",
     "name": "Washed Linen Shirt",
     "description": "A breathable linen shirt with a soft washed finish and easy shape.",
     "information": {
@@ -63,6 +67,7 @@
     "id": 205,
     "pid": "a9dd0089-8cee-45f9-901d-6f411bea3005",
     "categoryId": 104,
+    "slug": "oxford-button-down-shirt",
     "name": "Oxford Button-down Shirt",
     "description": "A crisp cotton Oxford shirt cut for comfortable everyday layering.",
     "information": {
@@ -78,6 +83,7 @@
     "id": 206,
     "pid": "10d6db44-bf11-414e-be62-5535ee0e3006",
     "categoryId": 105,
+    "slug": "everyday-canvas-tote",
     "name": "Everyday Canvas Tote",
     "description": "A roomy heavyweight canvas tote with reinforced handles and an inner pocket.",
     "information": {
@@ -93,6 +99,7 @@
     "id": 207,
     "pid": "93c2924c-1a7a-466b-8acc-7aa5c3133007",
     "categoryId": 105,
+    "slug": "full-grain-leather-belt",
     "name": "Full-grain Leather Belt",
     "description": "A vegetable-tanned leather belt finished with a brushed metal buckle.",
     "information": {
@@ -108,6 +115,7 @@
     "id": 208,
     "pid": "8f944bd4-26fc-4877-920a-af0bdcf73008",
     "categoryId": 105,
+    "slug": "brushed-wool-scarf",
     "name": "Brushed Wool Scarf",
     "description": "A warm, softly brushed wool scarf with subtle fringed ends.",
     "information": {
@@ -123,6 +131,7 @@
     "id": 209,
     "pid": "645bf6e1-bf37-472a-aa0f-09dc9aa13009",
     "categoryId": 103,
+    "slug": "mesh-running-trainers",
     "name": "Mesh Running Trainers",
     "description": "Lightweight trainers with a breathable mesh upper and responsive foam sole.",
     "information": {
@@ -138,6 +147,7 @@
     "id": 210,
     "pid": "a012b9f1-58cb-45c5-bc83-141b3a4a3010",
     "categoryId": 102,
+    "slug": "pleated-wide-leg-trousers",
     "name": "Pleated Wide-leg Trousers",
     "description": "Fluid wide-leg trousers with front pleats and a clean tailored waistband.",
     "information": {

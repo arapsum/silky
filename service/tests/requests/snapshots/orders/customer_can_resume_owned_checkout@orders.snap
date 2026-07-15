@@ -1,0 +1,8 @@
+---
+source: tests/requests/orders.rs
+expression: "(response.status_code(), response.text())"
+---
+(
+    200,
+    "{\"orderPid\":\"PID\",\"orderStatus\":\"pending\",\"paymentStatus\":\"pending\",\"attemptStatus\":\"session_created\",\"checkoutUrl\":\"https://checkout.stripe.com/c/pay/customer-resume\",\"expiresAt\":\"DATE\"}",
+)

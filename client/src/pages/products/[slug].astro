@@ -2,9 +2,10 @@
 import { ArrowLeftIcon } from "@phosphor-icons/react";
 import SiteFooter from "@/components/layout/SiteFooter.astro";
 import SiteHeader from "@/components/layout/SiteHeader.astro";
+import { ProductGallery } from "@/components/products/ProductGallery";
 import BaseLayout from "@/layouts/BaseLayout.astro";
 import { getProductBySlug, StorefrontApiError } from "@/lib/api/client";
-import type { ProductDetail, ProductPicture } from "@/lib/api/types";
+import type { ProductDetail } from "@/lib/api/types";
 import { formatCurrency, titleCase } from "@/lib/format";
 
 const { slug = "" } = Astro.params;
@@ -36,9 +37,11 @@ const groupedOptions = product?.variants.reduce<Record<string, Set<string>>>((gr
   return groups;
 }, {}) ?? {};
 
-function pictureAlt(picture: ProductPicture, index: number): string {
-  return index === 0 && product ? product.name : product ? `${product.name}, view ${index + 1}` : picture.pid;
-}
+const galleryImages = pictures.map((picture, index) => ({
+  id: picture.pid,
+  src: picture.imageLink,
+  alt: index === 0 && product ? product.name : `${product?.name ?? "Product"}, view ${index + 1}`,
+}));
 ---
 
 <BaseLayout
@@ -63,18 +66,9 @@ function pictureAlt(picture: ProductPicture, index: number): string {
           </nav>
 
           <div class="product__layout">
-            <section class="product__gallery" aria-label={`${product.name} images`}>
-              {pictures.length > 0 ? (
-                pictures.map((picture, index) => (
-                  <img
-                    alt={pictureAlt(picture, index)}
-                    decoding="async"
-                    height="920"
-                    loading={index === 0 ? "eager" : "lazy"}
-                    src={picture.imageLink}
-                    width="760"
-                  />
-                ))
+            <section aria-label={`${product.name} images`}>
+              {galleryImages.length > 0 ? (
+                <ProductGallery client:load images={galleryImages} />
               ) : (
                 <div class="product__gallery-empty">Silk</div>
               )}
@@ -163,29 +157,13 @@ function pictureAlt(picture: ProductPicture, index: number): string {
     gap: clamp(2rem, 6vw, 6rem);
   }
 
-  .product__gallery {
-    display: grid;
-    grid-template-columns: repeat(2, minmax(0, 1fr));
-    gap: 0.65rem;
-  }
-
-  .product__gallery img,
   .product__gallery-empty {
     width: 100%;
     aspect-ratio: 4 / 5;
-    border-radius: var(--radius-card);
-    background: var(--surface-muted);
-    object-fit: cover;
-  }
-
-  .product__gallery img:first-child:last-child,
-  .product__gallery-empty {
-    grid-column: 1 / -1;
-  }
-
-  .product__gallery-empty {
     display: grid;
     place-items: center;
+    border-radius: var(--radius-card);
+    background: var(--surface-muted);
     color: var(--text-muted);
     font-family: var(--font-display);
     font-size: 2rem;
@@ -317,7 +295,7 @@ function pictureAlt(picture: ProductPicture, index: number): string {
 
   @media (min-width: 58rem) {
     .product__layout {
-      grid-template-columns: minmax(0, 1.5fr) minmax(20rem, 0.7fr);
+      grid-template-columns: minmax(0, 1.05fr) minmax(24rem, 0.95fr);
     }
 
     .product__summary {

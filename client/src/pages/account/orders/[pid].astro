@@ -1,0 +1,6 @@
+---
+import { OrderView } from "@/components/account/OrderView";
+import AccountLayout from "@/layouts/AccountLayout.astro";
+const { pid = "" } = Astro.params;
+---
+<AccountLayout active="orders" title="Order details"><OrderView client:load pid={pid} /></AccountLayout>

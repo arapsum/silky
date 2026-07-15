@@ -1,0 +1,43 @@
+---
+import { MapPinIcon, PackageIcon, UserIcon } from "@phosphor-icons/react";
+import { AccountMenu } from "@/components/account/AccountMenu";
+import SiteFooter from "@/components/layout/SiteFooter.astro";
+import SiteHeader from "@/components/layout/SiteHeader.astro";
+import BaseLayout from "@/layouts/BaseLayout.astro";
+interface Props { title: string; active: "account" | "orders" | "addresses" }
+const { title, active } = Astro.props;
+---
+<BaseLayout title={`${title} | Silk`} description="Manage your Silk account." noIndex>
+  <SiteHeader />
+  <main class="account shell">
+    <aside class="account-nav">
+      <p class="eyebrow">Your Silk</p>
+      <nav aria-label="Account navigation">
+        <a class:list={{ "is-active": active === "account" }} href="/account"><UserIcon aria-hidden="true" size={17} /> Account</a>
+        <a class:list={{ "is-active": active === "orders" }} href="/account/orders"><PackageIcon aria-hidden="true" size={17} /> Orders</a>
+        <a class:list={{ "is-active": active === "addresses" }} href="/account/addresses"><MapPinIcon aria-hidden="true" size={17} /> Addresses</a>
+      </nav>
+      <AccountMenu client:load />
+    </aside>
+    <div class="account-content"><slot /></div>
+  </main>
+  <SiteFooter />
+</BaseLayout>
+
+<style>
+  .account { display: grid; gap: 2rem; padding-top: clamp(2.5rem, 6vw, 5rem); }
+  .account-nav { align-self: start; }
+  .account-nav > .eyebrow { margin: 0 0 1rem; color: var(--text-muted); }
+  .account-nav nav { display: flex; gap: 0.4rem; overflow-x: auto; }
+  .account-nav nav a,
+  .account-nav :global(button) { display: inline-flex; min-height: 2.65rem; align-items: center; gap: 0.5rem; padding: 0.55rem 0.85rem; border: 0; border-radius: var(--radius-control); background: transparent; color: var(--text-muted); font-size: 0.78rem; white-space: nowrap; }
+  .account-nav nav a.is-active { background: var(--action); color: var(--action-text); }
+  .account-nav :global(button) { margin-top: 0.65rem; cursor: pointer; }
+  .account-content { min-width: 0; }
+  @media (min-width: 58rem) {
+    .account { grid-template-columns: 13rem minmax(0, 1fr); }
+    .account-nav { position: sticky; top: 2rem; }
+    .account-nav nav { display: grid; overflow: visible; }
+    .account-nav nav a { width: 100%; box-sizing: border-box; }
+  }
+</style>

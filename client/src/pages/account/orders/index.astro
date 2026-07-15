@@ -1,0 +1,5 @@
+---
+import { OrderHistory } from "@/components/account/OrderHistory";
+import AccountLayout from "@/layouts/AccountLayout.astro";
+---
+<AccountLayout active="orders" title="Your orders"><OrderHistory client:load /></AccountLayout>

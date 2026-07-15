@@ -1,0 +1,47 @@
+---
+source: tests/models/cart.rs
+expression: quote
+---
+CartQuote {
+    items: [
+        CartQuoteItem {
+            variant_pid: PID,
+            product_pid: Some(
+                PID,
+            ),
+            product_slug: Some(
+                "classic-cotton-t-shirt",
+            ),
+            product_name: Some(
+                "Classic Cotton T-shirt",
+            ),
+            sku: Some(
+                "TSHIRT-BLK-M",
+            ),
+            image_url: Some(
+                "https://images.unsplash.com/photo-1521572163474-6864f9cf17ab?auto=format&fit=crop&w=900&q=80",
+            ),
+            selected_options: Json(
+                Object {
+                    "size": String("M"),
+                    "colour": String("Black"),
+                },
+            ),
+            requested_quantity: 2,
+            available_quantity: 32,
+            unit_price: Some(
+                24.99,
+            ),
+            line_total: Some(
+                49.98,
+            ),
+            status: Available,
+        },
+    ],
+    currency: "USD",
+    subtotal: 49.98,
+    shipping_total: 0,
+    tax_total: 0,
+    grand_total: 49.98,
+    can_checkout: true,
+}

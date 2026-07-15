@@ -1,0 +1,8 @@
+---
+source: tests/requests/cart.rs
+expression: "(response.status_code(), response.text())"
+---
+(
+    400,
+    "{\"error\":\"One or more fields failed validation\",\"code\":\"validation_error\",\"details\":{\"items[0].quantity\":\"Field error\"}}",
+)

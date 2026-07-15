@@ -1,5 +1,6 @@
 mod addresses;
 mod auth;
+mod cart;
 mod categories;
 mod media;
 mod orders;

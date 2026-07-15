@@ -16,6 +16,9 @@ pub struct CartQuote {
     items: Vec<CartQuoteItem>,
     currency: &'static str,
     subtotal: Decimal,
+    shipping_total: Decimal,
+    tax_total: Decimal,
+    grand_total: Decimal,
     can_checkout: bool,
 }
 
@@ -169,6 +172,9 @@ impl CartQuote {
             items,
             currency: "USD",
             subtotal,
+            shipping_total: Decimal::ZERO,
+            tax_total: Decimal::ZERO,
+            grand_total: subtotal,
             can_checkout,
         })
     }

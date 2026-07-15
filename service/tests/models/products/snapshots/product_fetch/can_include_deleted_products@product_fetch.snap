@@ -8,6 +8,7 @@ expression: "(without_deleted, with_deleted)"
             data: [
                 ProductListItem {
                     pid: PID,
+                    slug: "pleated-wide-leg-trousers",
                     name: "Pleated Wide-leg Trousers",
                     description: Some(
                         "Fluid wide-leg trousers with front pleats and a clean tailored waistband.",
@@ -43,6 +44,7 @@ expression: "(without_deleted, with_deleted)"
                 },
                 ProductListItem {
                     pid: PID,
+                    slug: "mesh-running-trainers",
                     name: "Mesh Running Trainers",
                     description: Some(
                         "Lightweight trainers with a breathable mesh upper and responsive foam sole.",
@@ -78,6 +80,7 @@ expression: "(without_deleted, with_deleted)"
                 },
                 ProductListItem {
                     pid: PID,
+                    slug: "brushed-wool-scarf",
                     name: "Brushed Wool Scarf",
                     description: Some(
                         "A warm, softly brushed wool scarf with subtle fringed ends.",
@@ -113,6 +116,7 @@ expression: "(without_deleted, with_deleted)"
                 },
                 ProductListItem {
                     pid: PID,
+                    slug: "full-grain-leather-belt",
                     name: "Full-grain Leather Belt",
                     description: Some(
                         "A vegetable-tanned leather belt finished with a brushed metal buckle.",
@@ -148,6 +152,7 @@ expression: "(without_deleted, with_deleted)"
                 },
                 ProductListItem {
                     pid: PID,
+                    slug: "everyday-canvas-tote",
                     name: "Everyday Canvas Tote",
                     description: Some(
                         "A roomy heavyweight canvas tote with reinforced handles and an inner pocket.",
@@ -183,6 +188,7 @@ expression: "(without_deleted, with_deleted)"
                 },
                 ProductListItem {
                     pid: PID,
+                    slug: "oxford-button-down-shirt",
                     name: "Oxford Button-down Shirt",
                     description: Some(
                         "A crisp cotton Oxford shirt cut for comfortable everyday layering.",
@@ -218,6 +224,7 @@ expression: "(without_deleted, with_deleted)"
                 },
                 ProductListItem {
                     pid: PID,
+                    slug: "washed-linen-shirt",
                     name: "Washed Linen Shirt",
                     description: Some(
                         "A breathable linen shirt with a soft washed finish and easy shape.",
@@ -253,6 +260,7 @@ expression: "(without_deleted, with_deleted)"
                 },
                 ProductListItem {
                     pid: PID,
+                    slug: "court-leather-sneakers",
                     name: "Court Leather Sneakers",
                     description: Some(
                         "Low-profile leather sneakers with cushioned insoles.",
@@ -288,6 +296,7 @@ expression: "(without_deleted, with_deleted)"
                 },
                 ProductListItem {
                     pid: PID,
+                    slug: "classic-cotton-t-shirt",
                     name: "Classic Cotton T-shirt",
                     description: Some(
                         "Soft everyday cotton t-shirt with a relaxed fit.",
@@ -337,6 +346,7 @@ expression: "(without_deleted, with_deleted)"
             data: [
                 ProductListItem {
                     pid: PID,
+                    slug: "pleated-wide-leg-trousers",
                     name: "Pleated Wide-leg Trousers",
                     description: Some(
                         "Fluid wide-leg trousers with front pleats and a clean tailored waistband.",
@@ -372,6 +382,7 @@ expression: "(without_deleted, with_deleted)"
                 },
                 ProductListItem {
                     pid: PID,
+                    slug: "mesh-running-trainers",
                     name: "Mesh Running Trainers",
                     description: Some(
                         "Lightweight trainers with a breathable mesh upper and responsive foam sole.",
@@ -407,6 +418,7 @@ expression: "(without_deleted, with_deleted)"
                 },
                 ProductListItem {
                     pid: PID,
+                    slug: "brushed-wool-scarf",
                     name: "Brushed Wool Scarf",
                     description: Some(
                         "A warm, softly brushed wool scarf with subtle fringed ends.",
@@ -442,6 +454,7 @@ expression: "(without_deleted, with_deleted)"
                 },
                 ProductListItem {
                     pid: PID,
+                    slug: "full-grain-leather-belt",
                     name: "Full-grain Leather Belt",
                     description: Some(
                         "A vegetable-tanned leather belt finished with a brushed metal buckle.",
@@ -477,6 +490,7 @@ expression: "(without_deleted, with_deleted)"
                 },
                 ProductListItem {
                     pid: PID,
+                    slug: "everyday-canvas-tote",
                     name: "Everyday Canvas Tote",
                     description: Some(
                         "A roomy heavyweight canvas tote with reinforced handles and an inner pocket.",
@@ -512,6 +526,7 @@ expression: "(without_deleted, with_deleted)"
                 },
                 ProductListItem {
                     pid: PID,
+                    slug: "oxford-button-down-shirt",
                     name: "Oxford Button-down Shirt",
                     description: Some(
                         "A crisp cotton Oxford shirt cut for comfortable everyday layering.",
@@ -547,6 +562,7 @@ expression: "(without_deleted, with_deleted)"
                 },
                 ProductListItem {
                     pid: PID,
+                    slug: "washed-linen-shirt",
                     name: "Washed Linen Shirt",
                     description: Some(
                         "A breathable linen shirt with a soft washed finish and easy shape.",
@@ -582,6 +598,7 @@ expression: "(without_deleted, with_deleted)"
                 },
                 ProductListItem {
                     pid: PID,
+                    slug: "court-leather-sneakers",
                     name: "Court Leather Sneakers",
                     description: Some(
                         "Low-profile leather sneakers with cushioned insoles.",
@@ -617,6 +634,7 @@ expression: "(without_deleted, with_deleted)"
                 },
                 ProductListItem {
                     pid: PID,
+                    slug: "tailored-chino-trousers",
                     name: "Tailored Chino Trousers",
                     description: Some(
                         "Mid-weight chinos with a tapered leg and stretch waistband.",
@@ -654,6 +672,7 @@ expression: "(without_deleted, with_deleted)"
                 },
                 ProductListItem {
                     pid: PID,
+                    slug: "classic-cotton-t-shirt",
                     name: "Classic Cotton T-shirt",
                     description: Some(
                         "Soft everyday cotton t-shirt with a relaxed fit.",

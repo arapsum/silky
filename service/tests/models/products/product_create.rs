@@ -165,6 +165,49 @@ async fn variant_count(db: &sqlx::PgPool, sku: Option<&str>) -> i64 {
 
 #[tokio::test]
 #[serial]
+async fn creates_unique_storefront_slugs() {
+    configure_insta!();
+
+    let ctx = boot_test().await.expect("Failed to boot test");
+    seed_data(ctx.db()).await.expect("Failed to seed data");
+    sqlx::query("DELETE FROM products WHERE name LIKE 'Storefront Slug Product%'")
+        .execute(ctx.db())
+        .await
+        .expect("Failed to clean product slug fixtures");
+
+    let first = Product::create(
+        ctx.db(),
+        &CreateProduct::new(
+            103,
+            Cow::Borrowed("Storefront Slug Product!"),
+            None,
+            None,
+            None,
+        ),
+    )
+    .await
+    .expect("Failed to create first slug product");
+    let second = Product::create(
+        ctx.db(),
+        &CreateProduct::new(
+            103,
+            Cow::Borrowed("Storefront Slug Product?"),
+            None,
+            None,
+            None,
+        ),
+    )
+    .await
+    .expect("Failed to create second slug product");
+
+    assert_debug_snapshot!(
+        "creates_unique_storefront_slugs",
+        (first.product.slug(), second.product.slug())
+    );
+}
+
+#[tokio::test]
+#[serial]
 async fn creates_product_tag_assignments_atomically() {
     let ctx = boot_test().await.expect("Failed to boot test");
     seed_data(ctx.db()).await.expect("Failed to seed data");

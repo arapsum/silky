@@ -404,6 +404,43 @@ async fn can_get_product_detail() {
     .await;
 }
 
+#[rstest]
+#[case(
+    "can_get_product_detail_by_slug",
+    "classic-cotton-t-shirt",
+    StatusCode::OK
+)]
+#[case(
+    "cannot_get_product_detail_by_missing_slug",
+    "missing-product",
+    StatusCode::NOT_FOUND
+)]
+#[tokio::test]
+#[serial]
+async fn can_get_product_detail_by_slug(
+    #[case] test_name: &str,
+    #[case] slug: &str,
+    #[case] expected_status: StatusCode,
+) {
+    crate::request(|server, ctx| async move {
+        configure_insta!();
+
+        crate::seed_data(ctx.db())
+            .await
+            .expect("Failed to seed data");
+
+        let response = server.get(&format!("/products/by-slug/{slug}")).await;
+
+        assert_eq!(response.status_code(), expected_status);
+        with_settings!({
+            filters => response_filters()
+        }, {
+            assert_debug_snapshot!(test_name, (response.status_code(), response.text()))
+        })
+    })
+    .await;
+}
+
 #[tokio::test]
 #[serial]
 async fn can_get_product_detail_without_credentials() {

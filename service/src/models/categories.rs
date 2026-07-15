@@ -6,6 +6,7 @@ use uuid::Uuid;
 
 use crate::{
     schemas::{CategoryAttributesInput, CategoryListQuery, NewCategory, UpdateCategory},
+    utils::slugify,
     views::{
         CategoryAttributeResponse, CategoryChildResponse, CategoryDetailResponse, CategoryResponse,
         CategoryTopProductResponse,
@@ -383,28 +384,12 @@ impl Category {
         .map_err(Into::into)
     }
 
-    fn slugify(value: &str) -> String {
-        let slug = value
-            .to_lowercase()
-            .trim()
-            .split(|ch: char| !ch.is_ascii_alphanumeric())
-            .filter(|part| !part.is_empty())
-            .collect::<Vec<_>>()
-            .join("-");
-
-        if slug.is_empty() {
-            "category".to_string()
-        } else {
-            slug
-        }
-    }
-
     async fn create_unique_slug(
         db: &mut PgConnection,
         value: &str,
         current_pid: Option<Uuid>,
     ) -> ModelResult<String> {
-        let base = Self::slugify(value);
+        let base = slugify(value, "category");
 
         for suffix in 0..1000 {
             let candidate = if suffix == 0 {

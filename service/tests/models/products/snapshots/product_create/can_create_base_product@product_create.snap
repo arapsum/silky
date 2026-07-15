@@ -9,6 +9,7 @@ expression: "(result, product_count, variant_count)"
                 id: ID,
                 pid: PID,
                 category_id: ID,
+                slug: "minimal-product",
                 name: "Minimal Product",
                 description: Some(
                     "A product without setup records",

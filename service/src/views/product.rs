@@ -61,6 +61,7 @@ pub struct ProductVariantSummary {
 #[serde(rename_all = "camelCase")]
 pub struct ProductListItem {
     pub pid: Uuid,
+    pub slug: String,
     pub name: String,
     pub description: Option<String>,
     pub information: BTreeMap<String, String>,
@@ -135,6 +136,7 @@ pub struct ProductVariantDetail {
 pub struct ProductDetailResponse {
     pub id: i32,
     pub pid: Uuid,
+    pub slug: String,
     pub name: String,
     pub description: Option<String>,
     pub information: BTreeMap<String, String>,

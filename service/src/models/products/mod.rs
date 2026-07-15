@@ -3,7 +3,9 @@ use std::collections::{BTreeMap, HashMap, HashSet};
 use chrono::{DateTime, FixedOffset};
 use rust_decimal::Decimal;
 use serde::{Deserialize, Serialize};
-use sqlx::{Encode, Executor, PgPool, Postgres, Transaction, prelude::FromRow, types::Json};
+use sqlx::{
+    Encode, Executor, PgConnection, PgPool, Postgres, Transaction, prelude::FromRow, types::Json,
+};
 use uuid::Uuid;
 
 use crate::{
@@ -12,6 +14,7 @@ use crate::{
         CreateProduct, CreateProductPicture, CreateProductVariant, CreateVariantOption,
         ProductListQuery, UpdateProduct, UpdateProductPicture, UpdateProductVariant,
     },
+    utils::slugify,
     views::{
         ProductCategorySummary, ProductCreateResponse, ProductDetailResponse, ProductListItem,
         ProductOptionResponse, ProductPictureResponse, ProductVariantDetail,
@@ -43,6 +46,7 @@ pub struct Product {
     id: i32,
     pid: Uuid,
     category_id: i32,
+    slug: String,
     name: String,
     description: Option<String>,
     #[serde(default)]
@@ -55,6 +59,7 @@ pub struct Product {
 #[derive(Debug, FromRow)]
 struct ProductListRow {
     pid: Uuid,
+    slug: String,
     name: String,
     description: Option<String>,
     information: Json<BTreeMap<String, String>>,
@@ -79,6 +84,7 @@ impl ProductListRow {
     fn into_response(self) -> ProductListItem {
         ProductListItem {
             pid: self.pid,
+            slug: self.slug,
             name: self.name,
             description: self.description,
             information: self.information.0,
@@ -116,6 +122,7 @@ impl ProductListRow {
 struct ProductDetailHeader {
     id: i32,
     pid: Uuid,
+    slug: String,
     name: String,
     description: Option<String>,
     information: Json<BTreeMap<String, String>>,
@@ -253,11 +260,13 @@ impl Product {
         params: &CreateProduct<'_>,
     ) -> ModelResult<ProductCreateResponse> {
         let mut txn = db.begin().await?;
+        let slug = Self::create_unique_slug(&mut txn, params.name()).await?;
 
         let product = sqlx::query_as::<_, Self>(
             r"
             INSERT INTO products (
                 category_id,
+                slug,
                 name,
                 description,
                 information
@@ -265,11 +274,13 @@ impl Product {
                 $1,
                 $2,
                 $3,
-                $4
+                $4,
+                $5
             ) RETURNING *
         ",
         )
         .bind(params.category_id())
+        .bind(slug)
         .bind(params.name().trim())
         .bind(params.description().map(|description| description.trim()))
         .bind(Json(params.information().cloned().unwrap_or_default()))
@@ -728,6 +739,7 @@ impl Product {
                 AND (
                     $1::TEXT IS NULL
                     OR p.name ILIKE '%' || $1 || '%'
+                    OR p.slug ILIKE '%' || $1 || '%'
                     OR COALESCE(p.description, '') ILIKE '%' || $1 || '%'
                     OR c.name ILIKE '%' || $1 || '%'
                     OR c.slug ILIKE '%' || $1 || '%'
@@ -786,6 +798,7 @@ impl Product {
             r"
             SELECT
                 p.pid,
+                p.slug,
                 p.name,
                 p.description,
                 p.information,
@@ -840,6 +853,7 @@ impl Product {
                 AND (
                     $3::TEXT IS NULL
                     OR p.name ILIKE '%' || $3 || '%'
+                    OR p.slug ILIKE '%' || $3 || '%'
                     OR COALESCE(p.description, '') ILIKE '%' || $3 || '%'
                     OR c.name ILIKE '%' || $3 || '%'
                     OR c.slug ILIKE '%' || $3 || '%'
@@ -935,6 +949,7 @@ impl Product {
             SELECT
                 p.id,
                 p.pid,
+                p.slug,
                 p.name,
                 p.description,
                 p.information,
@@ -1102,6 +1117,7 @@ impl Product {
         Ok(ProductDetailResponse {
             id: product.id,
             pid: product.pid,
+            slug: product.slug,
             name: product.name,
             description: product.description,
             information: product.information.0,
@@ -1119,6 +1135,61 @@ impl Product {
             updated_at: product.updated_at,
             deleted_at: product.deleted_at,
         })
+    }
+
+    /// Finds an active product aggregate by its normalized storefront slug.
+    ///
+    /// # Errors
+    ///
+    /// Returns [`ModelError::EntityNotFound`] when no active product owns the
+    /// slug. Returns a database error when either lookup fails.
+    pub async fn find_detail_by_slug(
+        db: &PgPool,
+        slug: &str,
+    ) -> ModelResult<ProductDetailResponse> {
+        let pid = sqlx::query_scalar::<_, Uuid>(
+            r"
+            SELECT pid
+            FROM products
+            WHERE slug = $1
+                AND deleted_at IS NULL
+            ",
+        )
+        .bind(slug.trim().to_lowercase())
+        .fetch_optional(db)
+        .await?
+        .ok_or(ModelError::EntityNotFound)?;
+
+        Self::find_detail_by_pid(db, pid).await
+    }
+
+    async fn find_by_slug<'e, E>(db: E, slug: &str) -> ModelResult<Option<Self>>
+    where
+        E: Executor<'e, Database = Postgres>,
+    {
+        sqlx::query_as::<_, Self>("SELECT * FROM products WHERE slug = $1")
+            .bind(slug.trim().to_lowercase())
+            .fetch_optional(db)
+            .await
+            .map_err(Into::into)
+    }
+
+    async fn create_unique_slug(db: &mut PgConnection, value: &str) -> ModelResult<String> {
+        let base = slugify(value, "product");
+
+        for suffix in 0..1000 {
+            let candidate = if suffix == 0 {
+                base.clone()
+            } else {
+                format!("{base}-{suffix}")
+            };
+
+            if Self::find_by_slug(&mut *db, &candidate).await?.is_none() {
+                return Ok(candidate);
+            }
+        }
+
+        Ok(format!("{}-{}", base, Uuid::new_v4().simple()))
     }
 
     /// Finds a product by public ID.
@@ -1304,6 +1375,12 @@ impl Product {
         &self.name
     }
 
+    /// Returns the stable storefront slug.
+    #[must_use]
+    pub fn slug(&self) -> &str {
+        &self.slug
+    }
+
     /// Returns the optional product description.
     #[must_use]
     pub const fn description(&self) -> Option<&String> {
@@ -1344,6 +1421,7 @@ impl Seedable for Product {
                     id,
                     pid,
                     category_id,
+                    slug,
                     name,
                     description,
                     information,
@@ -1359,10 +1437,12 @@ impl Seedable for Product {
                     $6,
                     $7,
                     $8,
-                    $9
+                    $9,
+                    $10
                 ) ON CONFLICT (id) DO UPDATE SET
                     pid = EXCLUDED.pid,
                     category_id = EXCLUDED.category_id,
+                    slug = EXCLUDED.slug,
                     name = EXCLUDED.name,
                     description = EXCLUDED.description,
                     information = EXCLUDED.information,
@@ -1374,6 +1454,7 @@ impl Seedable for Product {
             .bind(product.id())
             .bind(product.pid())
             .bind(product.category_id())
+            .bind(product.slug())
             .bind(product.name())
             .bind(product.description())
             .bind(Json(product.information()))

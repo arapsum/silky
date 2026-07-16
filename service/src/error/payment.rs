@@ -19,8 +19,8 @@ pub enum PaymentError {
     MissingWebhookSignature,
     #[error("the Stripe webhook signature is invalid")]
     InvalidWebhookSignature,
-    #[error("the Stripe webhook payload is invalid")]
-    InvalidWebhookPayload,
+    #[error("the Stripe webhook payload is invalid: {0}")]
+    InvalidWebhookPayload(String),
     #[error("Stripe webhook reconciliation failed: {0}")]
     WebhookReconciliation(&'static str),
     #[error("Stripe webhook processing failed: {0}")]
@@ -40,7 +40,7 @@ impl PaymentError {
             Self::MissingWebhookSignature | Self::InvalidWebhookSignature => {
                 "invalid_stripe_signature"
             }
-            Self::InvalidWebhookPayload => "invalid_stripe_payload",
+            Self::InvalidWebhookPayload(_) => "invalid_stripe_payload",
             Self::WebhookReconciliation(_) => "webhook_reconciliation_failed",
             Self::WebhookProcessing(_) => "webhook_processing_failed",
         }
@@ -73,7 +73,7 @@ impl PaymentError {
                 StatusCode::BAD_REQUEST,
                 "The Stripe webhook signature is missing or invalid.",
             ),
-            Self::InvalidWebhookPayload => (
+            Self::InvalidWebhookPayload(_) => (
                 StatusCode::BAD_REQUEST,
                 "The Stripe webhook payload could not be verified.",
             ),
@@ -91,9 +91,7 @@ impl PaymentError {
             stripe::StripeError::Timeout | stripe::StripeError::ClientError(_) => {
                 Self::ProviderUnavailable(error)
             }
-            stripe::StripeError::Stripe(request) if request.http_status == 429 => {
-                Self::ProviderUnavailable(error)
-            }
+            stripe::StripeError::Stripe(_, 429) => Self::ProviderUnavailable(error),
             _ => Self::ProviderRejected(error),
         }
     }

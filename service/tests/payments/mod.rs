@@ -7,10 +7,7 @@ use service::{
     models::{CheckoutSessionDetails, Order, PaymentAttempt},
     payments::{process_stripe_event, to_minor_units, verify_stripe_event},
 };
-use stripe::{
-    CheckoutSession, CheckoutSessionMode, CheckoutSessionPaymentStatus, Currency, Event,
-    EventObject, EventType, NotificationEventData,
-};
+use stripe_webhook::{Event, EventObject, Webhook};
 
 macro_rules! configure_insta {
     ($(expr:expr),*) => {
@@ -57,88 +54,150 @@ fn stripe_config() -> StripeConfig {
     .expect("test Stripe config should deserialize")
 }
 
-fn checkout_event(
+fn checkout_event_payload(
     event_id: &str,
-    event_type: EventType,
+    event_type: &str,
     session_id: &str,
     attempt_pid: uuid::Uuid,
     order_pid: uuid::Uuid,
     amount: i64,
-    payment_status: CheckoutSessionPaymentStatus,
-) -> Event {
-    let session = CheckoutSession {
-        id: session_id.parse().expect("session ID should parse"),
-        amount_total: Some(amount),
-        client_reference_id: Some(order_pid.to_string()),
-        currency: Some(Currency::USD),
-        expires_at: chrono::Utc::now().timestamp() + 1800,
-        livemode: false,
-        metadata: Some(std::collections::HashMap::from([
-            ("order_pid".to_string(), order_pid.to_string()),
-            ("payment_attempt_pid".to_string(), attempt_pid.to_string()),
-        ])),
-        mode: CheckoutSessionMode::Payment,
-        payment_status,
-        ..Default::default()
-    };
-    Event {
-        id: event_id.parse().expect("event ID should parse"),
-        api_version: Some("2025-02-24.acacia".to_string()),
-        data: NotificationEventData {
-            object: EventObject::CheckoutSession(session),
-            previous_attributes: None,
+    payment_status: &str,
+) -> String {
+    serde_json::json!({
+        "id": event_id,
+        "object": "event",
+        "api_version": "2026-06-24.dahlia",
+        "created": chrono::Utc::now().timestamp(),
+        "data": {
+            "object": {
+                "id": session_id,
+                "object": "checkout.session",
+                "amount_total": amount,
+                "automatic_tax": { "enabled": false },
+                "client_reference_id": order_pid,
+                "created": chrono::Utc::now().timestamp(),
+                "currency": "usd",
+                "custom_fields": [],
+                "custom_text": {},
+                "expires_at": chrono::Utc::now().timestamp() + 1800,
+                "livemode": false,
+                "metadata": {
+                    "order_pid": order_pid,
+                    "payment_attempt_pid": attempt_pid,
+                },
+                "mode": "payment",
+                "payment_intent": "pi_test_silk",
+                "payment_method_types": ["card"],
+                "payment_status": payment_status,
+                "shipping_options": [],
+                "status": "complete",
+                "ui_mode": "hosted_page"
+            }
         },
-        livemode: false,
-        type_: event_type,
-        ..Default::default()
-    }
+        "livemode": false,
+        "pending_webhooks": 1,
+        "request": { "id": null, "idempotency_key": null },
+        "type": event_type
+    })
+    .to_string()
+}
+
+fn verified_checkout_event(payload: &str) -> Event {
+    let secret = "whsec_test_silk";
+    let signature = Webhook::generate_test_header(payload, secret, None);
+    verify_stripe_event(payload, &signature, secret)
+        .expect("current Stripe webhook fixture should verify and deserialize")
+}
+
+#[test]
+fn accepts_the_current_stripe_checkout_snapshot_shape() {
+    let attempt_pid = uuid::Uuid::new_v4();
+    let order_pid = uuid::Uuid::new_v4();
+    let payload = checkout_event_payload(
+        "evt_current_checkout_snapshot",
+        "checkout.session.completed",
+        "cs_test_current_checkout_snapshot",
+        attempt_pid,
+        order_pid,
+        2_499,
+        "paid",
+    );
+    let event = verified_checkout_event(&payload);
+
+    assert_eq!(
+        event.api_version.as_ref().map(ToString::to_string),
+        Some("2026-06-24.dahlia".to_string())
+    );
+    let EventObject::CheckoutSessionCompleted(session) = event.data.object else {
+        panic!("fixture should deserialize as a completed Checkout Session");
+    };
+    assert_eq!(
+        session.client_reference_id.as_deref(),
+        Some(order_pid.to_string()).as_deref()
+    );
+    assert_eq!(
+        session.ui_mode.map(|mode| mode.to_string()).as_deref(),
+        Some("hosted_page")
+    );
+}
+
+#[test]
+fn classifies_a_signed_malformed_webhook_as_an_invalid_payload() {
+    let payload = r#"{"object":"event"}"#;
+    let secret = "whsec_test_silk";
+    let signature = Webhook::generate_test_header(payload, secret, None);
+    let error = verify_stripe_event(payload, &signature, secret)
+        .expect_err("an incomplete signed event must not deserialize");
+
+    assert_eq!(error.code(), "invalid_stripe_payload");
+    assert!(error.to_string().contains("webhook payload is invalid"));
 }
 
 #[rstest]
 #[case(
     "completes_paid_checkout",
-    EventType::CheckoutSessionCompleted,
-    CheckoutSessionPaymentStatus::Paid,
+    "checkout.session.completed",
+    "paid",
     "succeeded",
     "confirmed",
     "paid"
 )]
 #[case(
     "waits_for_delayed_payment",
-    EventType::CheckoutSessionCompleted,
-    CheckoutSessionPaymentStatus::Unpaid,
+    "checkout.session.completed",
+    "unpaid",
     "processing",
     "pending",
     "pending"
 )]
 #[case(
     "completes_delayed_payment",
-    EventType::CheckoutSessionAsyncPaymentSucceeded,
-    CheckoutSessionPaymentStatus::Paid,
+    "checkout.session.async_payment_succeeded",
+    "paid",
     "succeeded",
     "confirmed",
     "paid"
 )]
 #[case(
     "records_delayed_payment_failure",
-    EventType::CheckoutSessionAsyncPaymentFailed,
-    CheckoutSessionPaymentStatus::Unpaid,
+    "checkout.session.async_payment_failed",
+    "unpaid",
     "failed",
     "cancelled",
     "failed"
 )]
 #[case(
     "expires_unpaid_checkout",
-    EventType::CheckoutSessionExpired,
-    CheckoutSessionPaymentStatus::Unpaid,
+    "checkout.session.expired",
+    "unpaid",
     "expired",
     "cancelled",
     "failed"
 )]
 #[case(
     "acknowledges_unknown_event",
-    EventType::Unknown,
-    CheckoutSessionPaymentStatus::Unpaid,
+    "silk.test.unknown",
+    "unpaid",
     "session_created",
     "pending",
     "pending"
@@ -147,8 +206,8 @@ fn checkout_event(
 #[serial]
 async fn processes_checkout_webhooks_once(
     #[case] test_name: &str,
-    #[case] event_type: EventType,
-    #[case] payment_status: CheckoutSessionPaymentStatus,
+    #[case] event_type: &str,
+    #[case] payment_status: &str,
     #[case] expected_attempt_status: &str,
     #[case] expected_order_status: &str,
     #[case] expected_payment_status: &str,
@@ -186,7 +245,7 @@ async fn processes_checkout_webhooks_once(
     .expect("session should attach");
     txn.commit().await.expect("transaction should commit");
 
-    let event = checkout_event(
+    let payload = checkout_event_payload(
         &format!("evt_{test_name}"),
         event_type,
         &session_id,
@@ -195,11 +254,12 @@ async fn processes_checkout_webhooks_once(
         to_minor_units(order.grand_total(), order.currency()).expect("amount should convert"),
         payment_status,
     );
+    let event = verified_checkout_event(&payload);
     let releases_inventory = matches!(
         event_type,
-        EventType::CheckoutSessionExpired | EventType::CheckoutSessionAsyncPaymentFailed
+        "checkout.session.expired" | "checkout.session.async_payment_failed"
     );
-    let payload = serde_json::to_value(&event).expect("event should serialize");
+    let payload = serde_json::from_str(&payload).expect("event payload should be valid JSON");
     let stock_before = sqlx::query_scalar::<_, i64>(
         "SELECT COALESCE(SUM(stock_quantity), 0)::BIGINT FROM product_variants",
     )

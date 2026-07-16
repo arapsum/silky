@@ -15,11 +15,31 @@ path = "src/lib.rs"
 apalis = { version = "0.7.4", features = ["retry"] }
 apalis-redis = "0.7.4"
 argon2 = { version = "0.5.3", features = ["std"] }
-async-stripe = { version = "=0.41.0", default-features = false, features = [
-  "runtime-tokio-hyper-rustls",
-  "checkout",
-  "connect",
-  "webhook-events",
+# This revision generates webhook models for Stripe API 2026-06-24.dahlia.
+# Keep the Dashboard event destination on that snapshot version until this pin is upgraded.
+async-stripe = { git = "https://github.com/arlyon/async-stripe", rev = "3ccf29941c8160711636e7b94bd64aa473d57247", default-features = false, features = [
+  "redact-generated-debug",
+  "rustls-ring",
+  "rustls-tls-native",
+] }
+async-stripe-checkout = { git = "https://github.com/arlyon/async-stripe", rev = "3ccf29941c8160711636e7b94bd64aa473d57247", default-features = false, features = [
+  "checkout_session",
+  "deserialize",
+  "redact-generated-debug",
+] }
+async-stripe-shared = { git = "https://github.com/arlyon/async-stripe", rev = "3ccf29941c8160711636e7b94bd64aa473d57247", default-features = false, features = [
+  "deserialize",
+  "redact-generated-debug",
+] }
+async-stripe-types = { git = "https://github.com/arlyon/async-stripe", rev = "3ccf29941c8160711636e7b94bd64aa473d57247", default-features = false, features = [
+  "deserialize",
+  "redact-generated-debug",
+] }
+async-stripe-webhook = { git = "https://github.com/arlyon/async-stripe", rev = "3ccf29941c8160711636e7b94bd64aa473d57247", default-features = false, features = [
+  "async-stripe-checkout",
+  "deserialize",
+  "detailed-errors",
+  "redact-generated-debug",
 ] }
 axum = { version = "0.8.9", features = ["macros"] }
 axum-extra = { version = "0.12.6", features = [

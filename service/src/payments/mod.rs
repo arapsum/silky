@@ -3,12 +3,16 @@ use std::collections::HashMap;
 use chrono::{DateTime, FixedOffset, Utc};
 use rust_decimal::{Decimal, prelude::ToPrimitive};
 use serde::Serialize;
-use stripe::{
-    CheckoutSession, CheckoutSessionId, CheckoutSessionMode, CreateCheckoutSession,
-    CreateCheckoutSessionLineItems, CreateCheckoutSessionLineItemsPriceData,
-    CreateCheckoutSessionLineItemsPriceDataProductData, Currency, Event, EventObject, EventType,
-    RequestStrategy,
+use stripe::{IdempotencyKey, RequestStrategy, StripeRequest};
+use stripe_checkout::checkout_session::{
+    CreateCheckoutSession, CreateCheckoutSessionLineItems, CreateCheckoutSessionLineItemsPriceData,
+    ExpireCheckoutSession, ProductData,
 };
+use stripe_shared::{
+    CheckoutSession, CheckoutSessionId, CheckoutSessionMode, CheckoutSessionPaymentStatus,
+};
+use stripe_types::Currency;
+use stripe_webhook::{Event, EventObject, Webhook, WebhookError};
 
 /// Expires an active Stripe Checkout Session before Silk releases inventory.
 ///
@@ -22,7 +26,8 @@ pub async fn expire_hosted_checkout_session(
     let session_id = session_id
         .parse::<CheckoutSessionId>()
         .map_err(|_| PaymentError::InvalidProviderResponse)?;
-    CheckoutSession::expire(stripe.client(), &session_id)
+    ExpireCheckoutSession::new(session_id)
+        .send(stripe.client())
         .await
         .map_err(PaymentError::from_stripe)?;
     Ok(())
@@ -106,20 +111,18 @@ pub async fn create_hosted_checkout_session(
         let quantity = u64::try_from(item.quantity()).map_err(|_| PaymentError::InvalidAmount)?;
         line_items.push(CreateCheckoutSessionLineItems {
             price_data: Some(CreateCheckoutSessionLineItemsPriceData {
-                currency,
-                product_data: Some(CreateCheckoutSessionLineItemsPriceDataProductData {
-                    name: item.product_name().to_owned(),
+                product_data: Some(ProductData {
                     metadata: Some(HashMap::from([
                         ("variant_pid".to_string(), item.variant_pid().to_string()),
                         ("sku".to_string(), item.sku().to_owned()),
                     ])),
-                    ..Default::default()
+                    ..ProductData::new(item.product_name())
                 }),
                 unit_amount: Some(to_minor_units(
                     item.unit_price(),
                     checkout.order.currency(),
                 )?),
-                ..Default::default()
+                ..CreateCheckoutSessionLineItemsPriceData::new(currency.clone())
             }),
             quantity: Some(quantity),
             ..Default::default()
@@ -135,26 +138,24 @@ pub async fn create_hosted_checkout_session(
         .checkout_cancel_url()
         .replace("{ORDER_PID}", &order_pid);
     let expires_at = Utc::now().timestamp() + config.checkout_ttl_seconds();
-    let mut params = CreateCheckoutSession::new();
-    params.cancel_url = Some(&cancel_url);
-    params.client_reference_id = Some(&order_pid);
-    params.customer_email = Some(checkout.order.customer_email());
-    params.expires_at = Some(expires_at);
-    params.line_items = Some(line_items);
-    params.metadata = Some(HashMap::from([
-        ("order_pid".to_string(), order_pid.clone()),
-        ("payment_attempt_pid".to_string(), attempt_pid.clone()),
-    ]));
-    params.mode = Some(CheckoutSessionMode::Payment);
-    params.success_url = Some(&success_url);
-
-    let client = stripe
-        .client()
-        .clone()
-        .with_strategy(RequestStrategy::Idempotent(format!(
-            "silk-checkout-{attempt_pid}"
-        )));
-    let session = CheckoutSession::create(&client, params)
+    let params = CreateCheckoutSession::new()
+        .cancel_url(cancel_url)
+        .client_reference_id(order_pid.clone())
+        .customer_email(checkout.order.customer_email())
+        .expires_at(expires_at)
+        .line_items(line_items)
+        .metadata(HashMap::from([
+            ("order_pid".to_string(), order_pid),
+            ("payment_attempt_pid".to_string(), attempt_pid.clone()),
+        ]))
+        .mode(CheckoutSessionMode::Payment)
+        .success_url(success_url);
+    let idempotency_key = IdempotencyKey::new(format!("silk-checkout-{attempt_pid}"))
+        .map_err(|_| PaymentError::InvalidProviderResponse)?;
+    let session = params
+        .customize()
+        .request_strategy(RequestStrategy::Idempotent(idempotency_key))
+        .send(stripe.client())
         .await
         .map_err(PaymentError::from_stripe)?;
     hosted_session(session)
@@ -188,6 +189,18 @@ fn hosted_session(session: CheckoutSession) -> Result<HostedCheckoutSession, Pay
 ///
 /// # Errors
 /// Returns a retryable webhook error when persistence or reconciliation fails.
+#[tracing::instrument(
+    skip(db, config, event, payload),
+    fields(
+        stripe.event_id = %event.id,
+        stripe.event_type = %event.type_,
+        stripe.api_version = %event
+            .api_version
+            .as_ref()
+            .map_or_else(|| "none".to_owned(), ToString::to_string),
+        stripe.livemode = event.livemode
+    )
+)]
 pub async fn process_stripe_event(
     db: &sqlx::PgPool,
     config: &StripeConfig,
@@ -204,34 +217,36 @@ pub async fn process_stripe_event(
         .map_err(|error| PaymentError::WebhookProcessing(error.to_string()))?;
     let event_id = event.id.to_string();
     let event_type = event.type_.to_string();
+    let api_version = event.api_version.as_ref().map(ToString::to_string);
     let is_new = StripeWebhookEvent::record_once(
         &mut txn,
         &event_id,
         &event_type,
-        event.api_version.as_deref(),
+        api_version.as_deref(),
         payload,
     )
     .await
     .map_err(|error| PaymentError::WebhookProcessing(error.to_string()))?;
     if !is_new {
+        tracing::info!("duplicate Stripe webhook acknowledged");
         txn.commit()
             .await
             .map_err(|error| PaymentError::WebhookProcessing(error.to_string()))?;
         return Ok(());
     }
 
-    match (event.type_, event.data.object) {
-        (
-            EventType::CheckoutSessionCompleted | EventType::CheckoutSessionAsyncPaymentSucceeded,
-            EventObject::CheckoutSession(session),
-        ) => process_completed(&mut txn, config, &session).await?,
-        (EventType::CheckoutSessionExpired, EventObject::CheckoutSession(session)) => {
+    match event.data.object {
+        EventObject::CheckoutSessionCompleted(session)
+        | EventObject::CheckoutSessionAsyncPaymentSucceeded(session) => {
+            process_completed(&mut txn, config, &session).await?;
+        }
+        EventObject::CheckoutSessionExpired(session) => {
             reconcile_session(&mut txn, config, &session).await?;
             PaymentAttempt::expire_and_release_inventory(&mut txn, session.id.as_ref())
                 .await
                 .map_err(|error| PaymentError::WebhookProcessing(error.to_string()))?;
         }
-        (EventType::CheckoutSessionAsyncPaymentFailed, EventObject::CheckoutSession(session)) => {
+        EventObject::CheckoutSessionAsyncPaymentFailed(session) => {
             reconcile_session(&mut txn, config, &session).await?;
             PaymentAttempt::fail_and_release_inventory(
                 &mut txn,
@@ -247,7 +262,9 @@ pub async fn process_stripe_event(
 
     txn.commit()
         .await
-        .map_err(|error| PaymentError::WebhookProcessing(error.to_string()))
+        .map_err(|error| PaymentError::WebhookProcessing(error.to_string()))?;
+    tracing::info!("Stripe webhook processed");
+    Ok(())
 }
 
 async fn process_completed(
@@ -257,12 +274,12 @@ async fn process_completed(
 ) -> Result<(), PaymentError> {
     reconcile_session(txn, config, session).await?;
     let session_id = session.id.to_string();
-    if session.payment_status == stripe::CheckoutSessionPaymentStatus::Paid {
+    if session.payment_status == CheckoutSessionPaymentStatus::Paid {
         let payment_intent_id = session
             .payment_intent
             .as_ref()
-            .map(stripe::Expandable::id)
-            .map(|id| id.to_string());
+            .map(stripe_types::Expandable::id)
+            .map(ToString::to_string);
         PaymentAttempt::mark_succeeded(txn, &session_id, payment_intent_id.as_deref())
             .await
             .map_err(|error| PaymentError::WebhookProcessing(error.to_string()))?;
@@ -325,7 +342,7 @@ async fn reconcile_session(
     if session.amount_total != Some(to_minor_units(stored.amount, &stored.currency)?) {
         return Err(PaymentError::WebhookReconciliation("amount mismatch"));
     }
-    let session_currency = session.currency.map(|currency| currency.to_string());
+    let session_currency = session.currency.as_ref().map(ToString::to_string);
     if session_currency
         .as_deref()
         .map(str::to_uppercase)
@@ -357,6 +374,11 @@ pub fn verify_stripe_event(
     signature: &str,
     webhook_secret: &str,
 ) -> Result<Event, PaymentError> {
-    stripe::Webhook::construct_event(payload, signature, webhook_secret)
-        .map_err(|_| PaymentError::InvalidWebhookSignature)
+    Webhook::construct_event(payload, signature, webhook_secret).map_err(|error| match error {
+        WebhookError::BadParse(message) => PaymentError::InvalidWebhookPayload(message),
+        WebhookError::BadKey
+        | WebhookError::BadHeader(_)
+        | WebhookError::BadSignature
+        | WebhookError::BadTimestamp(_) => PaymentError::InvalidWebhookSignature,
+    })
 }

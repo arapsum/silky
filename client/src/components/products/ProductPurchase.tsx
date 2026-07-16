@@ -8,6 +8,7 @@ import {
   selectionsForVariant,
 } from "@/lib/product-options";
 import { useCartStore } from "@/stores/cart";
+import { toast } from "@/lib/toast";
 
 interface ProductPurchaseProps {
   product: ProductDetail;
@@ -54,6 +55,7 @@ export function ProductPurchase({ product, fallbackImage }: ProductPurchaseProps
       quantity,
       availableQuantity: variant.stockQuantity,
     });
+    toast.success("Added to your bag", `${product.name} · ${variant.sku}`);
     setAdded(true);
     window.setTimeout(() => setAdded(false), 2200);
   }

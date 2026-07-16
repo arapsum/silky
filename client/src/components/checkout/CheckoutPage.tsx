@@ -6,6 +6,7 @@ import type { Address, CartQuote, UserSession } from "@/lib/api/types";
 import { formatCurrency } from "@/lib/format";
 import { CheckoutSkeleton } from "@/components/loading/StorefrontSkeletons";
 import { useCartStore } from "@/stores/cart";
+import { toast } from "@/lib/toast";
 
 export function CheckoutPage() {
   const items = useCartStore((state) => state.items);
@@ -78,7 +79,9 @@ export function CheckoutPage() {
       if (requestError instanceof ApiError && requestError.status < 500) {
         setCheckoutAttempt(null);
       }
-      setError(requestError instanceof ApiError ? requestError.message : "Payment could not be started.");
+      const message = requestError instanceof ApiError ? requestError.message : "Payment could not be started.";
+      setError(message);
+      toast.error("Payment could not be started", message);
       setSubmitting(false);
     }
   }
@@ -89,8 +92,11 @@ export function CheckoutPage() {
     try {
       await orderApi.cancel(pending.orderPid);
       setPending(null);
+      toast.success("Checkout cancelled", "Your bag is ready whenever you want to try again.");
     } catch (requestError) {
-      setError(requestError instanceof ApiError ? requestError.message : "The pending checkout could not be cancelled.");
+      const message = requestError instanceof ApiError ? requestError.message : "The pending checkout could not be cancelled.";
+      setError(message);
+      toast.error("Checkout not cancelled", message);
     } finally {
       setSubmitting(false);
     }
@@ -106,7 +112,6 @@ export function CheckoutPage() {
         <p className="eyebrow">Payment in progress</p>
         <h1>Continue where you left off.</h1>
         <p>Your pieces are reserved until {new Intl.DateTimeFormat("en", { hour: "numeric", minute: "2-digit" }).format(new Date(pending.expiresAt))}.</p>
-        {error && <p className="form-error" role="alert">{error}</p>}
         <div>
           <a className="button-primary" href={pending.checkoutUrl}>Resume payment <ArrowRightIcon aria-hidden size={17} /></a>
           <button className="button-secondary" disabled={submitting} onClick={cancelPending} type="button">Cancel this checkout</button>
@@ -161,7 +166,6 @@ export function CheckoutPage() {
           <div><dt>Tax</dt><dd>{quote && formatCurrency(quote.taxTotal)}</dd></div>
           <div className="order-summary__total"><dt>Total</dt><dd>{quote && formatCurrency(quote.grandTotal)}</dd></div>
         </dl>
-        {error && <p className="form-error" role="alert">{error}</p>}
         <button className="button-primary order-summary__checkout" disabled={submitting || !shippingPid || !quote?.canCheckout} onClick={startCheckout} type="button">
           {submitting ? "Opening secure payment" : checkoutAttempt ? "Retry secure payment" : "Continue to payment"}<ArrowRightIcon aria-hidden size={17} />
         </button>

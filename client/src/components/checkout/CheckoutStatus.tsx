@@ -1,8 +1,9 @@
 import { ArrowRightIcon, CheckCircleIcon, SpinnerGapIcon, XCircleIcon } from "@phosphor-icons/react";
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { ApiError, orderApi } from "@/lib/api/browser";
 import type { CheckoutSession } from "@/lib/api/types";
 import { useCartStore } from "@/stores/cart";
+import { toast } from "@/lib/toast";
 
 interface CheckoutStatusProps { orderPid: string; mode: "success" | "cancel" }
 
@@ -10,6 +11,7 @@ export function CheckoutStatus({ orderPid, mode }: CheckoutStatusProps) {
   const [session, setSession] = useState<CheckoutSession | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [cancelling, setCancelling] = useState(false);
+  const paymentReported = useRef(false);
   const clear = useCartStore((state) => state.clear);
   const setPending = useCartStore((state) => state.setPendingCheckout);
 
@@ -24,6 +26,10 @@ export function CheckoutStatus({ orderPid, mode }: CheckoutStatusProps) {
         setSession(next);
         if (next.paymentStatus === "paid") {
           clear();
+          if (!paymentReported.current) {
+            paymentReported.current = true;
+            toast.success("Payment confirmed", "Your Silk order is now confirmed.");
+          }
           return;
         }
         attempts += 1;
@@ -31,7 +37,11 @@ export function CheckoutStatus({ orderPid, mode }: CheckoutStatusProps) {
           window.setTimeout(poll, 2000);
         }
       } catch (requestError) {
-        if (active) setError(requestError instanceof ApiError ? requestError.message : "Payment status could not be confirmed.");
+        if (active) {
+          const message = requestError instanceof ApiError ? requestError.message : "Payment status could not be confirmed.";
+          setError(message);
+          toast.error("Could not confirm payment", message);
+        }
       }
     };
     void poll();
@@ -44,9 +54,12 @@ export function CheckoutStatus({ orderPid, mode }: CheckoutStatusProps) {
     try {
       await orderApi.cancel(orderPid);
       setPending(null);
+      toast.flash.success("Checkout cancelled", "Your bag is ready for another checkout.");
       window.location.assign("/cart");
     } catch (requestError) {
-      setError(requestError instanceof ApiError ? requestError.message : "The checkout could not be cancelled.");
+      const message = requestError instanceof ApiError ? requestError.message : "The checkout could not be cancelled.";
+      setError(message);
+      toast.error("Checkout not cancelled", message);
       setCancelling(false);
     }
   }

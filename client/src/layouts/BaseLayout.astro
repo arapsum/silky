@@ -2,6 +2,7 @@
 import "@fontsource-variable/archivo";
 import "@fontsource-variable/manrope";
 import "@/styles/global.css";
+import { ToastViewport } from "@/components/feedback/ToastViewport";
 
 interface Props {
   title?: string;
@@ -44,5 +45,6 @@ const socialImage = new URL(image, Astro.site ?? Astro.url.origin);
   </head>
   <body>
     <slot />
+    <ToastViewport client:load />
   </body>
 </html>

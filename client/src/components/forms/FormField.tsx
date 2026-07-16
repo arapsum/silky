@@ -9,16 +9,19 @@ interface FormFieldProps extends InputHTMLAttributes<HTMLInputElement> {
 export function FormField({ label, error, hint, id, ...input }: FormFieldProps) {
   const fieldId = id ?? input.name;
   const messageId = `${fieldId}-message`;
+  const message = error ?? hint;
   return (
-    <label className="form-field" htmlFor={fieldId}>
+    <label className={`form-field ${error ? "is-invalid" : ""}`} htmlFor={fieldId}>
       <span>{label}</span>
       <input
         {...input}
-        aria-describedby={error || hint ? messageId : undefined}
+        aria-describedby={message ? messageId : undefined}
         aria-invalid={Boolean(error)}
         id={fieldId}
       />
-      {(error || hint) && <small className={error ? "form-error" : ""} id={messageId}>{error ?? hint}</small>}
+      <small aria-hidden={!message} className={error ? "form-error" : ""} id={messageId}>
+        {message ?? "\u00a0"}
+      </small>
     </label>
   );
 }

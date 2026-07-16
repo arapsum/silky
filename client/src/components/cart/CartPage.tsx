@@ -4,6 +4,7 @@ import { cartApi } from "@/lib/api/browser";
 import { formatCurrency } from "@/lib/format";
 import { CartSkeleton, InlineAmountSkeleton } from "@/components/loading/StorefrontSkeletons";
 import { hydrateCartStore, useCartStore } from "@/stores/cart";
+import { toast } from "@/lib/toast";
 
 export function CartPage() {
   const items = useCartStore((state) => state.items);
@@ -18,6 +19,11 @@ export function CartPage() {
     () => items.map((item) => `${item.variantPid}:${item.quantity}`).join("|"),
     [items],
   );
+
+  function removeItem(variantPid: string, productName: string) {
+    remove(variantPid);
+    toast.info("Removed from your bag", productName);
+  }
 
   useEffect(() => {
     void hydrateCartStore();
@@ -130,7 +136,7 @@ export function CartPage() {
                     </div>
                     <button
                       className="cart-line__remove"
-                      onClick={() => remove(item.variantPid)}
+                      onClick={() => removeItem(item.variantPid, item.productName)}
                       type="button"
                     >
                       <TrashIcon aria-hidden size={16} /> Remove

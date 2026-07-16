@@ -67,7 +67,7 @@ export const sessionApi = {
   resetPassword: (input: { token: string; password: string; confirmPassword: string }) =>
     apiRequest<{ message: string }>("/auth/reset-password", { method: "POST", body: JSON.stringify(input) }, false),
   verify: (token: string) => apiRequest<{ message: string }>(`/auth/verify/${encodeURIComponent(token)}`, {}, false),
-  update: (input: { name: string; email: string; image?: string | null }) =>
+  update: (input: { name: string; email: string; image?: string | null; mediaAssetPid?: string }) =>
     apiRequest<UserSession>("/auth/me", { method: "PATCH", body: JSON.stringify(input) }),
 };
 

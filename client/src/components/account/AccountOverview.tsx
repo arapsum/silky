@@ -4,15 +4,17 @@ import { useEffect, useState } from "react";
 import { useForm } from "react-hook-form";
 import { z } from "zod";
 import { FormField } from "@/components/forms/FormField";
+import { ProfileAvatar, validateAvatarFile } from "@/components/account/ProfileAvatar";
 import { AccountOverviewSkeleton } from "@/components/loading/StorefrontSkeletons";
 import { ApiError, orderApi, sessionApi } from "@/lib/api/browser";
 import type { OrderSummary, UserSession } from "@/lib/api/types";
 import { formatCurrency } from "@/lib/format";
+import { uploadAvatarImage } from "@/lib/media";
+import { toast } from "@/lib/toast";
 
 const schema = z.object({
   name: z.string().min(6, "Enter at least 6 characters.").max(32),
   email: z.email("Enter a valid email address."),
-  image: z.union([z.literal(""), z.url("Enter a valid image URL.")]),
 });
 type Values = z.infer<typeof schema>;
 
@@ -20,28 +22,55 @@ export function AccountOverview() {
   const [user, setUser] = useState<UserSession | null>(null);
   const [orders, setOrders] = useState<OrderSummary[]>([]);
   const [error, setError] = useState<string | null>(null);
-  const [saved, setSaved] = useState(false);
-  const { register, handleSubmit, reset, formState: { errors, isSubmitting } } = useForm<Values>({ resolver: zodResolver(schema) });
+  const [isUploadingAvatar, setIsUploadingAvatar] = useState(false);
+  const { register, handleSubmit, reset, formState: { errors, isSubmitting } } = useForm<Values>({
+    resolver: zodResolver(schema),
+    mode: "onChange",
+    reValidateMode: "onChange",
+  });
 
   useEffect(() => {
     Promise.all([sessionApi.me(), orderApi.list(1)])
       .then(([session, history]) => {
         setUser(session);
         setOrders(history.data.slice(0, 3));
-        reset({ name: session.name, email: session.email, image: session.image ?? "" });
+        reset({ name: session.name, email: session.email });
       })
       .catch((requestError) => setError(requestError instanceof ApiError ? requestError.message : "Your account could not be loaded."));
   }, [reset]);
 
   async function submit(values: Values) {
     setError(null);
-    setSaved(false);
     try {
-      const updated = await sessionApi.update({ name: values.name, email: values.email, image: values.image || null });
+      const updated = await sessionApi.update({ name: values.name, email: values.email });
       setUser(updated);
-      setSaved(true);
+      toast.success("Profile saved", "Your Silk account details are up to date.");
     } catch (requestError) {
-      setError(requestError instanceof ApiError ? requestError.message : "Your profile could not be saved.");
+      toast.error("Profile not saved", requestError instanceof ApiError ? requestError.message : "Your profile could not be saved.");
+    }
+  }
+
+  async function uploadAvatar(file: File) {
+    const validationError = validateAvatarFile(file);
+    if (validationError) {
+      toast.error("Choose a different image", validationError);
+      return;
+    }
+    setIsUploadingAvatar(true);
+    try {
+      const uploaded = await uploadAvatarImage(file);
+      const updated = await sessionApi.update({
+        name: user?.name ?? "",
+        email: user?.email ?? "",
+        image: uploaded.imageUrl,
+        mediaAssetPid: uploaded.assetPid,
+      });
+      setUser(updated);
+      toast.success("Profile picture updated", "Your new profile picture is ready.");
+    } catch (uploadError) {
+      toast.error("Profile picture not updated", uploadError instanceof Error ? uploadError.message : "Please try again.");
+    } finally {
+      setIsUploadingAvatar(false);
     }
   }
 
@@ -54,11 +83,9 @@ export function AccountOverview() {
       <section className="account-panel">
         <div className="account-panel__heading"><div><p className="eyebrow">Profile</p><h2>Your details</h2></div>{user.verified && <span>Verified email</span>}</div>
         <form className="profile-form" noValidate onSubmit={handleSubmit(submit)}>
+          <ProfileAvatar image={user.image} isUploading={isUploadingAvatar} name={user.name} onSelect={uploadAvatar} />
           <FormField error={errors.name?.message} label="Full name" {...register("name")} />
           <FormField error={errors.email?.message} label="Email address" type="email" {...register("email")} />
-          <FormField error={errors.image?.message} hint="Use a public image URL." label="Profile image URL" type="url" {...register("image")} />
-          {error && <p className="form-error" role="alert">{error}</p>}
-          {saved && <p className="form-success" role="status">Profile saved.</p>}
           <button className="button-primary" disabled={isSubmitting} type="submit">{isSubmitting ? "Saving" : "Save profile"}</button>
         </form>
       </section>

@@ -1,6 +1,7 @@
 import { CheckCircleIcon, SpinnerGapIcon, WarningCircleIcon } from "@phosphor-icons/react";
 import { useEffect, useState } from "react";
 import { ApiError, sessionApi } from "@/lib/api/browser";
+import { toast } from "@/lib/toast";
 
 export function VerifyEmail({ token }: { token: string }) {
   const [state, setState] = useState<"loading" | "success" | "error">("loading");
@@ -9,11 +10,21 @@ export function VerifyEmail({ token }: { token: string }) {
     if (!token) {
       setState("error");
       setMessage("This verification link is incomplete.");
+      toast.error("Email not verified", "This verification link is incomplete.");
       return;
     }
     sessionApi.verify(token)
-      .then(() => { setState("success"); setMessage("Your email is verified. You can now sign in."); })
-      .catch((error) => { setState("error"); setMessage(error instanceof ApiError ? error.message : "This verification link could not be confirmed."); });
+      .then(() => {
+        setState("success");
+        setMessage("Your email is verified. You can now sign in.");
+        toast.success("Email verified", "You can now sign in to Silk.");
+      })
+      .catch((error) => {
+        const description = error instanceof ApiError ? error.message : "This verification link could not be confirmed.";
+        setState("error");
+        setMessage(description);
+        toast.error("Email not verified", description);
+      });
   }, [token]);
   return (
     <section className="auth-card verify-card">

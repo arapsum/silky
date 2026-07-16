@@ -1,10 +1,10 @@
 import { zodResolver } from "@hookform/resolvers/zod";
-import { useState } from "react";
 import { useForm } from "react-hook-form";
 import { z } from "zod";
 import { FormField } from "@/components/forms/FormField";
 import { addressApi, ApiError } from "@/lib/api/browser";
 import type { Address, AddressInput } from "@/lib/api/types";
+import { toast } from "@/lib/toast";
 
 const optionalText = z.string().max(255).optional();
 const schema = z.object({
@@ -70,21 +70,22 @@ function toInput(values: Values): AddressInput {
 }
 
 export function AddressForm({ address, onSaved, onCancel, compact = false }: AddressFormProps) {
-  const [requestError, setRequestError] = useState<string | null>(null);
   const { register, handleSubmit, formState: { errors, isSubmitting } } = useForm<Values>({
     resolver: zodResolver(schema),
     defaultValues: valuesFor(address),
+    mode: "onChange",
+    reValidateMode: "onChange",
   });
 
   async function submit(values: Values) {
-    setRequestError(null);
     try {
       const saved = address
         ? await addressApi.update(address.pid, toInput(values))
         : await addressApi.create(toInput(values));
       onSaved(saved);
+      toast.success(address ? "Address updated" : "Address saved", "Your delivery details are ready to use.");
     } catch (error) {
-      setRequestError(error instanceof ApiError ? error.message : "The address could not be saved.");
+      toast.error("Address not saved", error instanceof ApiError ? error.message : "The address could not be saved.");
     }
   }
 
@@ -113,7 +114,6 @@ export function AddressForm({ address, onSaved, onCancel, compact = false }: Add
         <input type="checkbox" {...register("isDefault")} />
         <span>Use as my default {address?.addressType ?? "address"}</span>
       </label>
-      {requestError && <p className="form-error" role="alert">{requestError}</p>}
       <div className="address-form__actions">
         {onCancel && <button className="button-secondary" onClick={onCancel} type="button">Cancel</button>}
         <button className="button-primary" disabled={isSubmitting} type="submit">

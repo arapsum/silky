@@ -1,10 +1,10 @@
 import { zodResolver } from "@hookform/resolvers/zod";
 import { ArrowRightIcon } from "@phosphor-icons/react";
-import { useState } from "react";
 import { useForm } from "react-hook-form";
 import { z } from "zod";
 import { FormField } from "@/components/forms/FormField";
 import { ApiError, sessionApi } from "@/lib/api/browser";
+import { toast } from "@/lib/toast";
 
 type AuthMode = "login" | "register" | "forgot" | "reset";
 
@@ -86,23 +86,22 @@ const formActions: Record<AuthMode, string> = {
 };
 
 export function AuthForm({ mode, next = "/account", token = "" }: AuthFormProps) {
-  const [status, setStatus] = useState<string | null>(null);
-  const [requestError, setRequestError] = useState<string | null>(null);
   const {
     register,
     handleSubmit,
     formState: { errors, isSubmitting },
   } = useForm<Record<string, string>>({
     resolver: zodResolver(schemas[mode]),
+    mode: "onChange",
+    reValidateMode: "onChange",
   });
   const content = copy[mode];
 
   async function submit(values: Record<string, string>) {
-    setRequestError(null);
-    setStatus(null);
     try {
       if (mode === "login") {
         await sessionApi.login({ email: values.email, password: values.password });
+        toast.flash.success("Welcome back", "You are signed in to Silk.");
         window.location.assign(next.startsWith("/") ? next : "/account");
       } else if (mode === "register") {
         await sessionApi.register({
@@ -111,20 +110,26 @@ export function AuthForm({ mode, next = "/account", token = "" }: AuthFormProps)
           password: values.password,
           confirmPassword: values.confirmPassword,
         });
+        toast.flash.success("Account created", "Sign in to continue shopping with Silk.");
         window.location.assign("/auth/login?registered=true");
       } else if (mode === "forgot") {
         await sessionApi.forgotPassword(values.email);
-        setStatus("If that email belongs to an account, a reset link is on its way.");
+        toast.success(
+          "Check your inbox",
+          "If that email belongs to an account, a reset link is on its way.",
+        );
       } else {
         await sessionApi.resetPassword({
           token,
           password: values.password,
           confirmPassword: values.confirmPassword,
         });
+        toast.flash.success("Password updated", "You can now sign in with your new password.");
         window.location.assign("/auth/login?reset=true");
       }
     } catch (error) {
-      setRequestError(
+      toast.error(
+        "Request unsuccessful",
         error instanceof ApiError ? error.message : "Silk could not complete that request.",
       );
     }
@@ -174,16 +179,6 @@ export function AuthForm({ mode, next = "/account", token = "" }: AuthFormProps)
           <a className="auth-card__forgot" href="/auth/forgot-password">
             Forgot your password?
           </a>
-        )}
-        {requestError && (
-          <p className="form-error" role="alert">
-            {requestError}
-          </p>
-        )}
-        {status && (
-          <p className="form-success" role="status">
-            {status}
-          </p>
         )}
         <button
           className="button-primary auth-card__submit"

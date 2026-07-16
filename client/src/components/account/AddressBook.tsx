@@ -4,6 +4,7 @@ import { AddressForm } from "./AddressForm";
 import { AddressBookSkeleton } from "@/components/loading/StorefrontSkeletons";
 import { addressApi, ApiError } from "@/lib/api/browser";
 import type { Address } from "@/lib/api/types";
+import { toast } from "@/lib/toast";
 
 export function AddressBook() {
   const [addresses, setAddresses] = useState<Address[]>([]);
@@ -19,8 +20,9 @@ export function AddressBook() {
     try {
       await addressApi.remove(address.pid);
       setAddresses((current) => current.filter((entry) => entry.pid !== address.pid));
+      toast.success("Address removed", `${address.label ?? address.lineOne} is no longer saved.`);
     } catch (requestError) {
-      setError(requestError instanceof ApiError ? requestError.message : "The address could not be removed.");
+      toast.error("Address not removed", requestError instanceof ApiError ? requestError.message : "The address could not be removed.");
     }
   }
 

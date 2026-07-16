@@ -1,6 +1,7 @@
 import { SignOutIcon } from "@phosphor-icons/react";
 import { useState } from "react";
 import { sessionApi } from "@/lib/api/browser";
+import { toast } from "@/lib/toast";
 
 export function AccountMenu() {
   const [loading, setLoading] = useState(false);
@@ -9,8 +10,14 @@ export function AccountMenu() {
       disabled={loading}
       onClick={async () => {
         setLoading(true);
-        await sessionApi.logout().catch(() => undefined);
-        window.location.assign("/");
+        try {
+          await sessionApi.logout();
+          toast.flash.success("Signed out", "See you again soon.");
+          window.location.assign("/");
+        } catch {
+          toast.error("Could not sign out", "Please try again.");
+          setLoading(false);
+        }
       }}
       type="button"
     >

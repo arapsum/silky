@@ -120,6 +120,59 @@ impl MediaAsset {
         Ok(asset)
     }
 
+    /// Finalizes a pending media asset owned by one specific user.
+    ///
+    /// This is used by customer self-service uploads, where a signed browser
+    /// upload must not allow one user to register another user's pending asset.
+    ///
+    /// # Errors
+    ///
+    /// Returns [`ModelError::EntityNotFound`] when the asset is missing,
+    /// belongs to another user, has already been finalized, or does not match
+    /// the supplied public ID. Returns a database error when the update fails.
+    pub async fn finalize_owned(
+        db: &PgPool,
+        pid: Uuid,
+        user_pid: Uuid,
+        input: &FinalizeMediaAsset,
+    ) -> ModelResult<Self> {
+        let asset = sqlx::query_as::<_, Self>(
+            r"
+            UPDATE media_assets
+            SET
+                public_id = $9,
+                asset_id = COALESCE($2, asset_id),
+                secure_url = $3,
+                format = COALESCE($4, format),
+                bytes = COALESCE($5, bytes),
+                width = COALESCE($6, width),
+                height = COALESCE($7, height),
+                checksum = COALESCE($8, checksum),
+                status = 'active'
+            WHERE pid = $1
+                AND created_by = (SELECT id FROM users WHERE pid = $10)
+                AND (public_id = $9 OR CONCAT(folder, '/', public_id) = $9)
+                AND status = 'pending'
+            RETURNING *
+            ",
+        )
+        .bind(pid)
+        .bind(&input.asset_id)
+        .bind(&input.secure_url)
+        .bind(&input.format)
+        .bind(input.bytes)
+        .bind(input.width)
+        .bind(input.height)
+        .bind(&input.checksum)
+        .bind(&input.public_id)
+        .bind(user_pid)
+        .fetch_optional(db)
+        .await?
+        .ok_or(ModelError::EntityNotFound)?;
+
+        Ok(asset)
+    }
+
     /// Finds a media asset by its public ID.
     ///
     /// # Errors

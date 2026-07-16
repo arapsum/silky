@@ -454,7 +454,13 @@ impl User {
                 name = $2,
                 email = $3,
                 image = COALESCE($4, image),
-                media_asset_id = COALESCE((SELECT id FROM media_assets WHERE pid = $5), media_asset_id),
+                media_asset_id = COALESCE((
+                    SELECT media_assets.id
+                    FROM media_assets
+                    WHERE media_assets.pid = $5
+                      AND media_assets.created_by = $6
+                      AND media_assets.status = 'active'
+                ), media_asset_id),
                 updated_at = NOW()
             WHERE id = $1
             RETURNING *
@@ -465,6 +471,7 @@ impl User {
         .bind(params.email())
         .bind(params.image())
         .bind(params.media_asset_pid())
+        .bind(user.pid())
         .fetch_one(&mut *txn)
         .await?;
 

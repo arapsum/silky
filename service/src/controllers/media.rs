@@ -55,18 +55,16 @@ fn sign_params(folder: &str, public_id: &str, timestamp: i64, secret: &str) -> S
     hex::encode(hasher.finalize())
 }
 
-#[tracing::instrument(skip(ctx, claims, params))]
-#[debug_handler]
-async fn sign_upload(
-    State(ctx): State<AppState>,
-    AppExtension(claims): AppExtension<Claims>,
-    AppJson(params): AppJson<SignUploadRequest>,
-) -> Result<impl IntoResponse> {
-    let Some(cloudinary) = ctx.config().cloudinary() else {
-        return Err(Error::ValidationError("Cloudinary is not configured".to_string()).into());
-    };
-    let folder = folder_for_kind(params.kind.trim())
-        .ok_or_else(|| Error::ValidationError("Unsupported media kind".to_string()))?;
+async fn create_upload_signature(
+    ctx: &AppState,
+    claims: &Claims,
+    folder: &str,
+    checksum: Option<&str>,
+) -> Result<SignUploadResponse> {
+    let cloudinary = ctx
+        .config()
+        .cloudinary()
+        .ok_or_else(|| Error::ValidationError("Cloudinary is not configured".to_string()))?;
     let timestamp = SystemTime::now()
         .duration_since(UNIX_EPOCH)
         .map_err(|_| Error::InvalidToken)?
@@ -75,27 +73,51 @@ async fn sign_upload(
         .map_err(|_| Error::InvalidToken)?;
     let public_id = Uuid::new_v4().to_string();
     let user_pid = Uuid::parse_str(claims.sub()).map_err(|_| Error::Forbidden)?;
-    let asset = MediaAsset::create_pending(
-        ctx.db(),
-        user_pid,
-        &public_id,
-        folder,
-        params.checksum.as_deref(),
-    )
-    .await?;
+    let asset =
+        MediaAsset::create_pending(ctx.db(), user_pid, &public_id, folder, checksum).await?;
     let signature = sign_params(folder, &public_id, timestamp, cloudinary.api_secret());
 
+    Ok(SignUploadResponse {
+        asset_pid: asset.pid(),
+        cloud_name: cloudinary.cloud_name().to_string(),
+        api_key: cloudinary.api_key().to_string(),
+        timestamp,
+        folder: folder.to_string(),
+        public_id,
+        signature,
+    })
+}
+
+#[tracing::instrument(skip(ctx, claims, params))]
+#[debug_handler]
+async fn sign_upload(
+    State(ctx): State<AppState>,
+    AppExtension(claims): AppExtension<Claims>,
+    AppJson(params): AppJson<SignUploadRequest>,
+) -> Result<impl IntoResponse> {
+    let folder = folder_for_kind(params.kind.trim())
+        .ok_or_else(|| Error::ValidationError("Unsupported media kind".to_string()))?;
     Ok((
         StatusCode::OK,
-        Json(SignUploadResponse {
-            asset_pid: asset.pid(),
-            cloud_name: cloudinary.cloud_name().to_string(),
-            api_key: cloudinary.api_key().to_string(),
-            timestamp,
-            folder: folder.to_string(),
-            public_id,
-            signature,
-        }),
+        Json(create_upload_signature(&ctx, &claims, folder, params.checksum.as_deref()).await?),
+    ))
+}
+
+/// Signs an avatar upload for the authenticated customer without granting
+/// catalogue-media permissions.
+#[tracing::instrument(skip(ctx, claims, params))]
+#[debug_handler]
+async fn sign_profile_upload(
+    State(ctx): State<AppState>,
+    AppExtension(claims): AppExtension<Claims>,
+    AppJson(params): AppJson<SignUploadRequest>,
+) -> Result<impl IntoResponse> {
+    Ok((
+        StatusCode::OK,
+        Json(
+            create_upload_signature(&ctx, &claims, "silk/users", params.checksum.as_deref())
+                .await?,
+        ),
     ))
 }
 
@@ -116,6 +138,29 @@ async fn finalize(
     }
 
     let asset = MediaAsset::finalize(ctx.db(), pid, &params).await?;
+    Ok((StatusCode::OK, Json(asset)))
+}
+
+/// Finalizes an avatar upload owned by the current customer.
+#[tracing::instrument(skip(ctx, claims, params))]
+#[debug_handler]
+async fn finalize_profile_upload(
+    State(ctx): State<AppState>,
+    AppExtension(claims): AppExtension<Claims>,
+    AppPath(pid): AppPath<Uuid>,
+    AppJson(params): AppJson<FinalizeMediaAsset>,
+) -> Result<impl IntoResponse> {
+    let cloudinary = ctx
+        .config()
+        .cloudinary()
+        .ok_or_else(|| Error::ValidationError("Cloudinary is not configured".to_string()))?;
+    let expected_prefix = format!("https://res.cloudinary.com/{}/", cloudinary.cloud_name());
+    if !params.secure_url.starts_with(&expected_prefix) {
+        return Err(Error::ValidationError("Invalid Cloudinary asset URL".to_string()).into());
+    }
+
+    let user_pid = Uuid::parse_str(claims.sub()).map_err(|_| Error::Forbidden)?;
+    let asset = MediaAsset::finalize_owned(ctx.db(), pid, user_pid, &params).await?;
     Ok((StatusCode::OK, Json(asset)))
 }
 
@@ -148,10 +193,12 @@ pub fn router(ctx: &AppState) -> Router {
             "/sign",
             post(sign_upload).layer(RbacLayer::new(ctx.clone(), permissions::media::CREATE)),
         )
+        .route("/profile/sign", post(sign_profile_upload))
         .route(
             "/{pid}/finalize",
             put(finalize).layer(RbacLayer::new(ctx.clone(), permissions::media::UPDATE)),
         )
+        .route("/profile/{pid}/finalize", put(finalize_profile_upload))
         .with_state(ctx.clone())
         .layer(AuthLayer::new(ctx.clone()))
 }

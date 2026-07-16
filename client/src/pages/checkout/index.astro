@@ -1,0 +1,10 @@
+---
+import { CheckoutPage } from "@/components/checkout/CheckoutPage";
+import SiteHeader from "@/components/layout/SiteHeader.astro";
+import BaseLayout from "@/layouts/BaseLayout.astro";
+---
+<BaseLayout title="Checkout | Silk" description="Complete your Silk order securely." noIndex>
+  <SiteHeader />
+  <main class="shell checkout-page"><CheckoutPage client:load /></main>
+</BaseLayout>
+<style>.checkout-page { min-height: 70vh; padding-block: clamp(2.5rem, 6vw, 5rem); }</style>

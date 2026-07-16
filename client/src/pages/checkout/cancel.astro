@@ -1,0 +1,9 @@
+---
+import { CheckoutStatus } from "@/components/checkout/CheckoutStatus";
+import SiteHeader from "@/components/layout/SiteHeader.astro";
+import BaseLayout from "@/layouts/BaseLayout.astro";
+const orderPid = Astro.url.searchParams.get("order_pid") ?? "";
+---
+<BaseLayout title="Payment paused | Silk" description="Resume or cancel your Silk checkout." noIndex>
+  <SiteHeader /><main class="shell"><CheckoutStatus client:load mode="cancel" orderPid={orderPid} /></main>
+</BaseLayout>

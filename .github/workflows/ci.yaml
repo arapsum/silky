@@ -29,6 +29,7 @@ jobs:
     runs-on: ubuntu-latest
     outputs:
       admin: ${{ steps.filter.outputs.admin }}
+      client: ${{ steps.filter.outputs.client }}
       service: ${{ steps.filter.outputs.service }}
     steps:
       - uses: actions/checkout@v4
@@ -39,6 +40,10 @@ jobs:
           filters: |
             admin:
               - 'admin/**'
+              - '.github/workflows/ci.yaml'
+
+            client:
+              - 'client/**'
               - '.github/workflows/ci.yaml'
 
             service:
@@ -135,6 +140,82 @@ jobs:
       - name: Build admin
         working-directory: admin
         run: pnpm build
+
+  # Customer storefront jobs
+  client-check:
+    name: Client - Type check and build
+    runs-on: ubuntu-latest
+    needs:
+      - changes
+    if: needs.changes.outputs.client == 'true'
+    steps:
+      - uses: actions/checkout@v4
+      - uses: pnpm/action-setup@v4
+        with:
+          version: 11
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 26
+          cache: pnpm
+          cache-dependency-path: client/pnpm-lock.yaml
+      - name: Install client dependencies
+        working-directory: client
+        run: pnpm install --frozen-lockfile
+      - name: Check client types
+        working-directory: client
+        run: pnpm check
+      - name: Build client
+        working-directory: client
+        run: pnpm build
+
+  client-test:
+    name: Client - Unit tests
+    runs-on: ubuntu-latest
+    needs:
+      - changes
+    if: needs.changes.outputs.client == 'true'
+    steps:
+      - uses: actions/checkout@v4
+      - uses: pnpm/action-setup@v4
+        with:
+          version: 11
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 26
+          cache: pnpm
+          cache-dependency-path: client/pnpm-lock.yaml
+      - name: Install client dependencies
+        working-directory: client
+        run: pnpm install --frozen-lockfile
+      - name: Run client unit tests
+        working-directory: client
+        run: pnpm test
+
+  client-browser:
+    name: Client - Browser smoke tests
+    runs-on: ubuntu-latest
+    needs:
+      - changes
+    if: needs.changes.outputs.client == 'true'
+    steps:
+      - uses: actions/checkout@v4
+      - uses: pnpm/action-setup@v4
+        with:
+          version: 11
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 26
+          cache: pnpm
+          cache-dependency-path: client/pnpm-lock.yaml
+      - name: Install client dependencies
+        working-directory: client
+        run: pnpm install --frozen-lockfile
+      - name: Install Chromium
+        working-directory: client
+        run: pnpm exec playwright install --with-deps chromium
+      - name: Run storefront browser smoke tests
+        working-directory: client
+        run: pnpm test:browser --project=chromium
 
   rustfmt:
     name: Check Style

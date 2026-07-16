@@ -7,6 +7,7 @@ const links = [
   { href: "/shop?category=t-shirts", label: "T-shirts" },
   { href: "/shop?category=shoes", label: "Shoes" },
   { href: "/shop?category=accessories", label: "Accessories" },
+  { href: "/account", label: "Your account" },
 ];
 
 export function MobileNavigation() {

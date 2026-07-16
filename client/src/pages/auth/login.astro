@@ -1,0 +1,8 @@
+---
+import { AuthForm } from "@/components/auth/AuthForm";
+import AuthLayout from "@/layouts/AuthLayout.astro";
+const next = Astro.url.searchParams.get("next") ?? "/account";
+---
+<AuthLayout title="Sign in" description="Sign in to your Silk account.">
+  <AuthForm client:load mode="login" next={next} />
+</AuthLayout>

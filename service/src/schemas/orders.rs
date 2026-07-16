@@ -127,6 +127,7 @@ pub struct NewOrder {
 #[derive(Debug, Clone, Deserialize, Serialize, Validate)]
 #[serde(rename_all = "camelCase", deny_unknown_fields)]
 pub struct CheckoutOrder {
+    checkout_key: Uuid,
     billing_address_pid: Option<Uuid>,
     shipping_address_pid: Uuid,
     #[validate(length(min = 1, max = 100), nested)]
@@ -136,6 +137,11 @@ pub struct CheckoutOrder {
 }
 
 impl CheckoutOrder {
+    #[must_use]
+    pub const fn checkout_key(&self) -> Uuid {
+        self.checkout_key
+    }
+
     #[must_use]
     pub const fn billing_address_pid(&self) -> Option<Uuid> {
         self.billing_address_pid

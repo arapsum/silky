@@ -1,24 +1,36 @@
 ---
 source: tests/models/user.rs
-expression: result
+expression: "(result, access)"
 ---
-Ok(
-    User {
-        id: ID,
-        pid: PID,
-        name: "test",
-        email: "test@mail.com",
-        image: Some(
-            "https://cdn.example.com/users/test_user.png",
-        ),
-        password_hash: "PASSWORD",
-        verified_at: None,
-        verification_token_hash: None,
-        verification_token_expires_at: None,
-        reset_token_hash: None,
-        reset_token_expires_at: None,
-        created_at: DATE,
-        updated_at: DATE,
-        deleted_at: None,
-    },
+(
+    Ok(
+        User {
+            id: ID,
+            pid: PID,
+            name: "test",
+            email: "test@mail.com",
+            image: Some(
+                "https://cdn.example.com/users/test_user.png",
+            ),
+            password_hash: "PASSWORD",
+            verified_at: None,
+            verification_token_hash: None,
+            verification_token_expires_at: None,
+            reset_token_hash: None,
+            reset_token_expires_at: None,
+            created_at: DATE,
+            updated_at: DATE,
+            deleted_at: None,
+        },
+    ),
+    Ok(
+        UserAccess {
+            roles: [
+                "customer",
+            ],
+            permissions: [
+                "categories:read",
+            ],
+        },
+    ),
 )

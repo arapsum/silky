@@ -1,0 +1,8 @@
+---
+source: tests/requests/cart.rs
+expression: "(response.status_code(), response.text())"
+---
+(
+    200,
+    "{\"items\":[{\"variantPid\":\"PID\",\"productPid\":\"PID\",\"productSlug\":\"classic-cotton-t-shirt\",\"productName\":\"Classic Cotton T-shirt\",\"sku\":\"TSHIRT-BLK-M\",\"imageUrl\":\"https://images.unsplash.com/photo-1521572163474-6864f9cf17ab?auto=format&fit=crop&w=900&q=80\",\"selectedOptions\":{\"size\":\"M\",\"colour\":\"Black\"},\"requestedQuantity\":2,\"availableQuantity\":32,\"unitPrice\":\"24.99\",\"lineTotal\":\"49.98\",\"status\":\"available\"}],\"currency\":\"USD\",\"subtotal\":\"49.98\",\"shippingTotal\":\"0\",\"taxTotal\":\"0\",\"grandTotal\":\"49.98\",\"canCheckout\":true}",
+)

@@ -231,7 +231,7 @@ async fn logout(
         ctx.config().auth(),
         "access_token",
         "",
-        false,
+        true,
         time::Duration::ZERO,
     );
 
@@ -297,7 +297,7 @@ async fn issue_login_response(ctx: &AppState, user: &User, sub: &str) -> Result<
         ctx.config().auth(),
         "access_token",
         &access_token,
-        false,
+        true,
         time::Duration::seconds(ctx.auth().access().expires_in()),
     );
 

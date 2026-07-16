@@ -1,0 +1,7 @@
+---
+import { AuthForm } from "@/components/auth/AuthForm";
+import AuthLayout from "@/layouts/AuthLayout.astro";
+---
+<AuthLayout title="Create account" description="Create a Silk customer account.">
+  <AuthForm client:load mode="register" />
+</AuthLayout>

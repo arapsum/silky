@@ -1,6 +1,8 @@
 # Build Objects
 target/
 node_modules/
+client/test-results/
+client/playwright-report/
 
 # Environmental files
 *.env
@@ -10,4 +12,3 @@ node_modules/
 
 # Config file
 production.yaml
-

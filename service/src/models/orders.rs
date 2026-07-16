@@ -12,6 +12,7 @@ use crate::schemas::{CheckoutOrder, NewOrder, NewOrderItem, OrderListQuery, Upda
 use super::{
     ModelError, ModelResult, PaginatedModel, Pagination, Seedable,
     order_items::{CheckoutItem, OrderItem},
+    payment_attempts::PaymentAttempt,
 };
 
 const ORDER_CURRENCY: &str = "USD";
@@ -23,6 +24,8 @@ pub struct Order {
     id: i32,
     pid: Uuid,
     order_number: i64,
+    #[serde(skip_serializing)]
+    checkout_key: Option<Uuid>,
     customer_id: i32,
     billing_address_id: Option<i32>,
     shipping_address_id: Option<i32>,
@@ -57,8 +60,16 @@ pub struct OrderWithItems {
     pub items: Vec<OrderItem>,
 }
 
+#[derive(Debug, Clone)]
+pub struct CheckoutOrderState {
+    pub order: OrderWithItems,
+    pub attempt: PaymentAttempt,
+    pub created: bool,
+}
+
 struct CheckoutOrderInput<'a> {
     customer_pid: Uuid,
+    checkout_key: Option<Uuid>,
     billing_address_pid: Option<Uuid>,
     shipping_address_pid: Option<Uuid>,
     items: &'a [NewOrderItem],
@@ -70,6 +81,7 @@ impl<'a> CheckoutOrderInput<'a> {
     fn from_new_order(params: &'a NewOrder) -> Self {
         Self {
             customer_pid: params.customer_pid(),
+            checkout_key: None,
             billing_address_pid: params.billing_address_pid(),
             shipping_address_pid: params.shipping_address_pid(),
             items: params.items(),
@@ -82,6 +94,7 @@ impl<'a> CheckoutOrderInput<'a> {
         let shipping_address_pid = params.shipping_address_pid();
         Self {
             customer_pid,
+            checkout_key: Some(params.checkout_key()),
             billing_address_pid: Some(params.billing_address_pid().unwrap_or(shipping_address_pid)),
             shipping_address_pid: Some(shipping_address_pid),
             items: params.items(),
@@ -92,6 +105,68 @@ impl<'a> CheckoutOrderInput<'a> {
 }
 
 impl Order {
+    /// Creates a checkout once for a customer-supplied idempotency key.
+    ///
+    /// Concurrent requests using the same customer and key are serialized by
+    /// a transaction-scoped advisory lock. A retry receives the original
+    /// order and active payment attempt without reserving stock again.
+    ///
+    /// # Errors
+    /// Returns the normal checkout validation errors, or an invalid payment
+    /// state when the keyed checkout is no longer active.
+    pub async fn prepare_checkout(
+        db: &PgPool,
+        customer_pid: Uuid,
+        params: &CheckoutOrder,
+    ) -> ModelResult<CheckoutOrderState> {
+        let mut txn = db.begin().await?;
+        let lock_key = format!("{customer_pid}:{}", params.checkout_key());
+        sqlx::query("SELECT pg_advisory_xact_lock(hashtextextended($1, 0))")
+            .bind(lock_key)
+            .execute(&mut *txn)
+            .await?;
+
+        let existing = sqlx::query_as::<_, Self>(
+            r"SELECT orders.*, customer.image AS customer_image
+              FROM orders AS orders
+              JOIN users AS customer ON customer.id = orders.customer_id
+              WHERE customer.pid = $1
+                AND orders.checkout_key = $2",
+        )
+        .bind(customer_pid)
+        .bind(params.checkout_key())
+        .fetch_optional(&mut *txn)
+        .await?;
+
+        let state = if let Some(order) = existing {
+            let items = OrderItem::find_by_order_id(&mut txn, order.id).await?;
+            let attempt = PaymentAttempt::find_active_for_order(&mut txn, order.id).await?;
+            CheckoutOrderState {
+                order: OrderWithItems { order, items },
+                attempt,
+                created: false,
+            }
+        } else {
+            let input = CheckoutOrderInput::from_checkout(customer_pid, params);
+            let order = Self::insert_checkout_order(&mut txn, input).await?;
+            let attempt = PaymentAttempt::create_for_order(
+                &mut txn,
+                order.order.row_id(),
+                order.order.grand_total(),
+                order.order.currency(),
+            )
+            .await?;
+            CheckoutOrderState {
+                order,
+                attempt,
+                created: true,
+            }
+        };
+
+        txn.commit().await?;
+        Ok(state)
+    }
+
     /// Checks out an order and reserves its inventory in one transaction.
     ///
     /// Any supplied billing and shipping address references must belong to the
@@ -171,6 +246,7 @@ impl Order {
         let order = sqlx::query_as::<_, Self>(
             r"INSERT INTO orders (
                 customer_id,
+                checkout_key,
                 billing_address_id,
                 shipping_address_id,
                 billing_address_snapshot,
@@ -187,11 +263,12 @@ impl Order {
                 staff_note,
                 placed_at
               )
-              VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14, $15, now())
+              VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14, $15, $16, now())
               RETURNING *,
                   (SELECT image FROM users WHERE id = customer_id) AS customer_image",
         )
         .bind(customer_id)
+        .bind(input.checkout_key)
         .bind(billing.as_ref().map(|value| value.0))
         .bind(shipping.as_ref().map(|value| value.0))
         .bind(Json(
@@ -235,6 +312,8 @@ impl Order {
                     variant_id: variant.variant_id,
                     product_pid: variant.product_pid,
                     variant_pid: variant.variant_pid,
+                    product_slug: variant.product_slug,
+                    image_url: variant.image_url,
                     product_name: variant.product_name,
                     sku: variant.sku,
                     selected_options: variant.selected_options,
@@ -465,6 +544,7 @@ impl Seedable for Order {
                     id,
                     pid,
                     order_number,
+                    checkout_key,
                     customer_id,
                     customer_name,
                     customer_email,
@@ -492,11 +572,12 @@ impl Seedable for Order {
                 VALUES (
                     $1, $2, $3, $4, $5, $6, $7, $8, $9, $10,
                     $11, $12, $13, $14, $15, $16, $17, $18, $19, $20,
-                    $21, $22, $23, $24, $25, $26
+                    $21, $22, $23, $24, $25, $26, $27
                 )
                 ON CONFLICT (id) DO UPDATE SET
                     pid = EXCLUDED.pid,
                     order_number = EXCLUDED.order_number,
+                    checkout_key = EXCLUDED.checkout_key,
                     customer_id = EXCLUDED.customer_id,
                     customer_name = EXCLUDED.customer_name,
                     customer_email = EXCLUDED.customer_email,
@@ -525,6 +606,7 @@ impl Seedable for Order {
             .bind(order.id)
             .bind(order.pid)
             .bind(order.order_number)
+            .bind(order.checkout_key)
             .bind(order.customer_id)
             .bind(&order.customer_name)
             .bind(&order.customer_email)
@@ -604,9 +686,20 @@ async fn load_checkout_variants(
                 v.stock_quantity,
                 p.id AS product_id,
                 p.pid AS product_pid,
+                p.slug AS product_slug,
                 p.name AS product_name,
                 v.sku,
                 v.price,
+                (
+                    SELECT picture.image_link
+                    FROM pictures AS picture
+                    WHERE picture.product_id = p.id
+                      AND (picture.variant_id IS NULL OR picture.variant_id = v.id)
+                    ORDER BY (picture.variant_id = v.id) DESC,
+                             picture.display_order NULLS LAST,
+                             picture.id
+                    LIMIT 1
+                ) AS image_url,
                 COALESCE(
                     (
                         SELECT jsonb_object_agg(a.name, av.value)
@@ -734,8 +827,10 @@ struct VariantSnapshot {
     stock_quantity: i32,
     product_id: i32,
     product_pid: Uuid,
+    product_slug: String,
     product_name: String,
     sku: String,
     price: Decimal,
+    image_url: Option<String>,
     selected_options: Json<JsonValue>,
 }

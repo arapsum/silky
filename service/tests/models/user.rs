@@ -80,6 +80,9 @@ async fn can_create_user() {
     configure_insta!();
 
     let ctx = boot_test().await.unwrap();
+    crate::seed_data(ctx.db())
+        .await
+        .expect("Failed to seed data");
 
     let params = RegisterUser::new(
         Cow::Owned("test@mail.com".to_string()),
@@ -92,6 +95,12 @@ async fn can_create_user() {
     );
 
     let result = User::create(ctx.db(), &params).await;
+    let access = match &result {
+        Ok(user) => User::find_access(ctx.db(), user.pid())
+            .await
+            .map_err(|error| error.to_string()),
+        Err(error) => Err(error.to_string()),
+    };
 
     with_settings!({
         filters => {
@@ -102,7 +111,7 @@ async fn can_create_user() {
             filters
         }
     }, {
-        assert_debug_snapshot!(result)
+        assert_debug_snapshot!((result, access))
     })
 }
 

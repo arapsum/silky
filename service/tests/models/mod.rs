@@ -1,4 +1,5 @@
 mod addresses;
+mod cart;
 mod categories;
 mod media_assets;
 mod order_items;

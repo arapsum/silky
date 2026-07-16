@@ -1,4 +1,5 @@
 pub mod auth;
+pub mod cart;
 pub mod categories;
 pub mod orders;
 pub mod products;
@@ -9,6 +10,7 @@ pub mod validator;
 
 pub use self::{
     auth::{ChangePassword, ForgotPassword, LoginUser, RegisterUser, ResetPassword, UpdateProfile},
+    cart::CartQuoteRequest,
     categories::{CategoryAttributesInput, NewCategory, UpdateCategory},
     orders::{CheckoutOrder, NewAddress, NewOrder, NewOrderItem, UpdateOrder},
     products::{

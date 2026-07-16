@@ -10,6 +10,7 @@ use crate::utils;
 
 const ORDER_PID: &str = "c2c4ed90-7b62-43d2-8b6d-96f4f4f94001";
 const MISSING_PID: &str = "00000000-0000-0000-0000-000000000000";
+const CHECKOUT_KEY: &str = "c5f94c62-483f-4c2a-b688-2e599979b86c";
 
 macro_rules! configure_insta {
     ($(expr:expr),*) => {
@@ -98,6 +99,7 @@ async fn protects_customer_checkout(#[case] test_name: &str, #[case] actor: Chec
         seed_data(ctx.db()).await.expect("seed should complete");
 
         let mut request = server.post("/orders/checkout").json(&serde_json::json!({
+            "checkoutKey": CHECKOUT_KEY,
             "shippingAddressPid": "4f3d4f3e-1c26-4f5f-a54f-6b5b2b8a7301",
             "items": [{
                 "variantPid": "db365773-2ac1-49aa-a4b9-03dcf8ac3401",
@@ -130,6 +132,7 @@ async fn checkout_requires_a_shipping_address() {
 
         let response = with_auth(
             server.post("/orders/checkout").json(&serde_json::json!({
+                "checkoutKey": CHECKOUT_KEY,
                 "items": [{
                     "variantPid": "db365773-2ac1-49aa-a4b9-03dcf8ac3401",
                     "quantity": 1

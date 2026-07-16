@@ -17,6 +17,8 @@ pub struct OrderItem {
     variant_id: Option<i32>,
     product_pid: Uuid,
     variant_pid: Uuid,
+    product_slug: Option<String>,
+    image_url: Option<String>,
     product_name: String,
     sku: String,
     selected_options: Json<JsonValue>,
@@ -30,6 +32,21 @@ pub struct OrderItem {
 }
 
 impl OrderItem {
+    pub(super) async fn find_by_order_id(
+        txn: &mut Transaction<'_, Postgres>,
+        order_id: i32,
+    ) -> ModelResult<Vec<Self>> {
+        Ok(sqlx::query_as::<_, Self>(
+            r"SELECT *
+              FROM order_items
+              WHERE order_id = $1
+              ORDER BY id",
+        )
+        .bind(order_id)
+        .fetch_all(&mut **txn)
+        .await?)
+    }
+
     /// Inserts a server-calculated item as part of an open checkout transaction.
     ///
     /// This function is restricted to the order repository so an item cannot
@@ -49,6 +66,8 @@ impl OrderItem {
                 variant_id,
                 product_pid,
                 variant_pid,
+                product_slug,
+                image_url,
                 product_name,
                 sku,
                 selected_options,
@@ -58,7 +77,7 @@ impl OrderItem {
                 tax_total,
                 line_total
               )
-              SELECT $1, $2, $3, $4, $5, $6, $7, $8, $9, $10, 0, 0, $11
+              SELECT $1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, 0, 0, $13
               FROM orders
               WHERE id = $1
                 AND status = 'pending'
@@ -69,6 +88,8 @@ impl OrderItem {
         .bind(item.variant_id)
         .bind(item.product_pid)
         .bind(item.variant_pid)
+        .bind(item.product_slug)
+        .bind(item.image_url)
         .bind(item.product_name)
         .bind(item.sku)
         .bind(item.selected_options)
@@ -159,6 +180,8 @@ pub(super) struct CheckoutItem {
     pub variant_id: i32,
     pub product_pid: Uuid,
     pub variant_pid: Uuid,
+    pub product_slug: String,
+    pub image_url: Option<String>,
     pub product_name: String,
     pub sku: String,
     pub selected_options: Json<JsonValue>,
@@ -180,6 +203,8 @@ impl Seedable for OrderItem {
                     variant_id,
                     product_pid,
                     variant_pid,
+                    product_slug,
+                    image_url,
                     product_name,
                     sku,
                     selected_options,
@@ -192,8 +217,8 @@ impl Seedable for OrderItem {
                     updated_at
                 )
                 VALUES (
-                    $1, $2, $3, $4, $5, $6, $7, $8, $9,
-                    $10, $11, $12, $13, $14, $15, $16, $17
+                    $1, $2, $3, $4, $5, $6, $7, $8, $9, $10,
+                    $11, $12, $13, $14, $15, $16, $17, $18, $19
                 )
                 ON CONFLICT (id) DO UPDATE SET
                     pid = EXCLUDED.pid,
@@ -202,6 +227,8 @@ impl Seedable for OrderItem {
                     variant_id = EXCLUDED.variant_id,
                     product_pid = EXCLUDED.product_pid,
                     variant_pid = EXCLUDED.variant_pid,
+                    product_slug = EXCLUDED.product_slug,
+                    image_url = EXCLUDED.image_url,
                     product_name = EXCLUDED.product_name,
                     sku = EXCLUDED.sku,
                     selected_options = EXCLUDED.selected_options,
@@ -221,6 +248,8 @@ impl Seedable for OrderItem {
             .bind(item.variant_id)
             .bind(item.product_pid)
             .bind(item.variant_pid)
+            .bind(item.product_slug.as_deref())
+            .bind(item.image_url.as_deref())
             .bind(&item.product_name)
             .bind(&item.sku)
             .bind(&item.selected_options)

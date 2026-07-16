@@ -4,10 +4,11 @@ import SiteFooter from "@/components/layout/SiteFooter.astro";
 import SiteHeader from "@/components/layout/SiteHeader.astro";
 import ProductDetails from "@/components/products/ProductDetails.astro";
 import { ProductGallery } from "@/components/products/ProductGallery";
+import { ProductPurchase } from "@/components/products/ProductPurchase";
 import BaseLayout from "@/layouts/BaseLayout.astro";
 import { getProductBySlug, StorefrontApiError } from "@/lib/api/client";
 import type { ProductDetail } from "@/lib/api/types";
-import { formatCurrency, titleCase } from "@/lib/format";
+import { titleCase } from "@/lib/format";
 
 const { slug = "" } = Astro.params;
 let product: ProductDetail | null = null;
@@ -28,15 +29,6 @@ const pictures = product
       ).values(),
     ).sort((left, right) => (left.displayOrder ?? 999) - (right.displayOrder ?? 999))
   : [];
-
-const defaultVariant = product?.variants.find((variant) => variant.isDefault) ?? product?.variants[0];
-const groupedOptions = product?.variants.reduce<Record<string, Set<string>>>((groups, variant) => {
-  for (const option of variant.options) {
-    groups[option.attributeName] ??= new Set();
-    groups[option.attributeName].add(option.value);
-  }
-  return groups;
-}, {}) ?? {};
 
 const galleryImages = pictures.map((picture, index) => ({
   id: picture.pid,
@@ -76,31 +68,7 @@ const galleryImages = pictures.map((picture, index) => ({
             </section>
 
             <aside class="product__summary">
-              <p class="eyebrow">{titleCase(product.category.name)}</p>
-              <h1 class="display-title">{product.name}</h1>
-              <p class="product__price">
-                {defaultVariant ? formatCurrency(defaultVariant.price) : "Price unavailable"}
-              </p>
-              {product.description && <p class="product__description">{product.description}</p>}
-
-              {Object.entries(groupedOptions).map(([name, values]) => (
-                <section class="product__options">
-                  <div>
-                    <h2>{titleCase(name)}</h2>
-                    <span>{values.size} {values.size === 1 ? "option" : "options"}</span>
-                  </div>
-                  <div class="product__option-values">
-                    {Array.from(values).map((value) => <span>{value}</span>)}
-                  </div>
-                </section>
-              ))}
-
-              <p class:list={["product__availability", { "product__availability--out": !defaultVariant || defaultVariant.stockQuantity === 0 }]}>
-                {defaultVariant && defaultVariant.stockQuantity > 0
-                  ? `${defaultVariant.stockQuantity} available in the shown variant`
-                  : "Currently unavailable"}
-              </p>
-
+              <ProductPurchase client:load product={product} fallbackImage={pictures[0]?.imageLink ?? null} />
             </aside>
           </div>
 
@@ -163,77 +131,6 @@ const galleryImages = pictures.map((picture, index) => ({
     align-self: start;
   }
 
-  .product__summary > .eyebrow {
-    margin: 0 0 0.8rem;
-    color: var(--text-muted);
-  }
-
-  .product__summary h1 {
-    max-width: none;
-    margin: 0;
-    font-size: clamp(2.25rem, 3.2vw, 2.8rem);
-    line-height: 1;
-  }
-
-  .product__price {
-    margin: 1rem 0 0;
-    font-size: 1.2rem;
-    font-weight: 760;
-  }
-
-  .product__description {
-    margin: 1.35rem 0 0;
-    color: var(--text-muted);
-  }
-
-  .product__options {
-    margin-top: 2rem;
-    padding-top: 1.5rem;
-    border-top: 1px solid var(--border);
-  }
-
-  .product__options > div:first-child {
-    display: flex;
-    align-items: center;
-    justify-content: space-between;
-    gap: 1rem;
-  }
-
-  .product__options h2 {
-    margin: 0;
-    font-size: 0.88rem;
-  }
-
-  .product__options > div:first-child span {
-    color: var(--text-muted);
-    font-size: 0.68rem;
-  }
-
-  .product__option-values {
-    display: flex;
-    flex-wrap: wrap;
-    gap: 0.45rem;
-    margin-top: 0.85rem;
-  }
-
-  .product__option-values span {
-    padding: 0.5rem 0.85rem;
-    border: 1px solid var(--border);
-    border-radius: var(--radius-control);
-    font-size: 0.74rem;
-  }
-
-  .product__availability {
-    margin: 1.5rem 0 0;
-    color: var(--olive);
-    font-size: 0.75rem;
-    font-weight: 720;
-  }
-
-  .product__availability--out {
-    color: var(--rust);
-  }
-
   .product__unavailable {
     display: grid;
     min-height: 65vh;
@@ -270,8 +167,5 @@ const galleryImages = pictures.map((picture, index) => ({
       padding-top: clamp(1rem, 4vw, 4rem);
     }
 
-    .product__summary h1 {
-      white-space: nowrap;
-    }
   }
 </style>

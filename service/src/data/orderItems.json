@@ -7,6 +7,8 @@
     "variantId": 201,
     "productPid": "6d7b16c3-efbf-4e7e-9b70-4f43e1cc3001",
     "variantPid": "db365773-2ac1-49aa-a4b9-03dcf8ac3401",
+    "productSlug": "classic-cotton-t-shirt",
+    "imageUrl": "https://images.unsplash.com/photo-1521572163474-6864f9cf17ab?auto=format&fit=crop&w=900&q=80",
     "productName": "Classic Cotton T-shirt",
     "sku": "TSHIRT-BLK-M",
     "selectedOptions": {
@@ -29,6 +31,8 @@
     "variantId": 205,
     "productPid": "e7d4a0c2-e831-4c42-bc5c-7a7ac6863003",
     "variantPid": "5a3c53d0-35a7-4928-926b-e776f00b3405",
+    "productSlug": "court-leather-sneakers",
+    "imageUrl": "https://images.unsplash.com/photo-1608231387042-66d1773070a5?auto=format&fit=crop&w=900&q=80",
     "productName": "Court Leather Sneakers",
     "sku": "SNEAKER-WHT-42",
     "selectedOptions": {
@@ -51,6 +55,8 @@
     "variantId": 202,
     "productPid": "6d7b16c3-efbf-4e7e-9b70-4f43e1cc3001",
     "variantPid": "6bf1821a-35d9-42cc-a2d8-b42fcf4f3402",
+    "productSlug": "classic-cotton-t-shirt",
+    "imageUrl": "https://images.unsplash.com/photo-1503341504253-dff4815485f1?auto=format&fit=crop&w=900&q=80",
     "productName": "Classic Cotton T-shirt",
     "sku": "TSHIRT-BLU-L",
     "selectedOptions": {
@@ -73,6 +79,8 @@
     "variantId": 203,
     "productPid": "4532debd-67fe-4070-b36c-d5b9392b3002",
     "variantPid": "ba346b5f-1d1f-4143-bc78-fc2319033403",
+    "productSlug": "tailored-chino-trousers",
+    "imageUrl": "https://images.unsplash.com/photo-1594633312681-425c7b97ccd1?auto=format&fit=crop&w=900&q=80",
     "productName": "Classic Chino Trousers",
     "sku": "CHINO-BLK-M",
     "selectedOptions": {
@@ -95,6 +103,8 @@
     "variantId": 206,
     "productPid": "e7d4a0c2-e831-4c42-bc5c-7a7ac6863003",
     "variantPid": "12395f42-d0bf-4cd2-bb7f-0f61926f3406",
+    "productSlug": "court-leather-sneakers",
+    "imageUrl": "https://images.unsplash.com/photo-1542291026-7eec264c27ff?auto=format&fit=crop&w=900&q=80",
     "productName": "Court Leather Sneakers",
     "sku": "SNEAKER-BLK-43",
     "selectedOptions": {
@@ -117,6 +127,8 @@
     "variantId": 201,
     "productPid": "6d7b16c3-efbf-4e7e-9b70-4f43e1cc3001",
     "variantPid": "db365773-2ac1-49aa-a4b9-03dcf8ac3401",
+    "productSlug": "classic-cotton-t-shirt",
+    "imageUrl": "https://images.unsplash.com/photo-1521572163474-6864f9cf17ab?auto=format&fit=crop&w=900&q=80",
     "productName": "Classic Cotton T-shirt",
     "sku": "TSHIRT-BLK-M",
     "selectedOptions": {
@@ -139,6 +151,8 @@
     "variantId": 205,
     "productPid": "e7d4a0c2-e831-4c42-bc5c-7a7ac6863003",
     "variantPid": "5a3c53d0-35a7-4928-926b-e776f00b3405",
+    "productSlug": "court-leather-sneakers",
+    "imageUrl": "https://images.unsplash.com/photo-1608231387042-66d1773070a5?auto=format&fit=crop&w=900&q=80",
     "productName": "Court Leather Sneakers",
     "sku": "SNEAKER-WHT-42",
     "selectedOptions": {
@@ -161,6 +175,8 @@
     "variantId": 204,
     "productPid": "4532debd-67fe-4070-b36c-d5b9392b3002",
     "variantPid": "585c7bb9-8a6b-4ec1-8e2e-f5c61a703404",
+    "productSlug": "tailored-chino-trousers",
+    "imageUrl": "https://images.unsplash.com/photo-1473966968600-fa801b869a1a?auto=format&fit=crop&w=900&q=80",
     "productName": "Classic Chino Trousers",
     "sku": "CHINO-BLU-L",
     "selectedOptions": {
@@ -183,6 +199,8 @@
     "variantId": 201,
     "productPid": "6d7b16c3-efbf-4e7e-9b70-4f43e1cc3001",
     "variantPid": "db365773-2ac1-49aa-a4b9-03dcf8ac3401",
+    "productSlug": "classic-cotton-t-shirt",
+    "imageUrl": "https://images.unsplash.com/photo-1521572163474-6864f9cf17ab?auto=format&fit=crop&w=900&q=80",
     "productName": "Classic Cotton T-shirt",
     "sku": "TSHIRT-BLK-M",
     "selectedOptions": {
@@ -205,6 +223,8 @@
     "variantId": 206,
     "productPid": "e7d4a0c2-e831-4c42-bc5c-7a7ac6863003",
     "variantPid": "12395f42-d0bf-4cd2-bb7f-0f61926f3406",
+    "productSlug": "court-leather-sneakers",
+    "imageUrl": "https://images.unsplash.com/photo-1542291026-7eec264c27ff?auto=format&fit=crop&w=900&q=80",
     "productName": "Court Leather Sneakers",
     "sku": "SNEAKER-BLK-43",
     "selectedOptions": {
@@ -227,6 +247,8 @@
     "variantId": 202,
     "productPid": "6d7b16c3-efbf-4e7e-9b70-4f43e1cc3001",
     "variantPid": "6bf1821a-35d9-42cc-a2d8-b42fcf4f3402",
+    "productSlug": "classic-cotton-t-shirt",
+    "imageUrl": "https://images.unsplash.com/photo-1503341504253-dff4815485f1?auto=format&fit=crop&w=900&q=80",
     "productName": "Classic Cotton T-shirt",
     "sku": "TSHIRT-BLU-L",
     "selectedOptions": {
@@ -249,6 +271,8 @@
     "variantId": 203,
     "productPid": "4532debd-67fe-4070-b36c-d5b9392b3002",
     "variantPid": "ba346b5f-1d1f-4143-bc78-fc2319033403",
+    "productSlug": "tailored-chino-trousers",
+    "imageUrl": "https://images.unsplash.com/photo-1594633312681-425c7b97ccd1?auto=format&fit=crop&w=900&q=80",
     "productName": "Classic Chino Trousers",
     "sku": "CHINO-BLK-M",
     "selectedOptions": {
@@ -271,6 +295,8 @@
     "variantId": 201,
     "productPid": "6d7b16c3-efbf-4e7e-9b70-4f43e1cc3001",
     "variantPid": "db365773-2ac1-49aa-a4b9-03dcf8ac3401",
+    "productSlug": "classic-cotton-t-shirt",
+    "imageUrl": "https://images.unsplash.com/photo-1521572163474-6864f9cf17ab?auto=format&fit=crop&w=900&q=80",
     "productName": "Classic Cotton T-shirt",
     "sku": "TSHIRT-BLK-M",
     "selectedOptions": {
@@ -293,6 +319,8 @@
     "variantId": 204,
     "productPid": "4532debd-67fe-4070-b36c-d5b9392b3002",
     "variantPid": "585c7bb9-8a6b-4ec1-8e2e-f5c61a703404",
+    "productSlug": "tailored-chino-trousers",
+    "imageUrl": "https://images.unsplash.com/photo-1473966968600-fa801b869a1a?auto=format&fit=crop&w=900&q=80",
     "productName": "Classic Chino Trousers",
     "sku": "CHINO-BLU-L",
     "selectedOptions": {
@@ -315,6 +343,8 @@
     "variantId": 205,
     "productPid": "e7d4a0c2-e831-4c42-bc5c-7a7ac6863003",
     "variantPid": "5a3c53d0-35a7-4928-926b-e776f00b3405",
+    "productSlug": "court-leather-sneakers",
+    "imageUrl": "https://images.unsplash.com/photo-1608231387042-66d1773070a5?auto=format&fit=crop&w=900&q=80",
     "productName": "Court Leather Sneakers",
     "sku": "SNEAKER-WHT-42",
     "selectedOptions": {

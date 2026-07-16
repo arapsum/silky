@@ -128,3 +128,127 @@ export interface ApiErrorPayload {
   error?: string;
   code?: string;
 }
+
+export interface UserSession {
+  pid: string;
+  email: string;
+  name: string;
+  image: string | null;
+  verified: boolean;
+  roles: string[];
+  permissions: string[];
+  createdAt: string;
+  updatedAt: string;
+}
+
+export interface LoginResponse {
+  pid: string;
+  email: string;
+  name: string;
+  verified: boolean;
+}
+
+export interface Address {
+  pid: string;
+  addressType: "billing" | "shipping" | "other";
+  label: string | null;
+  recipientName: string;
+  company: string | null;
+  lineOne: string;
+  lineTwo: string | null;
+  city: string;
+  region: string | null;
+  postalCode: string | null;
+  countryCode: string;
+  email: string | null;
+  phone: string | null;
+  isDefault: boolean;
+  createdAt: string;
+  updatedAt: string;
+  deletedAt: string | null;
+}
+
+export type AddressInput = Omit<Address, "pid" | "createdAt" | "updatedAt" | "deletedAt">;
+
+export interface CartQuoteLine {
+  variantPid: string;
+  productPid: string | null;
+  productSlug: string | null;
+  productName: string | null;
+  sku: string | null;
+  imageUrl: string | null;
+  selectedOptions: Record<string, string>;
+  requestedQuantity: number;
+  availableQuantity: number;
+  unitPrice: string | null;
+  lineTotal: string | null;
+  status: "available" | "insufficient_stock" | "unavailable";
+}
+
+export interface CartQuote {
+  currency: string;
+  subtotal: string;
+  shippingTotal: string;
+  taxTotal: string;
+  grandTotal: string;
+  canCheckout: boolean;
+  items: CartQuoteLine[];
+}
+
+export interface CheckoutResponse {
+  orderPid: string;
+  checkoutUrl: string;
+  expiresAt: string;
+}
+
+export interface CheckoutSession {
+  orderPid: string;
+  orderStatus: string;
+  paymentStatus: string;
+  attemptStatus: string;
+  checkoutUrl: string | null;
+  expiresAt: string | null;
+}
+
+export interface OrderSummary {
+  id: number;
+  pid: string;
+  orderNumber: number;
+  customerName: string;
+  customerEmail: string;
+  customerImage: string | null;
+  status: string;
+  paymentStatus: string;
+  fulfillmentStatus: string;
+  currency: string;
+  subtotal: string;
+  shippingTotal: string;
+  taxTotal: string;
+  grandTotal: string;
+  placedAt: string | null;
+  createdAt: string;
+  updatedAt: string;
+}
+
+export interface OrderItem {
+  pid: string;
+  productPid: string;
+  variantPid: string;
+  productSlug: string | null;
+  imageUrl: string | null;
+  productName: string;
+  sku: string;
+  selectedOptions: Record<string, string>;
+  quantity: number;
+  unitPrice: string;
+  lineTotal: string;
+}
+
+export interface OrderDetail {
+  order: OrderSummary & {
+    billingAddressSnapshot: Record<string, unknown>;
+    shippingAddressSnapshot: Record<string, unknown>;
+    customerNote: string | null;
+  };
+  items: OrderItem[];
+}

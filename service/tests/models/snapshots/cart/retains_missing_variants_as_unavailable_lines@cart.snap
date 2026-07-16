@@ -1,0 +1,30 @@
+---
+source: tests/models/cart.rs
+expression: quote
+---
+CartQuote {
+    items: [
+        CartQuoteItem {
+            variant_pid: PID,
+            product_pid: None,
+            product_slug: None,
+            product_name: None,
+            sku: None,
+            image_url: None,
+            selected_options: Json(
+                Object {},
+            ),
+            requested_quantity: 1,
+            available_quantity: 0,
+            unit_price: None,
+            line_total: None,
+            status: Unavailable,
+        },
+    ],
+    currency: "USD",
+    subtotal: 0,
+    shipping_total: 0,
+    tax_total: 0,
+    grand_total: 0,
+    can_checkout: false,
+}

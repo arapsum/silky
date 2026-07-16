@@ -19,6 +19,7 @@ beforeEach(() => {
   useCartStore.setState({
     items: [],
     quote: null,
+    checkoutAttempt: null,
     pendingCheckout: null,
     expiresAt: Date.now() + 60_000,
     hydrated: true,
@@ -66,5 +67,21 @@ describe("cart store", () => {
     expect(useCartStore.getState().pendingCheckout).toEqual(pending);
     useCartStore.getState().setPendingCheckout(null);
     expect(useCartStore.getState().pendingCheckout).toBeNull();
+  });
+
+  it("keeps an in-flight checkout request available for an idempotent retry", () => {
+    const attempt = {
+      checkoutKey: "checkout-one",
+      shippingAddressPid: "shipping-one",
+      billingAddressPid: "billing-one",
+      items: [{ variantPid: item.variantPid, quantity: item.quantity }],
+      createdAt: Date.now(),
+    };
+
+    useCartStore.getState().setCheckoutAttempt(attempt);
+
+    expect(useCartStore.getState().checkoutAttempt).toEqual(attempt);
+    useCartStore.getState().setCheckoutAttempt(null);
+    expect(useCartStore.getState().checkoutAttempt).toBeNull();
   });
 });

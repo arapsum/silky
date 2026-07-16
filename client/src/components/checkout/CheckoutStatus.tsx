@@ -53,12 +53,33 @@ export function CheckoutStatus({ orderPid, mode }: CheckoutStatusProps) {
 
   const paid = session?.paymentStatus === "paid";
   const failed = session && ["failed", "expired", "cancelled"].includes(session.attemptStatus);
+  const eyebrow = paid
+    ? "Payment confirmed"
+    : mode === "cancel"
+      ? "Payment paused"
+      : failed
+        ? "Payment unsuccessful"
+        : "Confirming payment";
+  const title = paid
+    ? "Your order is in."
+    : mode === "cancel"
+      ? "Nothing has been lost."
+      : failed
+        ? "Payment was not completed."
+        : "We are checking with Stripe.";
+  const description = paid
+    ? "We have your payment and will keep you updated as your order moves."
+    : mode === "cancel"
+      ? "Your bag is intact. Resume the reserved checkout or cancel it before trying again."
+      : failed
+        ? "Your bag is still here. Review it and start a new checkout whenever you are ready."
+        : "This usually takes only a few seconds. You can safely stay on this page.";
   return (
     <section className="checkout-status">
       {paid ? <CheckCircleIcon aria-hidden size={54} weight="thin" /> : failed || mode === "cancel" ? <XCircleIcon aria-hidden size={54} weight="thin" /> : <SpinnerGapIcon aria-hidden className="is-spinning" size={54} weight="thin" />}
-      <p className="eyebrow">{paid ? "Payment confirmed" : mode === "cancel" ? "Payment paused" : "Confirming payment"}</p>
-      <h1>{paid ? "Your order is in." : mode === "cancel" ? "Nothing has been lost." : "We are checking with Stripe."}</h1>
-      <p>{paid ? "We have your payment and will keep you updated as your order moves." : mode === "cancel" ? "Your bag is intact. Resume the reserved checkout or cancel it before trying again." : "This usually takes only a few seconds. You can safely stay on this page."}</p>
+      <p className="eyebrow">{eyebrow}</p>
+      <h1>{title}</h1>
+      <p>{description}</p>
       {error && <p className="form-error" role="alert">{error}</p>}
       <div>
         {paid && <a className="button-primary" href={`/account/orders/${orderPid}`}>View order <ArrowRightIcon aria-hidden size={17} /></a>}

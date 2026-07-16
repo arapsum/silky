@@ -10,7 +10,9 @@ import { useCartStore } from "@/stores/cart";
 export function CheckoutPage() {
   const items = useCartStore((state) => state.items);
   const hydrated = useCartStore((state) => state.hydrated);
+  const checkoutAttempt = useCartStore((state) => state.checkoutAttempt);
   const pending = useCartStore((state) => state.pendingCheckout);
+  const setCheckoutAttempt = useCartStore((state) => state.setCheckoutAttempt);
   const setPending = useCartStore((state) => state.setPendingCheckout);
   const [user, setUser] = useState<UserSession | null>(null);
   const [addresses, setAddresses] = useState<Address[]>([]);
@@ -54,17 +56,28 @@ export function CheckoutPage() {
     if (!shippingPid || !quote?.canCheckout) return;
     setSubmitting(true);
     setError(null);
-    const checkoutKey = crypto.randomUUID();
+    const attempt = checkoutAttempt ?? {
+      checkoutKey: crypto.randomUUID(),
+      shippingAddressPid: shippingPid,
+      billingAddressPid: sameAddress ? undefined : billingPid || undefined,
+      items: items.map(({ variantPid, quantity }) => ({ variantPid, quantity })),
+      createdAt: Date.now(),
+    };
+    if (!checkoutAttempt) setCheckoutAttempt(attempt);
     try {
       const checkout = await orderApi.checkout({
-        checkoutKey,
-        shippingAddressPid: shippingPid,
-        billingAddressPid: sameAddress ? undefined : billingPid || undefined,
-        items: items.map(({ variantPid, quantity }) => ({ variantPid, quantity })),
+        checkoutKey: attempt.checkoutKey,
+        shippingAddressPid: attempt.shippingAddressPid,
+        billingAddressPid: attempt.billingAddressPid,
+        items: attempt.items,
       });
-      setPending({ checkoutKey, orderPid: checkout.orderPid, checkoutUrl: checkout.checkoutUrl, expiresAt: checkout.expiresAt });
+      setPending({ checkoutKey: attempt.checkoutKey, orderPid: checkout.orderPid, checkoutUrl: checkout.checkoutUrl, expiresAt: checkout.expiresAt });
+      setCheckoutAttempt(null);
       window.location.assign(checkout.checkoutUrl);
     } catch (requestError) {
+      if (requestError instanceof ApiError && requestError.status < 500) {
+        setCheckoutAttempt(null);
+      }
       setError(requestError instanceof ApiError ? requestError.message : "Payment could not be started.");
       setSubmitting(false);
     }
@@ -150,7 +163,7 @@ export function CheckoutPage() {
         </dl>
         {error && <p className="form-error" role="alert">{error}</p>}
         <button className="button-primary order-summary__checkout" disabled={submitting || !shippingPid || !quote?.canCheckout} onClick={startCheckout} type="button">
-          {submitting ? "Opening secure payment" : "Continue to payment"}<ArrowRightIcon aria-hidden size={17} />
+          {submitting ? "Opening secure payment" : checkoutAttempt ? "Retry secure payment" : "Continue to payment"}<ArrowRightIcon aria-hidden size={17} />
         </button>
         <p className="order-summary__note">Payment is completed securely with Stripe.</p>
       </aside>

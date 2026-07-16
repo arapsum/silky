@@ -1,0 +1,58 @@
+---
+import { ArrowLeftIcon } from "@phosphor-icons/react";
+---
+
+<header class="auth-header">
+  <div class="auth-header__inner shell">
+    <a class="auth-header__brand" href="/" aria-label="Silk home">Silk</a>
+    <a class="auth-header__return" href="/shop">
+      <ArrowLeftIcon aria-hidden="true" size={15} weight="bold" />
+      <span>Back to shop</span>
+    </a>
+  </div>
+</header>
+
+<style>
+  .auth-header {
+    border-bottom: 1px solid var(--border);
+    background: var(--surface);
+  }
+
+  .auth-header__inner {
+    display: flex;
+    min-height: 4.5rem;
+    align-items: center;
+    justify-content: space-between;
+    gap: 1rem;
+  }
+
+  .auth-header__brand {
+    font-family: var(--font-display);
+    font-size: 1.7rem;
+    font-weight: 820;
+    letter-spacing: -0.065em;
+  }
+
+  .auth-header__return {
+    display: inline-flex;
+    min-height: 2.75rem;
+    align-items: center;
+    gap: 0.45rem;
+    border-radius: var(--radius-control);
+    padding-inline: 0.8rem;
+    color: var(--text-muted);
+    font-size: 0.78rem;
+    font-weight: 680;
+    transition: color 150ms ease;
+  }
+
+  .auth-header__return:hover {
+    color: var(--text);
+  }
+
+  @media (max-height: 46rem) {
+    .auth-header__inner {
+      min-height: 4rem;
+    }
+  }
+</style>

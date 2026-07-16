@@ -1,0 +1,70 @@
+---
+source: tests/models/payment_attempts.rs
+expression: "(failed, replayed, stock_before, stock_reserved, stock_after, state,)"
+---
+(
+    PaymentAttempt {
+        id: ID,
+        pid: PID,
+        order_id: ID,
+        provider: "stripe",
+        status: "failed",
+        amount: 179.98,
+        currency: "USD",
+        stripe_checkout_session_id: Some(
+            "cs_test_async_failure",
+        ),
+        stripe_payment_intent_id: None,
+        checkout_url: Some(
+            "https://checkout.stripe.com/c/pay/test-session",
+        ),
+        expires_at: Some(
+            DATE,
+        ),
+        failure_code: Some(
+            "async_payment_failed",
+        ),
+        failure_message: None,
+        created_at: DATE,
+        updated_at: DATE,
+        completed_at: Some(
+            DATE,
+        ),
+    },
+    PaymentAttempt {
+        id: ID,
+        pid: PID,
+        order_id: ID,
+        provider: "stripe",
+        status: "failed",
+        amount: 179.98,
+        currency: "USD",
+        stripe_checkout_session_id: Some(
+            "cs_test_async_failure",
+        ),
+        stripe_payment_intent_id: None,
+        checkout_url: Some(
+            "https://checkout.stripe.com/c/pay/test-session",
+        ),
+        expires_at: Some(
+            DATE,
+        ),
+        failure_code: Some(
+            "async_payment_failed",
+        ),
+        failure_message: None,
+        created_at: DATE,
+        updated_at: DATE,
+        completed_at: Some(
+            DATE,
+        ),
+    },
+    32,
+    30,
+    32,
+    (
+        "cancelled",
+        "failed",
+        "cancelled",
+    ),
+)

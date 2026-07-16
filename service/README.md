@@ -65,8 +65,8 @@ settings are present. Keep these values in `service/.env`; never commit them:
 ```bash
 APP_STRIPE_SECRET_KEY=sk_test_...
 APP_STRIPE_WEBHOOK_SECRET=whsec_...
-APP_STRIPE_CHECKOUT_SUCCESS_URL=http://localhost:3000/checkout/success?session_id={CHECKOUT_SESSION_ID}
-APP_STRIPE_CHECKOUT_CANCEL_URL=http://localhost:3000/checkout/cancel
+APP_STRIPE_CHECKOUT_SUCCESS_URL=http://localhost:4321/checkout/success?session_id={CHECKOUT_SESSION_ID}&order_pid={ORDER_PID}
+APP_STRIPE_CHECKOUT_CANCEL_URL=http://localhost:4321/checkout/cancel?order_pid={ORDER_PID}
 APP_STRIPE_CHECKOUT_TTL_SECONDS=1800
 APP_STRIPE_LIVE_MODE=false
 ```
@@ -80,10 +80,12 @@ stripe listen \
   --forward-to http://127.0.0.1:7150/api/payments/stripe/webhook
 ```
 
-Copy the command's `whsec_...` signing secret into
-`APP_STRIPE_WEBHOOK_SECRET`, then restart the service. Development should use
-Stripe test keys with `APP_STRIPE_LIVE_MODE=false`; production must use live
-keys, an HTTPS webhook destination, and `APP_STRIPE_LIVE_MODE=true`.
+Copy the command's temporary `whsec_...` signing secret into
+`APP_STRIPE_WEBHOOK_SECRET`, then restart the service. This Stripe CLI secret is
+different from the signing secret shown for a registered Dashboard webhook.
+Development should use Stripe test keys with `APP_STRIPE_LIVE_MODE=false`;
+production must use its live webhook destination secret, live keys, HTTPS
+return and webhook URLs, and `APP_STRIPE_LIVE_MODE=true`.
 
 ## Development
 

@@ -25,9 +25,18 @@ export interface PendingCheckout {
   expiresAt: string;
 }
 
+export interface CheckoutAttempt {
+  checkoutKey: string;
+  shippingAddressPid: string;
+  billingAddressPid?: string;
+  items: Array<{ variantPid: string; quantity: number }>;
+  createdAt: number;
+}
+
 interface CartState {
   items: CartItem[];
   quote: CartQuote | null;
+  checkoutAttempt: CheckoutAttempt | null;
   pendingCheckout: PendingCheckout | null;
   expiresAt: number;
   hydrated: boolean;
@@ -35,6 +44,7 @@ interface CartState {
   remove: (variantPid: string) => void;
   setQuantity: (variantPid: string, quantity: number) => void;
   setQuote: (quote: CartQuote | null) => void;
+  setCheckoutAttempt: (attempt: CheckoutAttempt | null) => void;
   setPendingCheckout: (checkout: PendingCheckout | null) => void;
   clear: () => void;
   setHydrated: (hydrated: boolean) => void;
@@ -49,6 +59,7 @@ export const useCartStore = create<CartState>()(
     (set) => ({
       items: [],
       quote: null,
+      checkoutAttempt: null,
       pendingCheckout: null,
       expiresAt: Date.now() + CART_LIFETIME_MS,
       hydrated: false,
@@ -89,11 +100,13 @@ export const useCartStore = create<CartState>()(
           expiresAt: Date.now() + CART_LIFETIME_MS,
         })),
       setQuote: (quote) => set({ quote }),
+      setCheckoutAttempt: (checkoutAttempt) => set({ checkoutAttempt }),
       setPendingCheckout: (pendingCheckout) => set({ pendingCheckout }),
       clear: () =>
         set({
           items: [],
           quote: null,
+          checkoutAttempt: null,
           pendingCheckout: null,
           expiresAt: Date.now() + CART_LIFETIME_MS,
         }),
@@ -103,8 +116,9 @@ export const useCartStore = create<CartState>()(
       name: "silk-cart",
       version: 1,
       storage: createJSONStorage(() => localStorage),
-      partialize: ({ items, pendingCheckout, expiresAt }) => ({
+      partialize: ({ items, checkoutAttempt, pendingCheckout, expiresAt }) => ({
         items,
+        checkoutAttempt,
         pendingCheckout,
         expiresAt,
       }),
@@ -114,6 +128,7 @@ export const useCartStore = create<CartState>()(
         return {
           ...current,
           items: valid ? (saved.items ?? []) : [],
+          checkoutAttempt: valid ? (saved.checkoutAttempt ?? null) : null,
           pendingCheckout: valid ? (saved.pendingCheckout ?? null) : null,
           expiresAt: valid ? (saved.expiresAt ?? current.expiresAt) : current.expiresAt,
         };

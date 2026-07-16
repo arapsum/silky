@@ -192,13 +192,11 @@ async fn expired_checkout_session_does_not_expose_redirect_url() {
 enum ForbiddenTransition {
     SucceededToProcessing,
     FailedToSucceeded,
-    SucceededToFailed,
 }
 
 #[rstest]
 #[case("succeeded to processing", ForbiddenTransition::SucceededToProcessing)]
 #[case("failed to succeeded", ForbiddenTransition::FailedToSucceeded)]
-#[case("succeeded to failed", ForbiddenTransition::SucceededToFailed)]
 #[tokio::test]
 #[serial]
 async fn rejects_terminal_payment_state_regressions(
@@ -226,7 +224,7 @@ async fn rejects_terminal_payment_state_regressions(
             PaymentAttempt::mark_processing(&mut txn, "cs_test_transition").await
         }
         ForbiddenTransition::FailedToSucceeded => {
-            PaymentAttempt::mark_failed(
+            PaymentAttempt::fail_and_release_inventory(
                 &mut txn,
                 "cs_test_transition",
                 Some("card_declined"),
@@ -235,13 +233,6 @@ async fn rejects_terminal_payment_state_regressions(
             .await
             .expect("failure should apply");
             PaymentAttempt::mark_succeeded(&mut txn, "cs_test_transition", Some("pi_test")).await
-        }
-        ForbiddenTransition::SucceededToFailed => {
-            PaymentAttempt::mark_succeeded(&mut txn, "cs_test_transition", Some("pi_test"))
-                .await
-                .expect("success should apply");
-            PaymentAttempt::mark_failed(&mut txn, "cs_test_transition", Some("late_failure"), None)
-                .await
         }
     }
     .map_err(|error| (error.code(), error.to_string()));
@@ -302,6 +293,143 @@ async fn expiration_releases_reserved_inventory_exactly_once() {
             expired,
             replayed,
             stock_before,
+            stock_reserved,
+            stock_after,
+            state,
+        ));
+    });
+}
+
+#[tokio::test]
+#[serial]
+async fn asynchronous_failure_releases_reserved_inventory_exactly_once() {
+    configure_insta!();
+    let ctx = boot_test().await.expect("test context should boot");
+    seed_data(ctx.db()).await.expect("seed should complete");
+    let variant_pid =
+        Uuid::parse_str("db365773-2ac1-49aa-a4b9-03dcf8ac3401").expect("variant pid should parse");
+    let stock_before =
+        sqlx::query_scalar::<_, i32>("SELECT stock_quantity FROM product_variants WHERE pid = $1")
+            .bind(variant_pid)
+            .fetch_one(ctx.db())
+            .await
+            .expect("stock should load");
+    let (order, attempt, _order_id) = create_order_and_attempt(&ctx).await;
+    let stock_reserved =
+        sqlx::query_scalar::<_, i32>("SELECT stock_quantity FROM product_variants WHERE pid = $1")
+            .bind(variant_pid)
+            .fetch_one(ctx.db())
+            .await
+            .expect("reserved stock should load");
+
+    let mut txn = ctx.db().begin().await.expect("transaction should begin");
+    PaymentAttempt::attach_checkout_session(
+        &mut txn,
+        attempt.pid(),
+        &session("cs_test_async_failure"),
+    )
+    .await
+    .expect("session should attach");
+    let failed = PaymentAttempt::fail_and_release_inventory(
+        &mut txn,
+        "cs_test_async_failure",
+        Some("async_payment_failed"),
+        None,
+    )
+    .await
+    .expect("attempt should fail");
+    let replayed = PaymentAttempt::fail_and_release_inventory(
+        &mut txn,
+        "cs_test_async_failure",
+        Some("async_payment_failed"),
+        None,
+    )
+    .await
+    .expect("failure replay should be idempotent");
+    txn.commit().await.expect("transaction should commit");
+
+    let stock_after =
+        sqlx::query_scalar::<_, i32>("SELECT stock_quantity FROM product_variants WHERE pid = $1")
+            .bind(variant_pid)
+            .fetch_one(ctx.db())
+            .await
+            .expect("restored stock should load");
+    let state = sqlx::query_as::<_, (String, String, String)>(
+        "SELECT status, payment_status, fulfillment_status FROM orders WHERE pid = $1",
+    )
+    .bind(order.pid())
+    .fetch_one(ctx.db())
+    .await
+    .expect("order state should load");
+
+    with_settings!({ filters => { let mut filters = cleanup_uuid().to_vec(); filters.extend(cleanup_date()); filters.extend(cleanup_id()); filters } }, {
+        assert_debug_snapshot!("asynchronous_failure_releases_reserved_inventory_exactly_once", (
+            failed,
+            replayed,
+            stock_before,
+            stock_reserved,
+            stock_after,
+            state,
+        ));
+    });
+}
+
+#[tokio::test]
+#[serial]
+async fn late_failure_cannot_revert_a_successful_payment() {
+    configure_insta!();
+    let ctx = boot_test().await.expect("test context should boot");
+    seed_data(ctx.db()).await.expect("seed should complete");
+    let variant_pid =
+        Uuid::parse_str("db365773-2ac1-49aa-a4b9-03dcf8ac3401").expect("variant pid should parse");
+    let (_order, attempt, order_id) = create_order_and_attempt(&ctx).await;
+    let stock_reserved =
+        sqlx::query_scalar::<_, i32>("SELECT stock_quantity FROM product_variants WHERE pid = $1")
+            .bind(variant_pid)
+            .fetch_one(ctx.db())
+            .await
+            .expect("reserved stock should load");
+
+    let mut txn = ctx.db().begin().await.expect("transaction should begin");
+    PaymentAttempt::attach_checkout_session(
+        &mut txn,
+        attempt.pid(),
+        &session("cs_test_paid_then_failed"),
+    )
+    .await
+    .expect("session should attach");
+    let succeeded =
+        PaymentAttempt::mark_succeeded(&mut txn, "cs_test_paid_then_failed", Some("pi_test_paid"))
+            .await
+            .expect("payment should succeed");
+    let after_failure = PaymentAttempt::fail_and_release_inventory(
+        &mut txn,
+        "cs_test_paid_then_failed",
+        Some("late_failure"),
+        None,
+    )
+    .await
+    .expect("late failure should be acknowledged");
+    txn.commit().await.expect("transaction should commit");
+
+    let stock_after =
+        sqlx::query_scalar::<_, i32>("SELECT stock_quantity FROM product_variants WHERE pid = $1")
+            .bind(variant_pid)
+            .fetch_one(ctx.db())
+            .await
+            .expect("stock should remain reserved");
+    let state = sqlx::query_as::<_, (String, String, String)>(
+        "SELECT status, payment_status, fulfillment_status FROM orders WHERE id = $1",
+    )
+    .bind(order_id)
+    .fetch_one(ctx.db())
+    .await
+    .expect("order state should load");
+
+    with_settings!({ filters => { let mut filters = cleanup_uuid().to_vec(); filters.extend(cleanup_date()); filters.extend(cleanup_id()); filters } }, {
+        assert_debug_snapshot!("late_failure_cannot_revert_a_successful_payment", (
+            succeeded,
+            after_failure,
             stock_reserved,
             stock_after,
             state,

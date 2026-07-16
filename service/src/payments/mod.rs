@@ -233,7 +233,7 @@ pub async fn process_stripe_event(
         }
         (EventType::CheckoutSessionAsyncPaymentFailed, EventObject::CheckoutSession(session)) => {
             reconcile_session(&mut txn, config, &session).await?;
-            PaymentAttempt::mark_failed(
+            PaymentAttempt::fail_and_release_inventory(
                 &mut txn,
                 session.id.as_ref(),
                 Some("async_payment_failed"),

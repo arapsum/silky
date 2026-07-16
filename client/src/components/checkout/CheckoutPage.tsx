@@ -4,6 +4,7 @@ import { AddressForm } from "@/components/account/AddressForm";
 import { addressApi, ApiError, cartApi, orderApi, sessionApi } from "@/lib/api/browser";
 import type { Address, CartQuote, UserSession } from "@/lib/api/types";
 import { formatCurrency } from "@/lib/format";
+import { CheckoutSkeleton } from "@/components/loading/StorefrontSkeletons";
 import { useCartStore } from "@/stores/cart";
 
 export function CheckoutPage() {
@@ -82,7 +83,7 @@ export function CheckoutPage() {
     }
   }
 
-  if (!hydrated || loading) return <div className="checkout-state">Preparing secure checkout...</div>;
+  if (!hydrated || loading) return <CheckoutSkeleton />;
   if (items.length === 0) return <div className="checkout-state"><h1>Your bag is empty.</h1><a className="button-primary" href="/shop">Browse the collection</a></div>;
   if (error && !quote) return <div className="checkout-state"><h1>Checkout needs a moment.</h1><p>{error}</p><a className="button-secondary" href="/cart">Return to your bag</a></div>;
 

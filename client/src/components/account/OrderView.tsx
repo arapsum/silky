@@ -1,6 +1,7 @@
 import { ArrowLeftIcon } from "@phosphor-icons/react";
 import { useEffect, useState } from "react";
 import { ApiError, orderApi } from "@/lib/api/browser";
+import { OrderDetailSkeleton } from "@/components/loading/StorefrontSkeletons";
 import type { OrderDetail } from "@/lib/api/types";
 import { formatCurrency } from "@/lib/format";
 
@@ -8,7 +9,7 @@ export function OrderView({ pid }: { pid: string }) {
   const [detail, setDetail] = useState<OrderDetail | null>(null);
   const [error, setError] = useState<string | null>(null);
   useEffect(() => { orderApi.one(pid).then(setDetail).catch((requestError) => setError(requestError instanceof ApiError ? requestError.message : "This order could not be loaded.")); }, [pid]);
-  if (!detail && !error) return <div className="account-state">Loading order...</div>;
+  if (!detail && !error) return <OrderDetailSkeleton />;
   if (!detail) return <div className="account-state"><h1>Order unavailable.</h1><p>{error}</p></div>;
   const { order, items } = detail;
   const address = order.shippingAddressSnapshot;

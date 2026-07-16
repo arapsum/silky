@@ -4,6 +4,7 @@ import { useEffect, useState } from "react";
 import { useForm } from "react-hook-form";
 import { z } from "zod";
 import { FormField } from "@/components/forms/FormField";
+import { AccountOverviewSkeleton } from "@/components/loading/StorefrontSkeletons";
 import { ApiError, orderApi, sessionApi } from "@/lib/api/browser";
 import type { OrderSummary, UserSession } from "@/lib/api/types";
 import { formatCurrency } from "@/lib/format";
@@ -44,7 +45,7 @@ export function AccountOverview() {
     }
   }
 
-  if (!user && !error) return <div className="account-state">Loading your account...</div>;
+  if (!user && !error) return <AccountOverviewSkeleton />;
   if (!user) return <div className="account-state"><h1>We could not load your account.</h1><p>{error}</p></div>;
 
   return (

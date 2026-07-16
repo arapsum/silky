@@ -2,6 +2,7 @@ import { ArrowRightIcon, MinusIcon, PlusIcon, TrashIcon } from "@phosphor-icons/
 import { useEffect, useMemo, useState } from "react";
 import { cartApi } from "@/lib/api/browser";
 import { formatCurrency } from "@/lib/format";
+import { CartSkeleton, InlineAmountSkeleton } from "@/components/loading/StorefrontSkeletons";
 import { hydrateCartStore, useCartStore } from "@/stores/cart";
 
 export function CartPage() {
@@ -52,11 +53,7 @@ export function CartPage() {
   }, [hydrated, requestKey]);
 
   if (!hydrated) {
-    return (
-      <div className="cart-state" aria-live="polite">
-        Loading your bag...
-      </div>
-    );
+    return <CartSkeleton />;
   }
   if (items.length === 0) {
     return (
@@ -159,19 +156,19 @@ export function CartPage() {
         <dl>
           <div>
             <dt>Subtotal</dt>
-            <dd>{quote ? formatCurrency(quote.subtotal) : "Checking..."}</dd>
+            <dd>{quote ? formatCurrency(quote.subtotal) : <InlineAmountSkeleton />}</dd>
           </div>
           <div>
             <dt>Shipping</dt>
-            <dd>{quote ? formatCurrency(quote.shippingTotal) : "Checking..."}</dd>
+            <dd>{quote ? formatCurrency(quote.shippingTotal) : <InlineAmountSkeleton />}</dd>
           </div>
           <div>
             <dt>Tax</dt>
-            <dd>{quote ? formatCurrency(quote.taxTotal) : "Checking..."}</dd>
+            <dd>{quote ? formatCurrency(quote.taxTotal) : <InlineAmountSkeleton />}</dd>
           </div>
           <div className="order-summary__total">
             <dt>Total</dt>
-            <dd>{quote ? formatCurrency(quote.grandTotal) : "Checking..."}</dd>
+            <dd>{quote ? formatCurrency(quote.grandTotal) : <InlineAmountSkeleton />}</dd>
           </div>
         </dl>
         {error && (

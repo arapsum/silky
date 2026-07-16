@@ -60,6 +60,21 @@ async fn access_token(server: &TestServer) -> HeaderValue {
     .access_token
 }
 
+async fn customer_access_token(server: &TestServer) -> HeaderValue {
+    utils::login_users(
+        server,
+        &json!({"email": "john.doe@silk.com", "password": "Password"}),
+    )
+    .await
+    .access_token
+}
+
+async fn access_token_for(server: &TestServer, email: &str) -> HeaderValue {
+    utils::login_users(server, &json!({"email": email, "password": "Password"}))
+        .await
+        .access_token
+}
+
 fn auth_header(token: HeaderValue) -> (axum::http::HeaderName, HeaderValue) {
     utils::auth_header(token)
 }
@@ -187,6 +202,62 @@ async fn media_endpoints_require_authentication() {
             .await;
 
         assert_eq!(response.status_code(), StatusCode::UNAUTHORIZED);
+    })
+    .await;
+}
+
+#[tokio::test]
+#[serial]
+async fn customers_can_finalize_their_own_profile_media() {
+    let _cloudinary = CloudinaryEnvGuard::set();
+
+    crate::request(|server, ctx| async move {
+        crate::seed_data(ctx.db())
+            .await
+            .expect("Failed to seed data");
+
+        let owner_token = customer_access_token(&server).await;
+        let (header, value) = auth_header(owner_token.clone());
+        let sign_response = server
+            .post("/media/profile/sign")
+            .add_header(header, value)
+            .json(&json!({"kind": "user"}))
+            .await;
+
+        assert_eq!(sign_response.status_code(), StatusCode::OK);
+        let signed: Value = sign_response.json();
+        assert_eq!(signed["folder"], json!("silk/users"));
+        assert_eq!(signed["signature"], json!(expected_signature(&signed)));
+
+        let asset_pid = signed["assetPid"].as_str().expect("Expected an asset PID");
+        let public_id = format!(
+            "{}/{}",
+            signed["folder"]
+                .as_str()
+                .expect("Expected an upload folder"),
+            signed["publicId"].as_str().expect("Expected a public ID")
+        );
+        let secure_url =
+            format!("https://res.cloudinary.com/{TEST_CLOUD_NAME}/image/upload/{public_id}.png");
+
+        let other_customer_token = access_token_for(&server, "jane.smith@globex.com").await;
+        let (header, value) = auth_header(other_customer_token);
+        let other_customer_finalize = server
+            .put(&format!("/media/profile/{asset_pid}/finalize"))
+            .add_header(header, value)
+            .json(&json!({"publicId": &public_id, "secureUrl": &secure_url}))
+            .await;
+        assert_eq!(other_customer_finalize.status_code(), StatusCode::NOT_FOUND);
+
+        let (header, value) = auth_header(owner_token);
+        let finalize_response = server
+            .put(&format!("/media/profile/{asset_pid}/finalize"))
+            .add_header(header, value)
+            .json(&json!({"publicId": public_id, "secureUrl": secure_url}))
+            .await;
+
+        assert_eq!(finalize_response.status_code(), StatusCode::OK);
+        assert_eq!(finalize_response.json::<Value>()["status"], json!("active"));
     })
     .await;
 }

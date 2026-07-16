@@ -23,6 +23,33 @@ test("shows a usable customer sign-in form", async ({ page }) => {
   await expect(page.getByLabel("Password")).toBeVisible();
 });
 
+test("keeps credentials out of the URL before React hydrates", async ({ browser }) => {
+  const context = await browser.newContext({ javaScriptEnabled: false });
+  const page = await context.newPage();
+  await page.route("**/auth/login", async (route) => {
+    if (route.request().method() === "POST") {
+      await route.fulfill({ body: "", status: 204 });
+      return;
+    }
+    await route.continue();
+  });
+
+  await page.goto("/auth/login");
+  await page.getByLabel("Email address").fill("test1@example.com");
+  await page.getByLabel("Password").fill("Password!");
+  const requestPromise = page.waitForRequest(
+    (request) => request.url().endsWith("/auth/login") && request.method() === "POST",
+  );
+  await page.getByRole("button", { name: "Sign in" }).click();
+  const request = await requestPromise;
+
+  expect(request.method()).toBe("POST");
+  expect(request.url()).not.toContain("email=");
+  expect(request.url()).not.toContain("password=");
+  expect(request.postData()).toContain("email=test1%40example.com");
+  await context.close();
+});
+
 for (const path of ["/auth/login", "/auth/register"]) {
   test(`${path} fits within the initial viewport`, async ({ page }) => {
     await page.goto(path);

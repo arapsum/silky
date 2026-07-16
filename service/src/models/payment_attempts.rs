@@ -220,29 +220,36 @@ impl PaymentAttempt {
         Ok(updated)
     }
 
-    /// Records a definitive provider failure without releasing inventory.
+    /// Fails an unpaid attempt, cancels its order, and restores stock once.
     ///
-    /// Inventory remains reserved because a failed asynchronous payment can be
-    /// retried through a fresh attempt after the order is reconciled.
+    /// Replayed failures are idempotent. A successful payment is acknowledged
+    /// without changing the attempt, order, or inventory when a stale failure
+    /// event arrives after payment confirmation.
     ///
     /// # Errors
     /// Returns an attempt-not-found or invalid-transition error, or a database
     /// error when the attempt cannot be updated.
-    pub async fn mark_failed(
+    pub async fn fail_and_release_inventory(
         txn: &mut Transaction<'_, Postgres>,
         session_id: &str,
         code: Option<&str>,
         message: Option<&str>,
     ) -> ModelResult<Self> {
         let attempt = Self::lock_by_session(txn, session_id).await?;
-        if attempt.status == "failed" {
+        if matches!(attempt.status.as_str(), "failed" | "succeeded") {
             return Ok(attempt);
         }
         attempt.require_status(&["session_created", "processing"], "failed")?;
 
+        restore_inventory(txn, attempt.order_id).await?;
+        cancel_order(txn, attempt.order_id).await?;
+
         let updated = sqlx::query_as::<_, Self>(
             r"UPDATE payment_attempts
-              SET status = 'failed', failure_code = $2, failure_message = $3
+              SET status = 'failed',
+                  failure_code = $2,
+                  failure_message = $3,
+                  completed_at = now()
               WHERE pid = $1
               RETURNING *",
         )
@@ -251,11 +258,6 @@ impl PaymentAttempt {
         .bind(message)
         .fetch_one(&mut **txn)
         .await?;
-
-        sqlx::query("UPDATE orders SET payment_status = 'failed' WHERE id = $1")
-            .bind(attempt.order_id)
-            .execute(&mut **txn)
-            .await?;
 
         Ok(updated)
     }

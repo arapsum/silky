@@ -124,7 +124,7 @@ fn checkout_event(
     EventType::CheckoutSessionAsyncPaymentFailed,
     CheckoutSessionPaymentStatus::Unpaid,
     "failed",
-    "pending",
+    "cancelled",
     "failed"
 )]
 #[case(
@@ -195,7 +195,10 @@ async fn processes_checkout_webhooks_once(
         to_minor_units(order.grand_total(), order.currency()).expect("amount should convert"),
         payment_status,
     );
-    let expires_inventory = matches!(event_type, EventType::CheckoutSessionExpired);
+    let releases_inventory = matches!(
+        event_type,
+        EventType::CheckoutSessionExpired | EventType::CheckoutSessionAsyncPaymentFailed
+    );
     let payload = serde_json::to_value(&event).expect("event should serialize");
     let stock_before = sqlx::query_scalar::<_, i64>(
         "SELECT COALESCE(SUM(stock_quantity), 0)::BIGINT FROM product_variants",
@@ -222,7 +225,7 @@ async fn processes_checkout_webhooks_once(
     .await
     .expect("stock total should load");
     assert_eq!(stock_after_first, stock_after_duplicate);
-    if expires_inventory {
+    if releases_inventory {
         assert!(stock_after_first > stock_before);
     } else {
         assert_eq!(stock_after_first, stock_before);

@@ -1,7 +1,12 @@
 import { CheckIcon, MinusIcon, PlusIcon, ShoppingBagIcon } from "@phosphor-icons/react";
 import { useMemo, useState } from "react";
-import type { ProductDetail, ProductVariant } from "@/lib/api/types";
+import type { ProductDetail } from "@/lib/api/types";
 import { formatCurrency, titleCase } from "@/lib/format";
+import {
+  optionValueIsAvailable,
+  resolveVariantSelection,
+  selectionsForVariant,
+} from "@/lib/product-options";
 import { useCartStore } from "@/stores/cart";
 
 interface ProductPurchaseProps {
@@ -9,13 +14,12 @@ interface ProductPurchaseProps {
   fallbackImage: string | null;
 }
 
-function selectionsFor(variant: ProductVariant | undefined) {
-  return Object.fromEntries(variant?.options.map((option) => [option.attributeName, option.value]) ?? []);
-}
-
 export function ProductPurchase({ product, fallbackImage }: ProductPurchaseProps) {
-  const defaultVariant = product.variants.find((variant) => variant.isDefault) ?? product.variants[0];
-  const [selections, setSelections] = useState<Record<string, string>>(() => selectionsFor(defaultVariant));
+  const defaultVariant =
+    product.variants.find((variant) => variant.isDefault) ?? product.variants[0];
+  const [selections, setSelections] = useState<Record<string, string>>(() =>
+    selectionsForVariant(defaultVariant),
+  );
   const [quantity, setQuantity] = useState(1);
   const [added, setAdded] = useState(false);
   const add = useCartStore((state) => state.add);
@@ -35,18 +39,6 @@ export function ProductPurchase({ product, fallbackImage }: ProductPurchaseProps
   );
   const available = (variant?.stockQuantity ?? 0) > 0;
 
-  function optionIsAvailable(name: string, value: string) {
-    return product.variants.some(
-      (candidate) =>
-        candidate.stockQuantity > 0 &&
-        candidate.options.every((option) =>
-          option.attributeName === name
-            ? option.value === value
-            : !selections[option.attributeName] || selections[option.attributeName] === option.value,
-        ),
-    );
-  }
-
   function addToCart() {
     if (!variant || !available) return;
     const image = variant.pictures[0]?.imageLink ?? fallbackImage;
@@ -57,7 +49,7 @@ export function ProductPurchase({ product, fallbackImage }: ProductPurchaseProps
       productName: product.name,
       sku: variant.sku,
       imageUrl: image,
-      selectedOptions: selectionsFor(variant),
+      selectedOptions: selectionsForVariant(variant),
       unitPrice: variant.price,
       quantity,
       availableQuantity: variant.stockQuantity,
@@ -85,10 +77,12 @@ export function ProductPurchase({ product, fallbackImage }: ProductPurchaseProps
                 <button
                   aria-pressed={selected}
                   className={selected ? "is-selected" : ""}
-                  disabled={!optionIsAvailable(name, value)}
+                  disabled={!optionValueIsAvailable(product.variants, name, value)}
                   key={value}
                   onClick={() => {
-                    setSelections((current) => ({ ...current, [name]: value }));
+                    setSelections((current) =>
+                      resolveVariantSelection(product.variants, current, name, value),
+                    );
                     setQuantity(1);
                   }}
                   type="button"
@@ -104,21 +98,42 @@ export function ProductPurchase({ product, fallbackImage }: ProductPurchaseProps
 
       <div className="purchase-panel__actions">
         <div className="quantity-control" aria-label="Quantity selector">
-          <button aria-label="Reduce quantity" disabled={quantity <= 1} onClick={() => setQuantity((value) => value - 1)} type="button">
+          <button
+            aria-label="Reduce quantity"
+            disabled={quantity <= 1}
+            onClick={() => setQuantity((value) => value - 1)}
+            type="button"
+          >
             <MinusIcon aria-hidden size={15} />
           </button>
           <output aria-live="polite">{quantity}</output>
-          <button aria-label="Increase quantity" disabled={!variant || quantity >= variant.stockQuantity} onClick={() => setQuantity((value) => value + 1)} type="button">
+          <button
+            aria-label="Increase quantity"
+            disabled={!variant || quantity >= variant.stockQuantity}
+            onClick={() => setQuantity((value) => value + 1)}
+            type="button"
+          >
             <PlusIcon aria-hidden size={15} />
           </button>
         </div>
-        <button className="button-primary purchase-panel__add" disabled={!available} onClick={addToCart} type="button">
-          {added ? <CheckIcon aria-hidden size={18} weight="bold" /> : <ShoppingBagIcon aria-hidden size={18} />}
+        <button
+          className="button-primary purchase-panel__add"
+          disabled={!available}
+          onClick={addToCart}
+          type="button"
+        >
+          {added ? (
+            <CheckIcon aria-hidden size={18} weight="bold" />
+          ) : (
+            <ShoppingBagIcon aria-hidden size={18} />
+          )}
           {added ? "Added to bag" : available ? "Add to bag" : "Unavailable"}
         </button>
       </div>
       <p className={`purchase-panel__availability ${available ? "" : "is-out"}`}>
-        {available && variant ? `${variant.stockQuantity} available` : "This combination is unavailable"}
+        {available && variant
+          ? `${variant.stockQuantity} available`
+          : "This combination is unavailable"}
       </p>
     </div>
   );

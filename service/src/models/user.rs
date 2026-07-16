@@ -458,7 +458,9 @@ impl User {
                     SELECT media_assets.id
                     FROM media_assets
                     WHERE media_assets.pid = $5
-                      AND media_assets.created_by = $6
+                      AND media_assets.created_by = (
+                          SELECT users.id FROM users WHERE users.pid = $6
+                      )
                       AND media_assets.status = 'active'
                 ), media_asset_id),
                 updated_at = NOW()

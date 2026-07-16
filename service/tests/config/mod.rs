@@ -149,7 +149,12 @@ fn loads_development_config_from_yaml() {
     assert_eq!(config.redis().url(), "redis://localhost:6379");
     assert_eq!(
         config.cors().allowed_origin(),
-        ["http://127.0.0.1:5173", "http://localhost:5173"]
+        [
+            "http://127.0.0.1:5173",
+            "http://localhost:5173",
+            "http://127.0.0.1:4321",
+            "http://localhost:4321"
+        ]
     );
     assert_eq!(config.logger().level().to_string(), "debug");
     assert_eq!(config.logger().format().to_string(), "pretty");

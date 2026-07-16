@@ -3,6 +3,16 @@ server:
   host: 127.0.0.1
   port: 7150
 
+database:
+  uri: postgresql://username:password@localhost:5432/database
+  max_connections: 10
+  min_connections: 1
+  connection_timeout: 5
+  idle_timeout: 5
+  auto_migrate: true
+  dangerously_truncate: false
+  dangerously_recreate: false
+
 logger:
   level: debug
   format: json
@@ -48,3 +58,11 @@ cors:
   allowed_origin:
     - http://127.0.0.1:5173
     - http://localhost:5173
+    - http://127.0.0.1:4321
+    - http://localhost:4321
+
+stripe:
+  checkout_success_url: http://localhost:4321/checkout/success?session_id={CHECKOUT_SESSION_ID}&order_pid={ORDER_PID}
+  checkout_cancel_url: http://localhost:4321/checkout/cancel?order_pid={ORDER_PID}
+  checkout_ttl_seconds: 1800
+  live_mode: false

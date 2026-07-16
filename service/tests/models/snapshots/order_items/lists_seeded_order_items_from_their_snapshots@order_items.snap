@@ -15,6 +15,12 @@ expression: items
         ),
         product_pid: PID,
         variant_pid: PID,
+        product_slug: Some(
+            "classic-cotton-t-shirt",
+        ),
+        image_url: Some(
+            "https://images.unsplash.com/photo-1521572163474-6864f9cf17ab?auto=format&fit=crop&w=900&q=80",
+        ),
         product_name: "Classic Cotton T-shirt",
         sku: "TSHIRT-BLK-M",
         selected_options: Json(

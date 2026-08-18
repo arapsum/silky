@@ -22,7 +22,7 @@ export function CartIndicator({ initialCount = 0 }: CartIndicatorProps) {
       href="/cart"
     >
       <ShoppingCartIcon aria-hidden size={22} weight="bold" />
-      {count > 0 && <span>{count > 99 ? "99+" : count}</span>}
+      <span className="cart-indicator__label">Bag ({count > 99 ? "99+" : count})</span>
     </a>
   );
 }

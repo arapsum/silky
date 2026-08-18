@@ -94,7 +94,7 @@ export function CartPage() {
               <article className="cart-line" key={item.variantPid}>
                 <a className="cart-line__image" href={`/products/${item.productSlug}`}>
                   {item.imageUrl ? (
-                    <img alt="" height="320" loading="lazy" src={item.imageUrl} width="256" />
+                    <img alt={item.productName} height="320" loading="lazy" src={item.imageUrl} width="256" />
                   ) : (
                     <span>Silk</span>
                   )}

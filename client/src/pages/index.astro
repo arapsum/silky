@@ -11,7 +11,6 @@ import { titleCase } from "@/lib/format";
 
 let products: ProductListItem[] = [];
 let categories: CategoryListItem[] = [];
-let productTotal = 0;
 let catalogueUnavailable = false;
 
 const [productResult, categoryResult] = await Promise.allSettled([
@@ -21,7 +20,6 @@ const [productResult, categoryResult] = await Promise.allSettled([
 
 if (productResult.status === "fulfilled") {
   products = productResult.value.data;
-  productTotal = productResult.value.pagination.totalItems;
 } else {
   catalogueUnavailable = true;
 }
@@ -33,7 +31,6 @@ if (categoryResult.status === "fulfilled") {
 }
 
 const featuredProducts = products.slice(0, 4);
-const totalVariants = products.reduce((total, product) => total + product.variantCount, 0);
 ---
 
 <BaseLayout>
@@ -41,42 +38,32 @@ const totalVariants = products.reduce((total, product) => total + product.varian
 
   <main>
     <section class="hero shell" aria-labelledby="hero-heading">
-      <img
-        alt="Two models wearing Silk's refined everyday collection"
-        class="hero__image"
-        decoding="sync"
-        fetchpriority="high"
-        height="810"
-        src="/images/silk-editorial-hero.webp"
-        width="1439"
-      />
-      <div class="hero__veil"></div>
       <div class="hero__content">
-        <p class="eyebrow">The everyday edit</p>
+        <p class="hero__meta"><span>Silk</span><span>Wardrobe index</span></p>
         <h1 class="display-title" id="hero-heading">Clothes that feel like you.</h1>
         <p class="hero__copy">
           Quietly confident pieces, selected for how they feel, layer, and live.
           Build a wardrobe that gives you room to be yourself.
         </p>
-        <a class="button-primary" href="/shop">
-          Shop the collection
-          <ArrowRightIcon aria-hidden="true" size={18} weight="bold" />
-        </a>
+        <div class="hero__actions">
+          <a class="button-primary" href="/shop">
+            Shop the collection
+            <ArrowRightIcon aria-hidden="true" size={18} weight="bold" />
+          </a>
+          <a class="hero__secondary-action" href="#new-arrivals">See what’s new</a>
+        </div>
       </div>
-    </section>
-
-    <section class="metrics shell" aria-label="Catalogue overview">
-      <div>
-        <strong>{productTotal || "10"}</strong>
-        <span>Considered pieces</span>
-      </div>
-      <div>
-        <strong>{categories.length || "5"}</strong>
-        <span>Wardrobe categories</span>
-      </div>
-      <div>
-        <strong>{totalVariants || "14"}</strong>
-        <span>Fits and finishes</span>
+      <div class="hero__media">
+        <img
+          alt="Two models wearing Silk's refined everyday collection"
+          class="hero__image"
+          decoding="sync"
+          fetchpriority="high"
+          height="810"
+          src="/images/silk-editorial-hero.webp"
+          width="1439"
+        />
+        <span class="hero__caption">A considered edit for everyday life</span>
       </div>
     </section>
 
@@ -84,8 +71,12 @@ const totalVariants = products.reduce((total, product) => total + product.varian
       categories.length > 0 && (
         <nav class="category-ribbon" aria-label="Shop by category">
           <div class="shell category-ribbon__inner">
+            <span class="category-ribbon__label">Start with</span>
             {categories.map((category) => (
-              <a href={`/shop?category=${category.slug}`}>{titleCase(category.name)}</a>
+              <a href={`/shop?category=${category.slug}`}>
+                {titleCase(category.name)}
+                <ArrowRightIcon aria-hidden="true" size={15} weight="bold" />
+              </a>
             ))}
           </div>
         </nav>
@@ -95,8 +86,8 @@ const totalVariants = products.reduce((total, product) => total + product.varian
     <section class="collection shell" id="new-arrivals" aria-labelledby="new-arrivals-heading">
       <header class="section-heading">
         <div>
-          <p class="eyebrow">Freshly selected</p>
           <h2 class="display-title" id="new-arrivals-heading">New arrivals</h2>
+          <p class="section-heading__note">The pieces setting the pace for the current edit.</p>
         </div>
         <a class="section-heading__link" href="/shop">
           View the full edit
@@ -131,7 +122,6 @@ const totalVariants = products.reduce((total, product) => total + product.varian
         />
       </div>
       <div class="editorial__content">
-        <p class="eyebrow">Made to work together</p>
         <h2 class="display-title" id="editorial-heading">Build a wardrobe, not a costume.</h2>
         <p>
           Start with shape, texture, and the way a piece earns its place. Our
@@ -146,8 +136,8 @@ const totalVariants = products.reduce((total, product) => total + product.varian
         <section class="categories shell" aria-labelledby="categories-heading">
           <header class="section-heading">
             <div>
-              <p class="eyebrow">Find your starting point</p>
               <h2 class="display-title" id="categories-heading">Browse by category</h2>
+              <p class="section-heading__note">Find the pieces that make sense for the way you dress.</p>
             </div>
           </header>
 
@@ -172,115 +162,140 @@ const totalVariants = products.reduce((total, product) => total + product.varian
         </section>
       )
     }
+
+    <section class="closing-cta shell" aria-labelledby="closing-cta-heading">
+      <div>
+        <h2 class="display-title" id="closing-cta-heading">Make room for what you’ll wear.</h2>
+        <p>Pieces selected to layer, wear, and live together.</p>
+      </div>
+      <a class="button-secondary" href="/shop">
+        Shop the full edit
+        <ArrowRightIcon aria-hidden="true" size={17} weight="bold" />
+      </a>
+    </section>
   </main>
 
   <SiteFooter />
 </BaseLayout>
 
 <style>
+  main {
+    overflow: clip;
+  }
+
   .hero {
-    position: relative;
-    min-height: clamp(35rem, 72vw, 47rem);
+    display: grid;
+    min-height: clamp(38rem, 58vw, 50rem);
     margin-top: 1rem;
     overflow: hidden;
     border-radius: var(--radius-panel);
-    background: #d7c4a5;
-    isolation: isolate;
-  }
-
-  .hero__image,
-  .hero__veil {
-    position: absolute;
-    inset: 0;
-    width: 100%;
-    height: 100%;
-  }
-
-  .hero__image {
-    z-index: -2;
-    object-fit: cover;
-    object-position: 66% center;
-  }
-
-  .hero__veil {
-    z-index: -1;
-    background: linear-gradient(90deg, rgb(232 217 190 / 96%) 0%, rgb(232 217 190 / 76%) 42%, transparent 72%);
+    background: #e7d9c1;
   }
 
   .hero__content {
-    display: flex;
-    min-height: inherit;
-    max-width: 37rem;
-    flex-direction: column;
-    align-items: start;
-    justify-content: center;
-    padding: clamp(2rem, 6vw, 5.5rem);
-    color: #171713;
-  }
-
-  .hero__content .eyebrow {
-    margin: 0 0 1rem;
-  }
-
-  .hero h1 {
-    max-width: 9ch;
-    margin: 0;
-    font-size: clamp(3.4rem, 8.5vw, 7.4rem);
-  }
-
-  .hero__copy {
-    max-width: 31rem;
-    margin: 1.5rem 0 2rem;
-    color: rgb(23 23 19 / 72%);
-    font-size: clamp(0.95rem, 1.5vw, 1.08rem);
-  }
-
-  .metrics {
-    display: grid;
-    grid-template-columns: repeat(3, 1fr);
-    margin-top: 1rem;
-    border: 1px solid var(--border);
-    border-radius: var(--radius-card);
-    background: var(--surface-raised);
-  }
-
-  .metrics div {
+    position: relative;
+    z-index: 1;
     display: flex;
     min-width: 0;
     flex-direction: column;
-    padding: 1.25rem clamp(0.75rem, 3vw, 2rem);
-    border-right: 1px solid var(--border);
+    align-items: flex-start;
+    justify-content: space-between;
+    gap: 2rem;
+    padding: clamp(1.5rem, 4vw, 3.5rem);
+    color: #171713;
   }
 
-  .metrics div:last-child {
-    border-right: 0;
+  .hero__meta {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: 0.7rem;
+    margin: 0;
+    color: rgb(23 23 19 / 62%);
+    font-size: 0.64rem;
+    font-weight: 780;
+    letter-spacing: 0.14em;
+    line-height: 1.2;
+    text-transform: uppercase;
   }
 
-  .metrics strong {
-    font-family: var(--font-display);
-    font-size: clamp(1.35rem, 4vw, 2.35rem);
-    letter-spacing: -0.05em;
-    line-height: 1;
+  .hero__meta span + span {
+    padding-left: 0.7rem;
+    border-left: 1px solid rgb(23 23 19 / 35%);
   }
 
-  .metrics span {
-    margin-top: 0.35rem;
-    color: var(--text-muted);
-    font-size: clamp(0.6rem, 1.6vw, 0.78rem);
+  .hero h1 {
+    max-width: 8ch;
+    margin: auto 0 0;
+    font-size: clamp(3.5rem, 7vw, 6.9rem);
+  }
+
+  .hero__copy {
+    max-width: 28rem;
+    margin: 0;
+    color: rgb(23 23 19 / 72%);
+    font-size: clamp(0.95rem, 1.3vw, 1.08rem);
+    line-height: 1.55;
+  }
+
+  .hero__actions {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: 1.2rem;
+  }
+
+  .hero__secondary-action,
+  .section-heading__link {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.45rem;
+    border-bottom: 1px solid currentColor;
+    padding-bottom: 0.28rem;
+    font-size: 0.78rem;
+    font-weight: 750;
+  }
+
+  .hero__media {
+    position: relative;
+    min-height: 100%;
+    overflow: hidden;
+    background: #d3c1a3;
+  }
+
+  .hero__image {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+    object-position: 62% center;
+  }
+
+  .hero__caption {
+    position: absolute;
+    right: 1.2rem;
+    bottom: 1.2rem;
+    max-width: 13rem;
+    padding: 0.45rem 0.65rem;
+    background: rgb(23 23 19 / 76%);
+    color: #fffef9;
+    font-size: 0.62rem;
+    font-weight: 700;
+    letter-spacing: 0.04em;
     line-height: 1.35;
   }
 
   .category-ribbon {
-    margin-top: clamp(3rem, 7vw, 5.5rem);
+    margin-top: 0;
     border-block: 1px solid var(--border);
+    background: var(--surface-raised);
   }
 
   .category-ribbon__inner {
     display: flex;
     overflow-x: auto;
-    justify-content: space-between;
-    gap: 2rem;
-    padding-block: 1.1rem;
+    align-items: center;
+    gap: clamp(1.25rem, 3vw, 2.75rem);
+    padding-block: 1.15rem;
     scrollbar-width: none;
   }
 
@@ -288,17 +303,34 @@ const totalVariants = products.reduce((total, product) => total + product.varian
     display: none;
   }
 
-  .category-ribbon a {
+  .category-ribbon__label {
     flex: none;
+    color: var(--text-muted);
+    font-size: 0.66rem;
+    font-weight: 780;
+    letter-spacing: 0.12em;
+    text-transform: uppercase;
+  }
+
+  .category-ribbon a {
+    display: inline-flex;
+    flex: none;
+    align-items: center;
+    gap: 0.45rem;
     font-family: var(--font-display);
-    font-size: clamp(1rem, 2.2vw, 1.35rem);
-    font-weight: 650;
-    letter-spacing: -0.035em;
+    font-size: clamp(1rem, 2vw, 1.25rem);
+    font-weight: 660;
+    letter-spacing: -0.03em;
+    transition: color 150ms ease;
+  }
+
+  .category-ribbon a:hover {
+    color: var(--text-muted);
   }
 
   .collection,
   .categories {
-    padding-top: clamp(5rem, 10vw, 9rem);
+    padding-top: clamp(5.5rem, 10vw, 9.5rem);
   }
 
   .section-heading {
@@ -309,24 +341,17 @@ const totalVariants = products.reduce((total, product) => total + product.varian
     margin-bottom: clamp(1.8rem, 4vw, 3rem);
   }
 
-  .section-heading .eyebrow {
-    margin: 0 0 0.7rem;
-    color: var(--text-muted);
-  }
-
   .section-heading h2 {
     margin: 0;
-    font-size: clamp(2.45rem, 6vw, 4.8rem);
+    font-size: clamp(2.8rem, 6vw, 5rem);
   }
 
-  .section-heading__link {
-    display: none;
-    align-items: center;
-    gap: 0.5rem;
-    padding-bottom: 0.35rem;
-    border-bottom: 1px solid var(--text);
-    font-size: 0.83rem;
-    font-weight: 720;
+  .section-heading__note {
+    max-width: 28ch;
+    margin: 0.85rem 0 0;
+    color: var(--text-muted);
+    font-size: 0.82rem;
+    line-height: 1.5;
   }
 
   .editorial {
@@ -356,17 +381,13 @@ const totalVariants = products.reduce((total, product) => total + product.varian
     padding: clamp(2rem, 6vw, 5rem);
   }
 
-  .editorial__content .eyebrow {
-    margin: 0 0 1rem;
-  }
-
   .editorial h2 {
     max-width: 10ch;
     margin: 0;
     font-size: clamp(2.7rem, 6.5vw, 5rem);
   }
 
-  .editorial__content > p:not(.eyebrow) {
+  .editorial__content > p {
     max-width: 31rem;
     margin: 1.4rem 0 2rem;
     color: rgb(23 23 19 / 72%);
@@ -423,44 +444,66 @@ const totalVariants = products.reduce((total, product) => total + product.varian
     letter-spacing: -0.04em;
   }
 
+  .closing-cta {
+    display: flex;
+    align-items: end;
+    justify-content: space-between;
+    gap: 2rem;
+    margin-top: clamp(5rem, 10vw, 9rem);
+    padding-block: clamp(2.5rem, 5vw, 4.5rem);
+    border-block: 1px solid var(--border);
+  }
+
+  .closing-cta h2 {
+    max-width: 11ch;
+    margin: 0;
+    font-size: clamp(2.8rem, 6vw, 5rem);
+  }
+
+  .closing-cta p {
+    margin: 1rem 0 0;
+    color: var(--text-muted);
+    font-size: 0.88rem;
+  }
+
   @media (hover: hover) {
     .category-tile:hover img {
       transform: scale(1.035);
     }
   }
 
-  @media (max-width: 40rem) {
+  @media (max-width: 47.99rem) {
     .hero {
       display: flex;
-      min-height: 42rem;
-      align-items: end;
+      flex-direction: column;
+    }
+
+    .hero__media {
+      order: 1;
+      height: clamp(20rem, 67vw, 31rem);
+      min-height: 0;
     }
 
     .hero__image {
-      object-position: 69% center;
-    }
-
-    .hero__veil {
-      background: linear-gradient(180deg, transparent 20%, rgb(232 217 190 / 45%) 47%, rgb(232 217 190 / 97%) 76%);
+      object-position: 65% center;
     }
 
     .hero__content {
-      min-height: auto;
-      padding-top: 15rem;
+      order: 2;
+      min-height: 29rem;
+      padding: clamp(1.5rem, 6vw, 3rem);
     }
 
     .hero h1 {
-      font-size: clamp(3rem, 15vw, 4.7rem);
-    }
-  }
-
-  @media (min-width: 40rem) {
-    .section-heading__link {
-      display: inline-flex;
+      font-size: clamp(3.2rem, 13vw, 5.2rem);
     }
   }
 
   @media (min-width: 48rem) {
+    .hero {
+      grid-template-columns: minmax(17rem, 0.72fr) minmax(0, 1.28fr);
+    }
+
     .editorial {
       grid-template-columns: minmax(0, 1.05fr) minmax(0, 0.95fr);
     }
@@ -494,6 +537,33 @@ const totalVariants = products.reduce((total, product) => total + product.varian
 
     .category-tile--5 {
       grid-column: span 4;
+    }
+  }
+
+  @media (max-width: 40rem) {
+    .section-heading {
+      display: block;
+    }
+
+    .section-heading__link {
+      margin-top: 1.1rem;
+    }
+
+    .hero__actions,
+    .closing-cta {
+      align-items: flex-start;
+      flex-direction: column;
+    }
+
+    .closing-cta .button-secondary {
+      width: 100%;
+    }
+  }
+
+  @media (prefers-reduced-motion: reduce) {
+    .category-ribbon a,
+    .category-tile img {
+      transition: none;
     }
   }
 </style>

@@ -11,7 +11,7 @@ const { title, description } = Astro.props;
     <AuthHeader />
     <main class="auth-page shell">
       <div class="auth-page__visual" aria-hidden="true">
-        <img alt="" height="1200" src="https://images.unsplash.com/photo-1529139574466-a303027c1d8b?auto=format&fit=crop&w=1200&q=85" width="960" />
+        <img alt="" decoding="async" height="810" loading="eager" src="/images/silk-editorial-hero.webp" width="1439" />
         <p>Considered pieces.<br />Kept close.</p>
       </div>
       <slot />
@@ -69,7 +69,7 @@ const { title, description } = Astro.props;
     margin: 0;
     color: white;
     font-family: var(--font-display);
-    font-size: clamp(2.5rem, 5vw, 4.5rem);
+    font-size: var(--text-headline);
     font-weight: 760;
     letter-spacing: -0.055em;
     line-height: 0.9;
@@ -104,7 +104,7 @@ const { title, description } = Astro.props;
     }
 
     .auth-page :global(.auth-card h1) {
-      font-size: clamp(2.35rem, 7vh, 3.7rem);
+      font-size: var(--text-headline);
     }
 
     .auth-page :global(.auth-card form) {

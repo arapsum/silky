@@ -1,5 +1,5 @@
 ---
-import "@fontsource-variable/archivo";
+import "@fontsource-variable/bodoni-moda";
 import "@fontsource-variable/manrope";
 import "@/styles/global.css";
 import { ToastViewport } from "@/components/feedback/ToastViewport";
@@ -55,6 +55,14 @@ const socialImage = new URL(image, Astro.site ?? Astro.url.origin);
     <title>{title}</title>
   </head>
   <body>
+    <!--
+      THESIS: Silk is an open house catalogue, not a generic storefront grid.
+      OWN-WORLD: Ivory paper, near-black ink, hairline rules, serif-led display type, and quiet utility lettering.
+      STORY: Visitors understand the edit, browse its categories, and move into real API-backed pieces.
+      FIRST VIEWPORT: The shared house header leads into a constrained editorial hero; supplied campaign art is used as photography, followed by real category and product content.
+      FORM: House catalogue / editorial register; direction seed 9b6fab96.
+      FINISH: unreviewed and undocumented is unfinished; this build ends with the finish review, the verdict, and DESIGN.md
+    -->
     <slot />
     <ToastViewport client:load />
   </body>

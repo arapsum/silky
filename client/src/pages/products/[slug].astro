@@ -92,16 +92,18 @@ const galleryImages = pictures.map((picture, index) => ({
 
 <style>
   .product {
-    padding-top: 1.5rem;
+    padding-top: clamp(2.5rem, 6vw, 5rem);
   }
 
   .product__breadcrumb {
     display: flex;
     align-items: center;
     gap: 0.55rem;
-    margin-bottom: 1.25rem;
+    margin-bottom: 2rem;
     color: var(--text-muted);
-    font-size: 0.74rem;
+    font-size: 0.6rem;
+    letter-spacing: 0.13em;
+    text-transform: uppercase;
   }
 
   .product__breadcrumb a:first-child {
@@ -148,6 +150,7 @@ const galleryImages = pictures.map((picture, index) => ({
     max-width: 12ch;
     margin: 1rem 0 0;
     font-size: clamp(3rem, 8vw, 6rem);
+    font-weight: 400;
   }
 
   .product__unavailable > p:not(.eyebrow) {

@@ -95,24 +95,29 @@ const isAvailable = product.totalStock > 0;
     align-items: start;
     justify-content: space-between;
     gap: 1rem;
-    padding-top: 0.85rem;
+    padding-top: 1rem;
   }
 
   .product-card__category {
     margin: 0 0 0.2rem;
     color: var(--text-muted);
-    font-size: 0.68rem;
+    font-size: 0.6rem;
     font-weight: 680;
-    letter-spacing: 0.08em;
+    letter-spacing: 0.14em;
     text-transform: uppercase;
   }
 
   .product-card h3,
   .product-card__price {
     margin: 0;
-    font-size: 0.9rem;
-    font-weight: 720;
+    font-size: 1rem;
+    font-weight: 400;
     line-height: 1.35;
+  }
+
+  .product-card h3 {
+    font-family: var(--font-display);
+    letter-spacing: -0.02em;
   }
 
   .product-card--catalogue .product-card__body {
@@ -126,7 +131,7 @@ const isAvailable = product.totalStock > 0;
   }
 
   .product-card--catalogue h3 {
-    font-size: 0.8rem;
+    font-size: 0.92rem;
   }
 
   .product-card--catalogue .product-card__price {

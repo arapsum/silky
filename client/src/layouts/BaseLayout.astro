@@ -27,6 +27,7 @@ const socialImage = new URL(image, Astro.site ?? Astro.url.origin);
   <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width" />
+    <meta name="color-scheme" content="light dark" />
     <meta name="generator" content={Astro.generator} />
     <meta name="description" content={description} />
     {noIndex && <meta name="robots" content="noindex, nofollow" />}
@@ -41,6 +42,16 @@ const socialImage = new URL(image, Astro.site ?? Astro.url.origin);
     <meta name="twitter:title" content={title} />
     <meta name="twitter:description" content={description} />
     <meta name="twitter:image" content={socialImage} />
+    <script is:inline>
+      try {
+        const storedTheme = localStorage.getItem("silk-theme");
+        if (storedTheme === "light" || storedTheme === "dark") {
+          document.documentElement.dataset.theme = storedTheme;
+        }
+      } catch {
+        // A blocked storage context can still use the system theme.
+      }
+    </script>
     <title>{title}</title>
   </head>
   <body>

@@ -1,5 +1,6 @@
 import { ListIcon, MagnifyingGlassIcon, XIcon } from "@phosphor-icons/react";
 import { useId, useState } from "react";
+import { ThemeToggle } from "@/components/theme/ThemeToggle";
 
 const links = [
   { href: "/shop", label: "Shop all" },
@@ -44,6 +45,11 @@ export function MobileNavigation() {
             </label>
             <input id={`${menuId}-search`} name="search" placeholder="Search Silk" type="search" />
           </form>
+
+          <div className="mobile-navigation__theme">
+            <span>Appearance</span>
+            <ThemeToggle />
+          </div>
         </div>
       )}
     </div>

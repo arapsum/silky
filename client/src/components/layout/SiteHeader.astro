@@ -1,6 +1,7 @@
 ---
 import { CaretDownIcon, MagnifyingGlassIcon, UserCircleIcon } from "@phosphor-icons/react";
 import { CartIndicator } from "@/components/cart/CartIndicator";
+import { ThemeToggle } from "@/components/theme/ThemeToggle";
 import { CART_COUNT_COOKIE } from "@/stores/cart";
 import { MobileNavigation } from "./MobileNavigation";
 
@@ -33,6 +34,7 @@ const initialCartCount = Number.isFinite(cookieCount) ? Math.max(0, cookieCount)
     </form>
 
     <div class="site-header__actions">
+      <ThemeToggle compact client:load />
       <CartIndicator initialCount={initialCartCount} client:load />
       <a class="account-action" href="/account" aria-label="Your account">
         <UserCircleIcon aria-hidden="true" size={22} weight="bold" />
@@ -80,7 +82,11 @@ const initialCartCount = Number.isFinite(cookieCount) ? Math.max(0, cookieCount)
   .site-header__actions {
     display: flex;
     align-items: center;
-    gap: 0.1rem;
+    gap: 0.15rem;
+  }
+
+  :global(.site-header__actions .theme-toggle) {
+    display: none;
   }
 
   :global(.cart-indicator) {
@@ -170,6 +176,19 @@ const initialCartCount = Number.isFinite(cookieCount) ? Math.max(0, cookieCount)
     color: var(--text);
   }
 
+  :global(.mobile-navigation__theme) {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 1rem;
+    margin-top: 0.8rem;
+    padding: 0.85rem 0.75rem 0.2rem;
+    border-top: 1px solid var(--border);
+    color: var(--text-muted);
+    font-size: 0.78rem;
+    font-weight: 720;
+  }
+
   :global(.sr-only) {
     position: absolute;
     width: 1px;
@@ -233,6 +252,10 @@ const initialCartCount = Number.isFinite(cookieCount) ? Math.max(0, cookieCount)
 
     :global(astro-island:has(.mobile-navigation)) {
       display: none;
+    }
+
+    :global(.site-header__actions .theme-toggle) {
+      display: inline-flex;
     }
 
     .account-action {
